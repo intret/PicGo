@@ -1,0 +1,91 @@
+apply plugin: 'com.android.application'
+apply plugin: 'me.tatarka.retrolambda'
+
+android {
+    compileSdkVersion 25
+    buildToolsVersion "25.0.0"
+    defaultConfig {
+        applicationId "cn.intret.app.picgo"
+        minSdkVersion 21
+        targetSdkVersion 25
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+//        jackOptions {
+//            enabled true
+//        }
+        compileOptions {
+            sourceCompatibility JavaVersion.VERSION_1_8
+            targetCompatibility JavaVersion.VERSION_1_8
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+String java8 = getJavaVersion(8)
+String java7 = getJavaVersion(7)
+// https://github.com/evant/gradle-retrolambda
+retrolambda {
+    jdk java8
+    oldJdk java7
+    javaVersion JavaVersion.VERSION_1_7
+    defaultMethods false
+    incremental true
+}
+// for OSX
+import org.gradle.internal.os.OperatingSystem;
+
+String getJavaVersion(Integer v) {
+    // http://stackoverflow.com/questions/11235614/how-to-detect-the-current-os-from-gradle/11255194#11255194
+
+    if (OperatingSystem.current().isMacOsX()) {
+        def sout = new StringBuffer()
+        def proc = "/usr/libexec/java_home -v 1.$v".execute()
+        proc.consumeProcessOutput(sout, new StringBuffer())
+        proc.waitForOrKill(1000)
+        return sout.toString().replace("\n", "").replace("\r", "")
+    } else if (OperatingSystem.current().isWindows()) {
+        if (v == 8) {
+            return System.getenv("JAVA8_HOME")
+        } else if (v == 7) {
+            return System.getenv("JAVA7_HOME")
+        }
+    } else {
+        println("No implementation for this operating system.")
+    }
+}
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+    compile "com.android.support:animated-vector-drawable:25.3.1"
+    compile "com.android.support:mediarouter-v7:25.3.1"
+    compile 'com.android.support:appcompat-v7:25.3.1'
+    compile 'com.android.support:recyclerview-v7:25.3.1'
+    compile 'com.android.support.constraint:constraint-layout:1.0.0-alpha8'
+    compile 'com.jakewharton:butterknife:8.7.0'
+    annotationProcessor 'com.jakewharton:butterknife-compiler:8.7.0'
+
+    compile "io.reactivex.rxjava2:rxjava:2.1.1"
+    compile 'io.reactivex.rxjava2:rxandroid:2.0.1'
+    compile 'com.annimon:stream:1.1.8'
+
+    compile 'com.github.bumptech.glide:glide:4.0.0-RC1'
+    compile 'com.android.support:support-v4:25.3.1'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.0.0-RC1'
+
+    compile ("com.github.bumptech.glide:recyclerview-integration:4.0.0-RC1") {
+        // Excludes the support library because it's already included by Glide.
+        transitive = false
+    }
+
+    compile 'com.github.siyamed:android-shape-imageview:0.9.3'
+    testCompile 'junit:junit:4.12'
+}

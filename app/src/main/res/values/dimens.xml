@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="mt_imagelist_item_checkbox">8dp</dimen>
+    <dimen name="margin_list_item_image_view">2dp</dimen>
+</resources>
