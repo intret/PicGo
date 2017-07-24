@@ -8,9 +8,6 @@ import android.support.annotation.Nullable;
 
 import jp.co.recruit_lifestyle.android.floatingview.FloatingViewListener;
 
-/**
- * Created by intret on 2017/7/24.
- */
 
 public class SelectedImageFloatViewService extends Service implements FloatingViewListener {
     @Nullable

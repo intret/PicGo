@@ -7,6 +7,7 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.graphics.drawable.DrawerArrowDrawable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.StaggeredGridLayoutManager;
@@ -105,32 +106,36 @@ public class MainActivity extends AppCompatActivity implements WaterfallImageLis
         Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
         setSupportActionBar(myToolbar);
 
-        getSupportActionBar().setHomeButtonEnabled(true); //设置返回键可用
-        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
-
         ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setHomeButtonEnabled(false);
 
-        mTitle = mDrawerTitle = getTitle();
-        mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout,
-                myToolbar, R.string.drawer_open, R.string.drawer_close) {
+            mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout,
+                    myToolbar, R.string.drawer_open, R.string.drawer_close) {
 
-            /** Called when a drawer has settled in a completely closed state. */
-            public void onDrawerClosed(View view) {
-                super.onDrawerClosed(view);
-                //getActionBar().setTitle(mTitle);
-                //invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
-            }
+                /** Called when a drawer has settled in a completely closed state. */
+                public void onDrawerClosed(View view) {
+                    super.onDrawerClosed(view);
+                    //getActionBar().setTitle(mTitle);
+                    supportInvalidateOptionsMenu();
+                    //invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
+                }
 
-            /** Called when a drawer has settled in a completely open state. */
-            public void onDrawerOpened(View drawerView) {
-                super.onDrawerOpened(drawerView);
-                //getActionBar().setTitle(mDrawerTitle);
-                //invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
-            }
-        };
+                /** Called when a drawer has settled in a completely open state. */
+                public void onDrawerOpened(View drawerView) {
+                    super.onDrawerOpened(drawerView);
+                    //getActionBar().setTitle(mDrawerTitle);
+                    supportInvalidateOptionsMenu();
+                    //invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
+                }
+            };
+            mDrawerToggle.setDrawerIndicatorEnabled(true);
 
-        // Set the drawer toggle as the DrawerListener
-        mDrawerLayout.setDrawerListener(mDrawerToggle);
+            mDrawerLayout.addDrawerListener(mDrawerToggle);
+            mDrawerToggle.syncState();
+        }
+
+        //mTitle = mDrawerTitle = getTitle();
 
 
         // 初始化相册文件夹列表
@@ -153,8 +158,9 @@ public class MainActivity extends AppCompatActivity implements WaterfallImageLis
 
         mFolderListAdapter = new FolderListAdapter(items);
         mFolderListAdapter.setOnItemEventListener(item -> {
-            mDrawerLayout.closeDrawers();
             showImageList(item);
+
+            mDrawerLayout.closeDrawers();
             Log.d(TAG, "initDrawer: 切换显示目录 " + item);
         });
         mDrawerFolderList.setAdapter(mFolderListAdapter);
@@ -204,7 +210,7 @@ public class MainActivity extends AppCompatActivity implements WaterfallImageLis
     private void showImageListAdapter(WaterfallImageListAdapter adapter) {
         adapter.setOnItemEventListener(this);
         mImageListAdapter = adapter;
-        mSpanCount = 4; // columns
+
         mImageList.setLayoutManager(new StaggeredGridLayoutManager(mSpanCount, StaggeredGridLayoutManager.VERTICAL));
         mImageList.swapAdapter(mImageListAdapter, true);
     }
@@ -214,7 +220,7 @@ public class MainActivity extends AppCompatActivity implements WaterfallImageLis
 
 //        mImageList.addOnScrollListener();
 
-        //mSpanCount = 4; // columns
+        mSpanCount = 6; // columns
         //mImageList.setLayoutManager(new StaggeredGridLayoutManager(mSpanCount, StaggeredGridLayoutManager.VERTICAL));
     }
 

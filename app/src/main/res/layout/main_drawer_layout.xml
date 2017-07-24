@@ -36,7 +36,7 @@
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:orientation="vertical"
-        android:background="#ddd"
+        android:background="#FFF"
         >
 
         <android.support.v7.widget.RecyclerView
