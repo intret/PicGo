@@ -51,7 +51,7 @@ public class FolderListAdapter extends RecyclerView.Adapter<FolderListAdapter.Vi
         long count;
 
         ViewHolder viewHolder;
-        private File mFile;
+        private File mDirectory;
 
         public ViewHolder getViewHolder() {
             return viewHolder;
@@ -80,13 +80,13 @@ public class FolderListAdapter extends RecyclerView.Adapter<FolderListAdapter.Vi
             return this;
         }
 
-        public Item setFile(File file) {
-            mFile = file;
+        public Item setDirectory(File directory) {
+            mDirectory = directory;
             return this;
         }
 
-        public File getFile() {
-            return mFile;
+        public File getDirectory() {
+            return mDirectory;
         }
 
         @Override
@@ -94,7 +94,7 @@ public class FolderListAdapter extends RecyclerView.Adapter<FolderListAdapter.Vi
             return "Item{" +
                     "name='" + name + '\'' +
                     ", count=" + count +
-                    ", mFile=" + mFile +
+                    ", mDirectory=" + mDirectory +
                     '}';
         }
     }

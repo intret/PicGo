@@ -7,7 +7,6 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.graphics.drawable.DrawerArrowDrawable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.StaggeredGridLayoutManager;
@@ -173,17 +172,28 @@ public class MainActivity extends AppCompatActivity implements WaterfallImageLis
         }
     }
 
+    public void changeTitle(File dir) {
+        if (dir != null) {
+            String name = dir.getName();
+            ActionBar actionBar = getSupportActionBar();
+            if (actionBar != null) {
+                actionBar.setTitle(name);
+            }
+        }
+    }
 
     @MainThread
     private void showImageList(FolderListAdapter.Item item) {
 
-        File file = item.getFile();
+        changeTitle(item.getDirectory());
+
+        File file = item.getDirectory();
         WaterfallImageListAdapter imageListAdapter = mImageAdapters.get(file.getAbsolutePath());
         if (imageListAdapter != null) {
             showImageListAdapter(imageListAdapter);
 
         } else {
-            loadGalleryImages(item.getFile())
+            loadGalleryImages(item.getDirectory())
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .doOnError(throwable -> {
@@ -193,7 +203,7 @@ public class MainActivity extends AppCompatActivity implements WaterfallImageLis
                     .subscribe(items -> {
                                 WaterfallImageListAdapter adapter = createWaterfallImageListAdapter(items);
 
-                                mImageAdapters.put(item.getFile().getAbsolutePath(), adapter);
+                                mImageAdapters.put(item.getDirectory().getAbsolutePath(), adapter);
 
                                 showImageListAdapter(adapter);
 
@@ -238,7 +248,7 @@ public class MainActivity extends AppCompatActivity implements WaterfallImageLis
             for (File file : folders) {
                 File[] files = file.listFiles();
                 items.add(new FolderListAdapter.Item()
-                        .setFile(file)
+                        .setDirectory(file)
                         .setName(file.getName())
                         .setCount(files == null ? 0 : files.length)
                 );
