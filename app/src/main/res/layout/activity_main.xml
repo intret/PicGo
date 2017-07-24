@@ -1,21 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="cn.intret.app.picgo.ui.MainActivity">
+    android:orientation="vertical"
+    tools:context="cn.intret.app.picgo.ui.MainActivity"
+    >
 
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/img_list"
+    <!--工具栏-->
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/my_toolbar"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:padding="@dimen/margin_list_item_image_view"
-        android:clipToPadding="false"
-        tools:listitem="@layout/waterfall_image_list_item"
-        >
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorPrimary"
+        android:elevation="4dp"
+        android:theme="@style/ThemeOverlay.AppCompat.ActionBar"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light"/>
 
-    </android.support.v7.widget.RecyclerView>
-
-</RelativeLayout>
+    <!--抽屉菜单-->
+    <include layout="@layout/main_drawer_layout"/>
+</LinearLayout>

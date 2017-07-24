@@ -2,8 +2,10 @@ package cn.intret.app.picgo.ui;
 
 import android.content.Context;
 import android.graphics.drawable.Drawable;
+import android.support.v7.widget.AppCompatCheckBox;
 import android.support.v7.widget.AppCompatRadioButton;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,6 +36,8 @@ class WaterfallImageListAdapter extends RecyclerView.Adapter<WaterfallImageListA
         void onItemCheckedChanged(Item item);
 
         void onSelectionModeChange(boolean isSelectionMode);
+
+        void onDragStared();
     }
 
     public static final String TAG = "WaterfallListAdapter";
@@ -64,36 +68,51 @@ class WaterfallImageListAdapter extends RecyclerView.Adapter<WaterfallImageListA
 
     @Override
     public boolean onLongClick(View v) {
+
         Object tag = v.getTag(R.id.item);
         if (tag != null) {
             Item item = (Item) tag;
-            handleItemSelectAction(item, true);
+            return handleItemSelectAction(item, true);
         }
         return true;
     }
 
     /**
      * A click or long click perform on an item
+     *
      * @param item
      * @param isLongClick
+     * @return true, if action has been handled.
      */
-    private void handleItemSelectAction(Item item, boolean isLongClick) {
+    private boolean handleItemSelectAction(Item item, boolean isLongClick) {
         int selectedCount = getSelectedCount();
 
         // Update item selected status
         if (mIsSelectionMode) {
-            if (item.isSelected() && selectedCount == 1) {
 
-                if (isLongClick) {
+            if (isLongClick) {
+                // Entering drap-and-drop mode
+                Log.d(TAG, "handleItemSelectAction: Drap started");
+                if (mOnItemEventListener != null) {
+                    mOnItemEventListener.onDragStared();
+                }
+                return true;
+            } else {
+
+                if (item.isSelected() && selectedCount == 1) {
+
                     // Notify leaving selection mode
                     if (mOnItemEventListener != null) {
+                        mIsSelectionMode = false;
                         mOnItemEventListener.onSelectionModeChange(false);
                     }
+                    item.setSelected(false);
+
+                } else {
+                    item.setSelected(!item.isSelected());
                 }
-                item.setSelected(false);
-            } else {
-                item.setSelected(!item.isSelected());
             }
+
         } else {
 
             if (isLongClick) {
@@ -119,6 +138,8 @@ class WaterfallImageListAdapter extends RecyclerView.Adapter<WaterfallImageListA
         if (mOnItemEventListener != null) {
             mOnItemEventListener.onItemLongClick(item);
         }
+
+        return true;
     }
 
     public static class Item {
@@ -233,32 +254,36 @@ class WaterfallImageListAdapter extends RecyclerView.Adapter<WaterfallImageListA
         holder.image.setTag(R.id.item, item);
 
         // Layout
-        // Setting image size
-        ViewGroup.LayoutParams layoutParams = holder.image.getLayoutParams();
-
-        holder.image.setLayoutParams(layoutParams);
 
         if (item.getDrawable() != null) {
             holder.image.setImageDrawable(item.getDrawable());
         } else {
-            // TODO load image
 
-            if (mRecyclerView != null && item.getFile() != null) {
+            if (item.getFile() != null) {
 
+                if (mRecyclerView != null) {
 
-                Context context = mRecyclerView.getContext();
-                float margin = mContext.getResources().getDimension(R.dimen.margin_list_item_image_view);
+                    Context context = mRecyclerView.getContext();
+                    float vhMargin = mContext.getResources().getDimension(R.dimen.margin_list_item_image_view);
+                    int parentWidth = mRecyclerView.getWidth();
 
-                layoutParams.height = (int) (
-                        mRecyclerView.getWidth()
-                                - (margin * 2 * (mSpanCount + 1)
-                        )
-                                / mSpanCount);
-                Glide.with(context)
-                        .load(item.getFile())
-                        .apply(RequestOptions.centerCropTransform())
-                        .transition(withCrossFade())
-                        .into(holder.image);
+                    // Setting image size
+                    ViewGroup.LayoutParams layoutParams = holder.image.getLayoutParams();
+
+                    //layoutParams.height = (int) (parentWidth - (vhMargin * 2 * (mSpanCount + 1)) / mSpanCount);
+                    //holder.image.setLayoutParams(layoutParams);
+
+                    Glide.with(context)
+                            .load(item.getFile())
+                            .apply(RequestOptions.centerCropTransform())
+                            .transition(withCrossFade())
+                            .into(holder.image);
+                }
+            } else {
+                // todo load default image
+                if (mRecyclerView != null) {
+                    holder.image.setBackgroundColor(mRecyclerView.getResources().getColor(R.color.colorPrimaryDark));
+                }
             }
         }
 
@@ -280,13 +305,9 @@ class WaterfallImageListAdapter extends RecyclerView.Adapter<WaterfallImageListA
 
     class ViewHolder extends RecyclerView.ViewHolder {
 
-        @BindView(R.id.img)
-        RoundedImageView image;
-//        @BindView(R.id.img)
-//        public ImageView image;
+        @BindView(R.id.img) RoundedImageView image;
+        @BindView(R.id.radio) AppCompatCheckBox radio;
 
-        @BindView(R.id.radio)
-        AppCompatRadioButton radio;
         ViewHolder(View itemView) {
             super(itemView);
 

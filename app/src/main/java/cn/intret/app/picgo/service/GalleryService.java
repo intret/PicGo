@@ -1,20 +1,14 @@
 package cn.intret.app.picgo.service;
 
-import android.support.v7.util.SortedList;
-
-import com.annimon.stream.function.IndexedPredicate;
+import com.annimon.stream.Stream;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.Collection;
+import java.security.InvalidParameterException;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.stream.Stream;
 
 import cn.intret.app.picgo.utils.SystemUtils;
-import io.reactivex.Observable;
-import io.reactivex.functions.BiConsumer;
 
 /**
  * Gallery images service
@@ -38,12 +32,10 @@ public class GalleryService {
 
         File[] allFiles = cameraDir.listFiles((file) -> file.isFile() && !file.getName().startsWith("."));
         if (allFiles == null) {
-            return new LinkedList<File>();
+            return new LinkedList<>();
         }
 
-        final Object[] selectedFiles = {new LinkedList<>()};
-
-        List<File> files1 = com.annimon.stream.Stream.of(allFiles)
+        return Stream.of(allFiles)
                 .sorted((file, file2) -> Long.compare(file2.lastModified(), file.lastModified()))
                 .takeUntilIndexed(0, 1, (index, value) -> {
                     if (index == count) {
@@ -52,15 +44,37 @@ public class GalleryService {
                     return false;
                 })
                 .toList();
-        return files1;
-//        Observable.fromArray(allFiles)
-//                .sorted( )
-//                .take(count)
-//                .toList()
-//                .subscribe((files, throwable) -> {
-//                    selectedFiles[0] = files;
-//                });
 
-//        return (List<File>) selectedFiles[0];
+    }
+
+    public List<File> loadAllFolderImages(File dir) {
+        if (!dir.isDirectory()) {
+            throw new InvalidParameterException("参数 'dir' 对应的目录（" + dir.getAbsolutePath()+ "）不存在：");
+        }
+
+        File[] allFiles = dir.listFiles((file) -> file.isFile() && !file.getName().startsWith("."));
+        if (allFiles == null) {
+            return new LinkedList<>();
+        }
+
+        return Stream.of(allFiles)
+                .sorted((file, file2) -> Long.compare(file2.lastModified(), file.lastModified()))
+                .toList();
+    }
+
+    public List<File> getAllGalleryFolders() throws FileNotFoundException {
+        File dcimDir = SystemUtils.getDCIMDir();
+        if (dcimDir == null) {
+            throw new FileNotFoundException("Cannot found camera directory.");
+        }
+
+        File[] allFiles = dcimDir.listFiles((file) -> file.isDirectory() && !file.getName().startsWith("."));
+        if (allFiles == null) {
+            return new LinkedList<>();
+        }
+
+        return Stream.of(allFiles)
+                .sorted((file, file2) -> Long.compare(file2.lastModified(), file.lastModified()))
+                .toList();
     }
 }

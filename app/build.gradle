@@ -1,6 +1,12 @@
 apply plugin: 'com.android.application'
 apply plugin: 'me.tatarka.retrolambda'
 
+repositories {
+    maven {
+        url "https://jitpack.io"
+    }
+}
+
 android {
     compileSdkVersion 25
     buildToolsVersion "25.0.0"
@@ -85,7 +91,7 @@ dependencies {
         // Excludes the support library because it's already included by Glide.
         transitive = false
     }
-
+    compile 'com.github.recruit-lifestyle:FloatingView:2.2.2'
     compile 'com.github.siyamed:android-shape-imageview:0.9.3'
     testCompile 'junit:junit:4.12'
 }

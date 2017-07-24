@@ -1,24 +1,28 @@
 package cn.intret.app.picgo.ui;
 
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
+import android.content.Intent;
+import android.support.annotation.MainThread;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.StaggeredGridLayoutManager;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import butterknife.OnItemLongClick;
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.service.GalleryService;
 import io.reactivex.Observable;
@@ -29,10 +33,24 @@ public class MainActivity extends AppCompatActivity implements WaterfallImageLis
 
     private static final String TAG = "MainActivity";
 
-    @BindView(R.id.img_list)
-    RecyclerView mImageList;
+    @BindView(R.id.img_list) RecyclerView mImageList;
+    @BindView(R.id.drawer_layout) DrawerLayout mDrawerLayout;
+    @BindView(R.id.drawer_folder_list) RecyclerView mDrawerFolderList;
+
     private WaterfallImageListAdapter mImageListAdapter;
     private int mSpanCount;
+
+    private ActionBarDrawerToggle mDrawerToggle;
+    private CharSequence mTitle;
+    private CharSequence mDrawerTitle;
+    private FolderListAdapter mFolderListAdapter;
+    private Intent mStartFloatingIntent;
+
+    /**
+     * Key: file absolute path
+     * Value: WaterfallImageListAdapter
+     */
+    Map<String, WaterfallImageListAdapter> mImageAdapters = new LinkedHashMap<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,58 +59,10 @@ public class MainActivity extends AppCompatActivity implements WaterfallImageLis
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
+        initAppBar();
+        initDrawer();
         initImageList();
-    }
-
-
-    private void initImageList() {
-
-//        mImageList.addOnScrollListener();
-
-        mSpanCount = 4; // columns
-        mImageList.setLayoutManager(new StaggeredGridLayoutManager(mSpanCount, StaggeredGridLayoutManager.VERTICAL));
-
-        loadGalleryImages()
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .doOnError(throwable -> {
-                    throwable.printStackTrace();
-                    Toast.makeText(this, R.string.load_gallery_failed, Toast.LENGTH_SHORT).show();
-                })
-                .subscribe(items -> {
-                            mImageListAdapter = createWaterfallImageListAdapter(items);
-                            mImageList.setAdapter(mImageListAdapter);
-
-                        }, throwable -> {
-
-                        }, () -> {
-
-                        }
-                );
-
-        mImageList.setAdapter(mImageListAdapter);
-    }
-
-    private WaterfallImageListAdapter createWaterfallImageListAdapter(List<WaterfallImageListAdapter.Item> items) {
-        return new WaterfallImageListAdapter(items)
-                .setSpanCount(mSpanCount)
-                .setOnItemEventListener(this);
-    }
-
-    private Observable<List<WaterfallImageListAdapter.Item>> loadGalleryImages() {
-        return Observable.<List<WaterfallImageListAdapter.Item>>create(e -> {
-            LinkedList<WaterfallImageListAdapter.Item> items = new LinkedList<WaterfallImageListAdapter.Item>();
-            List<File> pictures = GalleryService.getInstance().loadLatestPictures(400);
-
-            for (File file : pictures) {
-                items.add(new WaterfallImageListAdapter.Item().setFile(file));
-            }
-
-            e.onNext(items);
-            e.onComplete();
-        });
-
-
+        //showFloatingWindow();
     }
 
     @Override
@@ -101,13 +71,197 @@ public class MainActivity extends AppCompatActivity implements WaterfallImageLis
     }
 
     @Override
-    protected void onStop() {
-        super.onStop();
+    protected void onResume() {
+//        changeFloatingCount(FloatWindowService.MSG_INCREASE);
+
+        super.onResume();
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
+    protected void onStop() {
+        super.onStop();
+
+//        changeFloatingCount(FloatWindowService.MSG_DECREASE);
+    }
+
+    @Override
+    protected void onDestroy() {
+//        stopService(mStartFloatingIntent);
+
+        super.onDestroy();
+    }
+
+    private void showFloatingWindow() {
+        mStartFloatingIntent = new Intent(MainActivity.this, FloatWindowService.class);
+        startService(mStartFloatingIntent);
+    }
+
+    private void initAppBar() {
+
+
+    }
+
+    private void initDrawer() {
+        Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
+        setSupportActionBar(myToolbar);
+
+        getSupportActionBar().setHomeButtonEnabled(true); //设置返回键可用
+        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+
+        ActionBar actionBar = getSupportActionBar();
+
+        mTitle = mDrawerTitle = getTitle();
+        mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout,
+                myToolbar, R.string.drawer_open, R.string.drawer_close) {
+
+            /** Called when a drawer has settled in a completely closed state. */
+            public void onDrawerClosed(View view) {
+                super.onDrawerClosed(view);
+                //getActionBar().setTitle(mTitle);
+                //invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
+            }
+
+            /** Called when a drawer has settled in a completely open state. */
+            public void onDrawerOpened(View drawerView) {
+                super.onDrawerOpened(drawerView);
+                //getActionBar().setTitle(mDrawerTitle);
+                //invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
+            }
+        };
+
+        // Set the drawer toggle as the DrawerListener
+        mDrawerLayout.setDrawerListener(mDrawerToggle);
+
+
+        // 初始化相册文件夹列表
+        mDrawerFolderList.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
+        loadFolderList();
+    }
+
+    private void loadFolderList() {
+        loadGalleryFolderList()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .doOnError(throwable -> {
+                    throwable.printStackTrace();
+                })
+                .subscribe(this::showFolderItems);
+    }
+
+    @MainThread
+    private void showFolderItems(List<FolderListAdapter.Item> items) {
+
+        mFolderListAdapter = new FolderListAdapter(items);
+        mFolderListAdapter.setOnItemEventListener(item -> {
+            mDrawerLayout.closeDrawers();
+            showImageList(item);
+            Log.d(TAG, "initDrawer: 切换显示目录 " + item);
+        });
+        mDrawerFolderList.setAdapter(mFolderListAdapter);
+
+        // show first folder's images in activity content field.
+        if (items != null && items.size() > 0) {
+
+            FolderListAdapter.Item item = items.get(0);
+            showImageList(item);
+        }
+    }
+
+
+    @MainThread
+    private void showImageList(FolderListAdapter.Item item) {
+
+        File file = item.getFile();
+        WaterfallImageListAdapter imageListAdapter = mImageAdapters.get(file.getAbsolutePath());
+        if (imageListAdapter != null) {
+            showImageListAdapter(imageListAdapter);
+
+        } else {
+            loadGalleryImages(item.getFile())
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .doOnError(throwable -> {
+                        throwable.printStackTrace();
+                        Toast.makeText(this, R.string.load_gallery_failed, Toast.LENGTH_SHORT).show();
+                    })
+                    .subscribe(items -> {
+                                WaterfallImageListAdapter adapter = createWaterfallImageListAdapter(items);
+
+                                mImageAdapters.put(item.getFile().getAbsolutePath(), adapter);
+
+                                showImageListAdapter(adapter);
+
+                            }, throwable -> {
+
+                            }, () -> {
+
+                            }
+                    );
+
+        }
+    }
+
+    private void showImageListAdapter(WaterfallImageListAdapter adapter) {
+        adapter.setOnItemEventListener(this);
+        mImageListAdapter = adapter;
+        mSpanCount = 4; // columns
+        mImageList.setLayoutManager(new StaggeredGridLayoutManager(mSpanCount, StaggeredGridLayoutManager.VERTICAL));
+        mImageList.swapAdapter(mImageListAdapter, true);
+    }
+
+
+    private void initImageList() {
+
+//        mImageList.addOnScrollListener();
+
+        //mSpanCount = 4; // columns
+        //mImageList.setLayoutManager(new StaggeredGridLayoutManager(mSpanCount, StaggeredGridLayoutManager.VERTICAL));
+    }
+
+    private WaterfallImageListAdapter createWaterfallImageListAdapter(List<WaterfallImageListAdapter.Item> items) {
+        return new WaterfallImageListAdapter(items)
+                .setSpanCount(mSpanCount)
+                .setOnItemEventListener(this);
+    }
+
+    private Observable<List<FolderListAdapter.Item>> loadGalleryFolderList() {
+        return Observable.create(emitter -> {
+            LinkedList<FolderListAdapter.Item> items = new LinkedList<FolderListAdapter.Item>();
+            List<File> folders = GalleryService.getInstance().getAllGalleryFolders();
+
+            for (File file : folders) {
+                File[] files = file.listFiles();
+                items.add(new FolderListAdapter.Item()
+                        .setFile(file)
+                        .setName(file.getName())
+                        .setCount(files == null ? 0 : files.length)
+                );
+            }
+
+            emitter.onNext(items);
+            emitter.onComplete();
+        });
+    }
+
+    private Observable<List<WaterfallImageListAdapter.Item>> loadGalleryImages(File directory) {
+        return Observable.<List<WaterfallImageListAdapter.Item>>create(e -> {
+            LinkedList<WaterfallImageListAdapter.Item> items = new LinkedList<WaterfallImageListAdapter.Item>();
+            List<File> images = GalleryService.getInstance().loadAllFolderImages(directory);
+
+            for (File file : images) {
+                items.add(new WaterfallImageListAdapter.Item().setFile(file));
+            }
+
+            e.onNext(items);
+            e.onComplete();
+        });
+    }
+
+    private void changeFloatingCount(int msgIncrease) {
+        Intent intent = new Intent();
+        intent.setAction(FloatWindowService.UPDATE_ACTION);
+        intent.putExtra(FloatWindowService.EXTRA_MSG, msgIncrease);
+        sendBroadcast(intent);
     }
 
     @Override
@@ -123,5 +277,15 @@ public class MainActivity extends AppCompatActivity implements WaterfallImageLis
     @Override
     public void onSelectionModeChange(boolean isSelectionMode) {
         Log.d(TAG, "onSelectionModeChange: isSelectionMode " + isSelectionMode);
+        if (isSelectionMode) {
+            changeFloatingCount(FloatWindowService.MSG_INCREASE);
+        } else {
+            changeFloatingCount(FloatWindowService.MSG_DECREASE);
+        }
+    }
+
+    @Override
+    public void onDragStared() {
+
     }
 }

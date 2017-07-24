@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<android.support.v4.widget.DrawerLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/drawer_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:showIn="@layout/activity_main">
+
+    <!--内容-->
+    <FrameLayout
+        android:id="@+id/content_frame"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:visibility="visible"
+        >
+
+        <!--图片列表-->
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/img_list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:padding="@dimen/margin_list_item_image_view"
+            tools:listitem="@layout/waterfall_image_list_item"
+            >
+
+        </android.support.v7.widget.RecyclerView>
+
+    </FrameLayout>
+
+    <!--抽屉菜单-->
+    <LinearLayout
+        android:layout_width="@dimen/main_drawer_width"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:orientation="vertical"
+        android:background="#ddd"
+        >
+
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/drawer_folder_list"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            tools:listitem="@layout/drawer_folder_list_item"
+            tools:visibility="invisible"
+            >
+        </android.support.v7.widget.RecyclerView>
+    </LinearLayout>
+
+
+</android.support.v4.widget.DrawerLayout>
