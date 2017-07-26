@@ -83,18 +83,15 @@ public class SystemImageService {
         return Observable.<FolderContainerModel>create(emitter -> {
             FolderContainerModel folderContainerModel = new FolderContainerModel();
 
-            {
-                // SDCard/DCIM directory images
-                List<File> allDcimFolders = GalleryService.getInstance().getAllDCIMFolders();
-                appendFolderSectionInfo(folderContainerModel,
-                        mContext.getString(R.string.gallery), allDcimFolders);
-            }
-            {
-                // SDCard/Picture directory images
-                List<File> allPictureFolders = GalleryService.getInstance().getAllPictureFolders();
-                appendFolderSectionInfo(folderContainerModel,
-                        mContext.getResources().getString(R.string.picture), allPictureFolders);
-            }
+            // SDCard/DCIM directory images
+            List<File> allDcimFolders = GalleryService.getInstance().getAllDCIMFolders();
+            appendFolderSectionInfo(folderContainerModel,
+                    mContext.getString(R.string.sdcard_DCIM), allDcimFolders);
+
+            // SDCard/Picture directory images
+            List<File> allPictureFolders = GalleryService.getInstance().getAllPictureFolders();
+            appendFolderSectionInfo(folderContainerModel,
+                    mContext.getResources().getString(R.string.sdcard_pictures), allPictureFolders);
 
 
             emitter.onNext(folderContainerModel);
@@ -124,7 +121,8 @@ public class SystemImageService {
         FolderContainerModel.FolderContainerInfo folderContainerInfo = new FolderContainerModel.FolderContainerInfo();
         LinkedList<ImageFolderModel> imageFolderModels = new LinkedList<>();
 
-        for (File file : allMediaFolders) {
+        for (int i = 0, allMediaFoldersSize = allMediaFolders.size(); i < allMediaFoldersSize; i++) {
+            File file = allMediaFolders.get(i);
 
             // todo merge with getThumbnailListOfDir
             File[] files = file.listFiles();

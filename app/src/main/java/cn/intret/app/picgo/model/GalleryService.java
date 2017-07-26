@@ -63,12 +63,12 @@ public class GalleryService {
     }
 
     public List<File> getAllPictureFolders() throws FileNotFoundException {
-        return getSortedSubDirectories(SystemUtils.getDCIMDir());
+        File dcimDir = SystemUtils.getPicturesDir();
+        return getSortedSubDirectories(dcimDir);
     }
 
     public List<File> getAllDCIMFolders() throws FileNotFoundException {
-        File dcimDir = SystemUtils.getPicturesDir();
-        return getSortedSubDirectories(dcimDir);
+        return getSortedSubDirectories(SystemUtils.getDCIMDir());
     }
 
     private List<File> getSortedSubDirectories(File directory) throws FileNotFoundException {

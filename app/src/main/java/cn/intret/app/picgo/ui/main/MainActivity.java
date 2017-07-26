@@ -164,13 +164,11 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
 
     private void showFolderModel(FolderContainerModel model) {
 
-        SparseArray<SectionFolderListAdapter.SectionItem> sectionItems = new SparseArray<>();
+        List<SectionFolderListAdapter.SectionItem> sectionItems = new LinkedList<>();
 
         List<FolderContainerModel.FolderContainerInfo> folderContainerInfos = model.getFolderContainerInfos();
-        for (int i = 0, folderContainerInfosSize = folderContainerInfos.size(); i < folderContainerInfosSize; i++) {
-            FolderContainerModel.FolderContainerInfo folderContainerInfo = folderContainerInfos.get(i);
-            SectionFolderListAdapter.SectionItem sectionItem = folderInfoToItem(folderContainerInfo);
-            sectionItems.put(i, sectionItem);
+        for (int i = 0, s = folderContainerInfos.size(); i < s; i++) {
+            sectionItems.add(folderInfoToItem(folderContainerInfos.get(i)));
         }
 
         SectionFolderListAdapter listAdapter = new SectionFolderListAdapter(sectionItems);

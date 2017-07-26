@@ -4,4 +4,7 @@
     <string name="drawer_close">关闭</string>
     <string name="gallery">相册</string>
     <string name="picture">照片</string>
+
+    <string name="sdcard_DCIM">DCIM</string>
+    <string name="sdcard_pictures">Pictures</string>
 </resources>

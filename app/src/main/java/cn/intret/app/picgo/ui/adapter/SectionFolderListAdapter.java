@@ -13,6 +13,7 @@ import com.annimon.stream.Stream;
 import com.truizlop.sectionedrecyclerview.SectionedRecyclerViewAdapter;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 import butterknife.BindView;
@@ -30,7 +31,7 @@ public class SectionFolderListAdapter
         SectionFolderListAdapter.FolderFooterViewHolder
         > {
 
-    SparseArray<SectionItem> mSectionItems = new SparseArray<>();
+    List<SectionItem> mSectionItems = new ArrayList<>();
 
     public static class SectionItem {
         String name;
@@ -128,18 +129,10 @@ public class SectionFolderListAdapter
         return this;
     }
 
-    public SectionFolderListAdapter(SparseArray<SectionItem> items) {
+    public SectionFolderListAdapter(List<SectionItem> items) {
         if (items != null) {
             mSectionItems = items;
         }
-    }
-
-    public SectionFolderListAdapter setSectionItems(SparseArray<SectionItem> sectionItems) {
-        if (sectionItems != null) {
-            mSectionItems = sectionItems;
-            notifyDataSetChanged();
-        }
-        return this;
     }
 
     @Override
