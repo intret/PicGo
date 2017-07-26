@@ -164,35 +164,27 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
 
     private void showFolderModel(FolderContainerModel model) {
 
-        SparseArray<SectionFolderListAdapter.SectionItem> sectionItemList = new SparseArray<>();
+        SparseArray<SectionFolderListAdapter.SectionItem> sectionItems = new SparseArray<>();
 
         List<FolderContainerModel.FolderContainerInfo> folderContainerInfos = model.getFolderContainerInfos();
         for (int i = 0, folderContainerInfosSize = folderContainerInfos.size(); i < folderContainerInfosSize; i++) {
             FolderContainerModel.FolderContainerInfo folderContainerInfo = folderContainerInfos.get(i);
-            SectionFolderListAdapter.SectionItem sectionItem = folderInfoToFolderListItem(folderContainerInfo);
-            sectionItemList.put(i, sectionItem);
+            SectionFolderListAdapter.SectionItem sectionItem = folderInfoToItem(folderContainerInfo);
+            sectionItems.put(i, sectionItem);
         }
 
-        List<SectionFolderListAdapter.SectionItem> sectionItems = Stream.of(model.getFolderContainerInfos())
-                .map(this::folderInfoToFolderListItem)
-                .toList();
-
-        SectionFolderListAdapter listAdapter = new SectionFolderListAdapter(sectionItemList);
-        listAdapter.setOnItemClickListener(new SectionFolderListAdapter.OnItemClickListener() {
-            @Override
-            public void onItemClick(SectionFolderListAdapter.SectionItem sectionItem, SectionFolderListAdapter.Item item) {
-                mDrawerLayout.closeDrawers();
-
-                showImageList(item.getFile());
-            }
+        SectionFolderListAdapter listAdapter = new SectionFolderListAdapter(sectionItems);
+        listAdapter.setOnItemClickListener((sectionItem, item) -> {
+            mDrawerLayout.closeDrawers();
+            showImageList(item.getFile());
         });
         mDrawerFolderList.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         mDrawerFolderList.setAdapter(listAdapter);
 
         // show first folder's images in activity content field.
-        if (sectionItemList.size() > 0) {
+        if (sectionItems.size() > 0) {
 
-            SectionFolderListAdapter.SectionItem item = sectionItemList.get(0);
+            SectionFolderListAdapter.SectionItem item = sectionItems.get(0);
             List<SectionFolderListAdapter.Item> items = item.getItems();
             if (items != null && !items.isEmpty()) {
                 showImageList(items.get(0).getFile());
@@ -201,8 +193,7 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
     }
 
 
-
-    private SectionFolderListAdapter.SectionItem folderInfoToFolderListItem(FolderContainerModel.FolderContainerInfo folderContainerInfo) {
+    private SectionFolderListAdapter.SectionItem folderInfoToItem(FolderContainerModel.FolderContainerInfo folderContainerInfo) {
         SectionFolderListAdapter.SectionItem sectionItem = new SectionFolderListAdapter.SectionItem();
         sectionItem.setName(folderContainerInfo.getName());
         sectionItem.setFile(folderContainerInfo.getFile());
@@ -210,7 +201,10 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
                 .map(item -> new SectionFolderListAdapter.Item()
                         .setFile(item.getFile())
                         .setName(item.getName())
-                        .setCount(item.getCount())).toList()
+                        .setCount(item.getCount())
+                        .setThumbList(item.getThumbList())
+                )
+                .toList()
         );
         return sectionItem;
     }
@@ -313,7 +307,7 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
         mCurrentImageListAdapter = adapter;
 
         mGridLayoutManager = new StaggeredGridLayoutManager(mSpanCount, StaggeredGridLayoutManager.VERTICAL);
-        mImageList.swapAdapter(mCurrentImageListAdapter, true);
+        mImageList.swapAdapter(mCurrentImageListAdapter, false);
     }
 
 

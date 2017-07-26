@@ -288,9 +288,9 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
 //                        initialLoadImage(item, holder, width, position);
 //                    } else {
                 Glide.with(context)
+                        .asBitmap()
                         .load(item.getFile())
                         .apply(RequestOptions.fitCenterTransform())
-                        .transition(withCrossFade())
                         .into(holder.image);
 //                    }
 

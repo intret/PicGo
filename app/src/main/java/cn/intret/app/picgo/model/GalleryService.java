@@ -49,7 +49,7 @@ public class GalleryService {
 
     public List<File> loadAllFolderImages(File dir) {
         if (!dir.isDirectory()) {
-            throw new InvalidParameterException("参数 'dir' 对应的目录（" + dir.getAbsolutePath()+ "）不存在：");
+            throw new InvalidParameterException("参数 'dir' 对应的目录（" + dir.getAbsolutePath() + "）不存在：");
         }
 
         File[] allFiles = dir.listFiles((file) -> file.isFile() && !file.getName().startsWith("."));
@@ -63,15 +63,15 @@ public class GalleryService {
     }
 
     public List<File> getAllPictureFolders() throws FileNotFoundException {
-        return getSortedDirectories(SystemUtils.getDCIMDir());
+        return getSortedSubDirectories(SystemUtils.getDCIMDir());
     }
 
     public List<File> getAllDCIMFolders() throws FileNotFoundException {
         File dcimDir = SystemUtils.getPicturesDir();
-        return getSortedDirectories(dcimDir);
+        return getSortedSubDirectories(dcimDir);
     }
 
-    private List<File> getSortedDirectories(File directory) throws FileNotFoundException {
+    private List<File> getSortedSubDirectories(File directory) throws FileNotFoundException {
         if (directory == null) {
             throw new FileNotFoundException("Cannot found camera directory.");
         }

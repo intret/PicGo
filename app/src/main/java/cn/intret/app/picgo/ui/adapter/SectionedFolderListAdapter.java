@@ -14,15 +14,13 @@ import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
 
-import butterknife.BindInt;
 import butterknife.BindView;
-import butterknife.Optional;
 import cn.intret.app.picgo.R;
 
 /**
  * 分段文件夹列表
  */
-
+@Deprecated
 public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<SectionedFolderListAdapter.ViewHolder> {
 
     List<SectionItem> mSectionItems = new LinkedList<>();

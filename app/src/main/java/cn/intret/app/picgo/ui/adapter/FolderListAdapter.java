@@ -1,6 +1,7 @@
 package cn.intret.app.picgo.ui.adapter;
 
 import android.support.v7.widget.RecyclerView;
+import android.util.SparseArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,6 +20,7 @@ import cn.intret.app.picgo.R;
  * 抽屉菜单列表
  */
 
+@Deprecated
 public class FolderListAdapter extends RecyclerView.Adapter<FolderListAdapter.ViewHolder> implements View.OnClickListener {
 
     List<Item> mItems = new LinkedList<>();
@@ -101,6 +103,16 @@ public class FolderListAdapter extends RecyclerView.Adapter<FolderListAdapter.Vi
                     ", mDirectory=" + mDirectory +
                     '}';
         }
+
+        List<File> mThumbList;
+        public List<File> getThumbList() {
+            return mThumbList;
+        }
+
+        public Item setThumbList(List<File> thumbList) {
+            mThumbList = thumbList;
+            return this;
+        }
     }
 
     public FolderListAdapter(List<Item> items) {
@@ -141,6 +153,9 @@ public class FolderListAdapter extends RecyclerView.Adapter<FolderListAdapter.Vi
 
         holder.itemView.setOnClickListener(this);
 
+        SparseArray<HorizontalImageListAdapter.Item> items = new SparseArray<>();
+        item.getThumbList();
+
         holder.name.setText(item.getName());
         holder.count.setText(String.valueOf(item.getCount()));
     }
@@ -154,6 +169,7 @@ public class FolderListAdapter extends RecyclerView.Adapter<FolderListAdapter.Vi
 
         @BindView(R.id.name) TextView name;
         @BindView(R.id.count) TextView count;
+        @BindView(R.id.thumb_list) RecyclerView thumbList;
 
         public ViewHolder(View itemView) {
             super(itemView);

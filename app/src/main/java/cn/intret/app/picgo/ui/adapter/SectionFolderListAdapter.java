@@ -1,12 +1,15 @@
 package cn.intret.app.picgo.ui.adapter;
 
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.SparseArray;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.annimon.stream.Stream;
 import com.truizlop.sectionedrecyclerview.SectionedRecyclerViewAdapter;
 
 import java.io.File;
@@ -67,6 +70,17 @@ public class SectionFolderListAdapter
         String mName;
         int mCount;
         File mFile;
+        List<File> mThumbList;
+        private HorizontalImageListAdapter mAdapter;
+
+        public List<File> getThumbList() {
+            return mThumbList;
+        }
+
+        public Item setThumbList(List<File> thumbList) {
+            mThumbList = thumbList;
+            return this;
+        }
 
         public String getName() {
             return mName;
@@ -93,6 +107,14 @@ public class SectionFolderListAdapter
         public Item setFile(File file) {
             mFile = file;
             return this;
+        }
+
+        public void setAdapter(HorizontalImageListAdapter adapter) {
+            mAdapter = adapter;
+        }
+
+        public HorizontalImageListAdapter getAdapter() {
+            return mAdapter;
         }
     }
 
@@ -197,8 +219,34 @@ public class SectionFolderListAdapter
                 }
             }
         });
+
+        holder.thumbList.setLayoutManager(new LinearLayoutManager(holder.itemView.getContext(),
+                LinearLayoutManager.HORIZONTAL, true));
+//        holder.thumbList.setOnTouchListener((v, event) -> {
+//            // http://stackoverflow.com/questions/8121491/is-it-possible-to-add-a-scrollable-textview-to-a-listview
+//            v.getParent().requestDisallowInterceptTouchEvent(true); // needed for complex gestures
+//            // simple tap works without the above line as well
+//            return holder.itemView.dispatchTouchEvent(event); // onTouchEvent won't work
+//        });
+
+        if (item.getAdapter() == null) {
+            HorizontalImageListAdapter adapter = new HorizontalImageListAdapter(filesToItems(item.getThumbList()));
+            adapter.setOnClickListener();
+            item.setAdapter(adapter);
+            holder.thumbList.setAdapter(item.getAdapter());
+        } else {
+            holder.thumbList.swapAdapter(item.getAdapter(), false);
+        }
+
         holder.name.setText(item.getName());
         holder.count.setText(String.valueOf(item.getCount()));
+    }
+
+    private List<HorizontalImageListAdapter.Item> filesToItems(List<File> thumbList) {
+        if (thumbList == null) {
+            return null;
+        }
+        return Stream.of(thumbList).map(file -> new HorizontalImageListAdapter.Item().setFile(file)).toList();
     }
 
     class FolderHeaderViewHolder extends RecyclerView.ViewHolder {
@@ -219,6 +267,9 @@ public class SectionFolderListAdapter
 
         @BindView(R.id.count)
         TextView count;
+
+        @BindView(R.id.thumb_list)
+        RecyclerView thumbList;
 
         ViewHolder(View itemView) {
             super(itemView);

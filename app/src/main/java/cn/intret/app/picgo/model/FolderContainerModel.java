@@ -9,6 +9,10 @@ import java.util.List;
  */
 public class FolderContainerModel {
 
+
+    /**
+     * TODO merge with class {@link ImageFolderModel}
+     */
     public static class FolderContainerInfo {
         File mFile;
         String mName;

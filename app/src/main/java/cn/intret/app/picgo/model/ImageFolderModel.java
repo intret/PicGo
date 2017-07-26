@@ -2,6 +2,7 @@ package cn.intret.app.picgo.model;
 
 
 import java.io.File;
+import java.util.List;
 
 
 /**
@@ -11,6 +12,16 @@ public class ImageFolderModel {
     File mFile;
     int mCount;
     private String mName;
+    List<File> mThumbList;
+
+    public List<File> getThumbList() {
+        return mThumbList;
+    }
+
+    public ImageFolderModel setThumbList(List<File> thumbList) {
+        this.mThumbList = thumbList;
+        return this;
+    }
 
     public File getFile() {
         return mFile;
