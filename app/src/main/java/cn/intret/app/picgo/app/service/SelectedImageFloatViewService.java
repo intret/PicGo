@@ -1,9 +1,8 @@
-package cn.intret.app.picgo.service;
+package cn.intret.app.picgo.app.service;
 
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
-import android.support.annotation.IntDef;
 import android.support.annotation.Nullable;
 
 import jp.co.recruit_lifestyle.android.floatingview.FloatingViewListener;

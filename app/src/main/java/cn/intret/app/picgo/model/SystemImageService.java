@@ -12,19 +12,19 @@ import java.util.Locale;
 
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.app.CoreModule;
-import cn.intret.app.picgo.service.GalleryService;
 import io.reactivex.Observable;
 
 
-public class SystemImageModel {
-    private static final SystemImageModel ourInstance = new SystemImageModel();
-    private static final String TAG = SystemImageModel.class.getSimpleName();
+public class SystemImageService {
 
-    public static SystemImageModel getInstance() {
+    private static final SystemImageService ourInstance = new SystemImageService();
+    private static final String TAG = SystemImageService.class.getSimpleName();
+
+    public static SystemImageService getInstance() {
         return ourInstance;
     }
 
-    private SystemImageModel() {
+    private SystemImageService() {
         if (CoreModule.getInstance().getAppContext() == null) {
             throw new IllegalStateException("Please initialize the CoreModule class (CoreModule.getInstance().init(appContext).");
         }
@@ -33,29 +33,29 @@ public class SystemImageModel {
 
     Context mContext;
 
-    FolderModel mFolderModel = new FolderModel();
+    FolderContainerModel mFolderContainerModel = new FolderContainerModel();
 
     public int getFolderListCount() {
-        if (mFolderModel == null) {
+        if (mFolderContainerModel == null) {
             loadGalleryFolderList().subscribe(folderInfos -> {
 
             });
-            return mFolderModel.getFolderContainerInfos().size();
+            return mFolderContainerModel.getFolderContainerInfos().size();
         } else {
-            return mFolderModel.getFolderContainerInfos().size();
+            return mFolderContainerModel.getFolderContainerInfos().size();
         }
     }
 
     public int getSectionForPosition(int position) {
-        if (mFolderModel == null) {
+        if (mFolderContainerModel == null) {
             return 0;
         } else {
 
             int begin = 0;
             int end = 0;
-            List<FolderModel.FolderContainerInfo> folderContainerInfos = mFolderModel.getFolderContainerInfos();
+            List<FolderContainerModel.FolderContainerInfo> folderContainerInfos = mFolderContainerModel.getFolderContainerInfos();
             for (int sectionIndex = 0; sectionIndex < folderContainerInfos.size(); sectionIndex++) {
-                FolderModel.FolderContainerInfo folderContainerInfo = folderContainerInfos.get(sectionIndex);
+                FolderContainerModel.FolderContainerInfo folderContainerInfo = folderContainerInfos.get(sectionIndex);
                 int size = folderContainerInfo.getFolders().size();
 
                 end += size;
@@ -75,20 +75,20 @@ public class SystemImageModel {
         }
     }
 
-    public Observable<FolderModel> loadAvailableFolderListModel() {
-        return Observable.<FolderModel>create(emitter -> {
-            FolderModel folderModel = new FolderModel();
+    public Observable<FolderContainerModel> loadAvailableFolderListModel() {
+        return Observable.<FolderContainerModel>create(emitter -> {
+            FolderContainerModel folderContainerModel = new FolderContainerModel();
 
             {
                 // Gallery images
-                FolderModel.FolderContainerInfo folderContainerInfo = new FolderModel.FolderContainerInfo();
-                List<FolderInfo> folderInfoList = new LinkedList<FolderInfo>();
+                FolderContainerModel.FolderContainerInfo folderContainerInfo = new FolderContainerModel.FolderContainerInfo();
+                List<ImageFolderModel> imageFolderModelList = new LinkedList<ImageFolderModel>();
 
 
                 List<File> allDcimFolders = GalleryService.getInstance().getAllDCIMFolders();
                 for (File file : allDcimFolders) {
                     File[] files = file.listFiles();
-                    folderInfoList.add(new FolderInfo()
+                    imageFolderModelList.add(new ImageFolderModel()
                             .setFile(file)
                             .setName(file.getName())
                             .setCount(files == null ? 0 : files.length)
@@ -96,19 +96,19 @@ public class SystemImageModel {
                 }
 
                 folderContainerInfo.setName(mContext.getString(R.string.gallery));
-                folderContainerInfo.setFolders(folderInfoList);
+                folderContainerInfo.setFolders(imageFolderModelList);
 
-                folderModel.addFolderSection(folderContainerInfo);
+                folderContainerModel.addFolderSection(folderContainerInfo);
             }
             {
                 // Picture images
-                FolderModel.FolderContainerInfo folderContainerInfo = new FolderModel.FolderContainerInfo();
-                LinkedList<FolderInfo> folderInfos = new LinkedList<>();
+                FolderContainerModel.FolderContainerInfo folderContainerInfo = new FolderContainerModel.FolderContainerInfo();
+                LinkedList<ImageFolderModel> imageFolderModels = new LinkedList<>();
 
                 List<File> allPictureFolders = GalleryService.getInstance().getAllPictureFolders();
                 for (File file : allPictureFolders) {
                     File[] files = file.listFiles();
-                    folderInfos.add(new FolderInfo()
+                    imageFolderModels.add(new ImageFolderModel()
                             .setFile(file)
                             .setName(file.getName())
                             .setCount(files == null ? 0 : files.length)
@@ -116,38 +116,38 @@ public class SystemImageModel {
                 }
 
                 folderContainerInfo.setName(mContext.getResources().getString(R.string.picture));
-                folderContainerInfo.setFolders(folderInfos);
-                folderModel.addFolderSection(folderContainerInfo);
+                folderContainerInfo.setFolders(imageFolderModels);
+                folderContainerModel.addFolderSection(folderContainerInfo);
             }
 
 
-            emitter.onNext(folderModel);
+            emitter.onNext(folderContainerModel);
             emitter.onComplete();
         })
-                .doOnNext(folderModel -> mFolderModel = folderModel);
+                .doOnNext(folderContainerModel -> mFolderContainerModel = folderContainerModel);
     }
 
-    public Observable<List<FolderInfo>> loadGalleryFolderList() {
+    public Observable<List<ImageFolderModel>> loadGalleryFolderList() {
 
         return loadAvailableFolderListModel()
-                .map(folderModel -> {
-                    List<FolderModel.FolderContainerInfo> folderContainerInfos = folderModel.getFolderContainerInfos();
+                .map(folderContainerModel -> {
+                    List<FolderContainerModel.FolderContainerInfo> folderContainerInfos = folderContainerModel.getFolderContainerInfos();
 
-                    List<FolderInfo> folderInfoList = new LinkedList<FolderInfo>();
+                    List<ImageFolderModel> imageFolderModelList = new LinkedList<ImageFolderModel>();
                     for (int i = 0; i < folderContainerInfos.size(); i++) {
-                        FolderModel.FolderContainerInfo folderContainerInfo = folderContainerInfos.get(i);
-                        List<FolderInfo> folders = folderContainerInfo.getFolders();
-                        folderInfoList.addAll(folders);
+                        FolderContainerModel.FolderContainerInfo folderContainerInfo = folderContainerInfos.get(i);
+                        List<ImageFolderModel> folders = folderContainerInfo.getFolders();
+                        imageFolderModelList.addAll(folders);
                     }
 
-                    return folderInfoList;
+                    return imageFolderModelList;
                 })
                 ;
     }
 
     public String getSectionFileName(int position) {
         int sectionForPosition = getSectionForPosition(position);
-        FolderModel.FolderContainerInfo folderContainerInfo = mFolderModel.getFolderContainerInfos().get(sectionForPosition);
+        FolderContainerModel.FolderContainerInfo folderContainerInfo = mFolderContainerModel.getFolderContainerInfos().get(sectionForPosition);
         return folderContainerInfo.getName();
     }
 }

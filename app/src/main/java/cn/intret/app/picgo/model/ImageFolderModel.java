@@ -3,7 +3,11 @@ package cn.intret.app.picgo.model;
 
 import java.io.File;
 
-public class FolderInfo {
+
+/**
+ * 图片文件夹模型，也就是这个文件中至少有一张图片。
+ */
+public class ImageFolderModel {
     File mFile;
     int mCount;
     private String mName;
@@ -12,7 +16,7 @@ public class FolderInfo {
         return mFile;
     }
 
-    public FolderInfo setFile(File file) {
+    public ImageFolderModel setFile(File file) {
         mFile = file;
         return this;
     }
@@ -21,12 +25,12 @@ public class FolderInfo {
         return mCount;
     }
 
-    public FolderInfo setCount(int count) {
+    public ImageFolderModel setCount(int count) {
         mCount = count;
         return this;
     }
 
-    public FolderInfo setName(String name) {
+    public ImageFolderModel setName(String name) {
         mName = name;
         return this;
     }

@@ -242,8 +242,9 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
     @Override
     public void onViewRecycled(ViewHolder holder) {
         if (holder != null) {
+            holder.radio.setVisibility(View.GONE);
+
             if (holder.image != null) {
-                holder.radio.setVisibility(View.GONE);
                 holder.image.setTag(R.id.item, -1);
             }
         }
@@ -254,7 +255,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         // todo check parent.getContext() ?
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.waterfall_image_list_item, null);
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.image_list_item, null);
         return new ViewHolder(view);
     }
 
@@ -268,47 +269,39 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         holder.image.setTag(R.id.item, item);
 
         // Layout
+        if (item.getFile() != null) {
 
-        if (item.getDrawable() != null) {
-            holder.image.setImageDrawable(item.getDrawable());
-        } else {
+            if (mRecyclerView != null) {
+                Context context = mRecyclerView.getContext();
 
-            if (item.getFile() != null) {
+                float vhMargin = mContext.getResources().getDimension(R.dimen.margin_list_item_image_view);
+                int parentWidth = mRecyclerView.getWidth();
+                int width = (int) (parentWidth - (vhMargin * 2 * (mSpanCount + 1)) / mSpanCount);
 
-                if (mRecyclerView != null) {
-                    Context context = mRecyclerView.getContext();
-
-                    float vhMargin = mContext.getResources().getDimension(R.dimen.margin_list_item_image_view);
-                    int parentWidth = mRecyclerView.getWidth();
-                    int width = (int) (parentWidth - (vhMargin * 2 * (mSpanCount + 1)) / mSpanCount);
-
-                    // Setting image size
-                    ViewGroup.LayoutParams layoutParams = holder.image.getLayoutParams();
-//                    if (layoutParams != null) {
-//                        layoutParams.height = 0;
-//                        holder.image.setLayoutParams(layoutParams);
-//                    }
+                // Setting image size
+                ViewGroup.LayoutParams layoutParams = holder.image.getLayoutParams();
+                if (layoutParams != null) {
+                    layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+                    holder.image.setLayoutParams(layoutParams);
+                }
 //                    if (item.getHeight() == -1) {
 //                        initialLoadImage(item, holder, width, position);
 //                    } else {
-                        Glide.with(context)
-                                .load(item.getFile())
-                                .apply(RequestOptions.centerCropTransform())
-
-                                .transition(withCrossFade())
-                                .into(holder.image);
+                Glide.with(context)
+                        .load(item.getFile())
+                        .apply(RequestOptions.fitCenterTransform())
+                        .transition(withCrossFade())
+                        .into(holder.image);
 //                    }
 
-
-                } else {
-                    Log.e(TAG, "onBindViewHolder: mRecyclerView is null." );
-                }
             } else {
-                // todo load default image
-                Log.e(TAG, "onBindViewHolder: No file url for image.");
-                if (mRecyclerView != null) {
-                    holder.image.setBackgroundColor(mRecyclerView.getResources().getColor(R.color.colorPrimaryDark));
-                }
+                Log.e(TAG, "onBindViewHolder: mRecyclerView is null.");
+            }
+        } else {
+            // todo load default image
+            Log.e(TAG, "onBindViewHolder: No file url for image.");
+            if (mRecyclerView != null) {
+                holder.image.setBackgroundColor(mRecyclerView.getResources().getColor(R.color.colorPrimaryDark));
             }
         }
 
@@ -358,7 +351,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         ViewTarget<RoundedImageView, Drawable> viewTarget = new ViewTarget<RoundedImageView, Drawable>(holder.image) {
             @Override
             public void onResourceReady(Drawable resource, Transition<? super Drawable> transition) {
-                float radio = (float) resource.getIntrinsicHeight() / (float)resource.getIntrinsicWidth();
+                float radio = (float) resource.getIntrinsicHeight() / (float) resource.getIntrinsicWidth();
                 int imageHeight = (int) (imageWidth * radio);
 
                 item.setHeight(imageHeight);

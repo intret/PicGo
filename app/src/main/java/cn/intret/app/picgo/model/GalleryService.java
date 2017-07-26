@@ -1,4 +1,4 @@
-package cn.intret.app.picgo.service;
+package cn.intret.app.picgo.model;
 
 import com.annimon.stream.Stream;
 

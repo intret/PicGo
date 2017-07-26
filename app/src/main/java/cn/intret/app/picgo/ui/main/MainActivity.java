@@ -1,4 +1,4 @@
-package cn.intret.app.picgo.ui;
+package cn.intret.app.picgo.ui.main;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -29,10 +29,10 @@ import java.util.concurrent.TimeUnit;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
-import cn.intret.app.picgo.model.FolderInfo;
-import cn.intret.app.picgo.model.FolderModel;
-import cn.intret.app.picgo.model.SystemImageModel;
-import cn.intret.app.picgo.service.GalleryService;
+import cn.intret.app.picgo.model.ImageFolderModel;
+import cn.intret.app.picgo.model.FolderContainerModel;
+import cn.intret.app.picgo.model.SystemImageService;
+import cn.intret.app.picgo.model.GalleryService;
 import cn.intret.app.picgo.ui.adapter.FolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.ImageListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionDecoration;
@@ -155,28 +155,20 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
 
     private void initFolderList() {
         // 初始化相册文件夹列表
-
-
-        SystemImageModel.getInstance().loadAvailableFolderListModel()
+        SystemImageService.getInstance().loadAvailableFolderListModel()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .doOnError(Throwable::printStackTrace)
                 .subscribe(this::showFolderModel);
-
-//        SystemImageModel.getInstance().loadGalleryFolderList()
-//                .subscribeOn(Schedulers.io())
-//                .observeOn(AndroidSchedulers.mainThread())
-//                .doOnError(Throwable::printStackTrace)
-//                .subscribe(this::showFolders);
     }
 
-    private void showFolderModel(FolderModel model) {
+    private void showFolderModel(FolderContainerModel model) {
 
         SparseArray<SectionFolderListAdapter.SectionItem> sectionItemList = new SparseArray<>();
 
-        List<FolderModel.FolderContainerInfo> folderContainerInfos = model.getFolderContainerInfos();
+        List<FolderContainerModel.FolderContainerInfo> folderContainerInfos = model.getFolderContainerInfos();
         for (int i = 0, folderContainerInfosSize = folderContainerInfos.size(); i < folderContainerInfosSize; i++) {
-            FolderModel.FolderContainerInfo folderContainerInfo = folderContainerInfos.get(i);
+            FolderContainerModel.FolderContainerInfo folderContainerInfo = folderContainerInfos.get(i);
             SectionFolderListAdapter.SectionItem sectionItem = folderInfoToFolderListItem(folderContainerInfo);
             sectionItemList.put(i, sectionItem);
         }
@@ -210,7 +202,7 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
 
 
 
-    private SectionFolderListAdapter.SectionItem folderInfoToFolderListItem(FolderModel.FolderContainerInfo folderContainerInfo) {
+    private SectionFolderListAdapter.SectionItem folderInfoToFolderListItem(FolderContainerModel.FolderContainerInfo folderContainerInfo) {
         SectionFolderListAdapter.SectionItem sectionItem = new SectionFolderListAdapter.SectionItem();
         sectionItem.setName(folderContainerInfo.getName());
         sectionItem.setFile(folderContainerInfo.getFile());
@@ -223,19 +215,19 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
         return sectionItem;
     }
 
-    private void showFolders(List<FolderInfo> folderInfos) {
+    private void showFolders(List<ImageFolderModel> imageFolderModels) {
 
 
-        List<FolderListAdapter.Item> items = Stream.of(folderInfos)
+        List<FolderListAdapter.Item> items = Stream.of(imageFolderModels)
                 .map(this::folderInfoToFolderListAdapterItem)
                 .toList();
         showFolderItems(items);
     }
 
-    private FolderListAdapter.Item folderInfoToFolderListAdapterItem(FolderInfo folderInfo) {
-        return new FolderListAdapter.Item().setName(folderInfo.getName())
-                .setCount(folderInfo.getCount())
-                .setDirectory(folderInfo.getFile());
+    private FolderListAdapter.Item folderInfoToFolderListAdapterItem(ImageFolderModel imageFolderModel) {
+        return new FolderListAdapter.Item().setName(imageFolderModel.getName())
+                .setCount(imageFolderModel.getCount())
+                .setDirectory(imageFolderModel.getFile());
     }
 
     @MainThread
@@ -252,13 +244,13 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
         mDrawerFolderList.addItemDecoration(new SectionDecoration(this, new SectionDecoration.DecorationCallback() {
             @Override
             public long getGroupId(int position) {
-                return SystemImageModel.getInstance().getSectionForPosition(position);
+                return SystemImageService.getInstance().getSectionForPosition(position);
 //                return mFolderListAdapter.getItemCount();
             }
 
             @Override
             public String getGroupFirstLine(int position) {
-                return SystemImageModel.getInstance().getSectionFileName(position);
+                return SystemImageService.getInstance().getSectionFileName(position);
             }
         }));
         mDrawerFolderList.setAdapter(mFolderListAdapter);
@@ -317,10 +309,11 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
 
     private void showImageListAdapter(ImageListAdapter adapter) {
         adapter.setOnItemEventListener(this);
+
         mCurrentImageListAdapter = adapter;
 
         mGridLayoutManager = new StaggeredGridLayoutManager(mSpanCount, StaggeredGridLayoutManager.VERTICAL);
-        mImageList.swapAdapter(mCurrentImageListAdapter, false);
+        mImageList.swapAdapter(mCurrentImageListAdapter, true);
     }
 
 

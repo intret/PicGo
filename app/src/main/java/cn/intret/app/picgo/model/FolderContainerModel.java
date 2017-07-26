@@ -5,21 +5,21 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * 图片文件夹数据模型
+ * 图片文件夹数据模型，包含多个文件夹。
  */
-public class FolderModel {
+public class FolderContainerModel {
 
     public static class FolderContainerInfo {
         File mFile;
         String mName;
 
-        List<FolderInfo> mFolders;
+        List<ImageFolderModel> mFolders;
 
-        public List<FolderInfo> getFolders() {
+        public List<ImageFolderModel> getFolders() {
             return mFolders;
         }
 
-        public FolderContainerInfo setFolders(List<FolderInfo> folders) {
+        public FolderContainerInfo setFolders(List<ImageFolderModel> folders) {
             mFolders = folders;
             return this;
         }
