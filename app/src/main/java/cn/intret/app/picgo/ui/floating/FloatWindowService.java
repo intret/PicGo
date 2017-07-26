@@ -1,4 +1,4 @@
-package cn.intret.app.picgo.ui;
+package cn.intret.app.picgo.ui.floating;
 
 import android.app.Service;
 import android.content.BroadcastReceiver;
@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.graphics.PixelFormat;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;

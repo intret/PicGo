@@ -11,6 +11,7 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
+        android:name=".app.AppComponent"
         android:theme="@style/AppTheme">
         <activity android:name=".ui.MainActivity">
             <intent-filter>
@@ -20,7 +21,7 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".ui.FloatWindowService" android:exported="false">
+        <service android:name=".ui.floating.FloatWindowService" android:exported="false">
         </service>
 
         <service android:name=".service.SelectedImageFloatViewService" android:exported="false">

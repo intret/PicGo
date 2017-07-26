@@ -11,6 +11,7 @@ import java.io.InputStreamReader;
 import java.util.List;
 
 import cn.intret.app.picgo.BuildConfig;
+import cn.intret.app.picgo.model.SystemImageModel;
 import cn.intret.app.picgo.service.GalleryService;
 import io.reactivex.plugins.RxJavaPlugins;
 
@@ -21,16 +22,14 @@ import io.reactivex.plugins.RxJavaPlugins;
 public class AppComponent extends Application {
     static AppComponent instance;
 
-    AppComponent() {
+
+    public AppComponent() {
         instance = this;
     }
 
-    public static AppComponent getInstance() {
-        return instance;
-    }
 
     public boolean isBackground() {
-        Context context = getInstance().getApplicationContext();
+        Context context = getApplicationContext();
 
         ActivityManager activityManager = (ActivityManager) context
                 .getSystemService(ACTIVITY_SERVICE);
@@ -113,7 +112,10 @@ public class AppComponent extends Application {
         try {
             // 主进程才加载核心业务, 消息推送进程不需要加载业务
             if (isMainProcess()) {
+                CoreModule.getInstance().init(getApplicationContext());
+
                 GalleryService.getInstance();
+                SystemImageModel.getInstance();
 
 //                initCore();
                 initLibraries();

@@ -1,18 +1,22 @@
-package cn.intret.app.picgo.ui;
+package cn.intret.app.picgo.ui.adapter;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
+import android.support.annotation.Nullable;
 import android.support.v7.widget.AppCompatCheckBox;
-import android.support.v7.widget.AppCompatRadioButton;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 
 import com.annimon.stream.Stream;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
+import com.bumptech.glide.request.target.ViewTarget;
+import com.bumptech.glide.request.transition.Transition;
 import com.github.siyamed.shapeimageview.RoundedImageView;
 
 import java.io.File;
@@ -28,7 +32,7 @@ import static com.bumptech.glide.load.resource.drawable.DrawableTransitionOption
 /**
  * Waterfall Image List Adapter class for {@link RecyclerView}
  */
-class WaterfallImageListAdapter extends RecyclerView.Adapter<WaterfallImageListAdapter.ViewHolder> implements View.OnLongClickListener, View.OnClickListener {
+public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.ViewHolder> implements View.OnLongClickListener, View.OnClickListener {
 
     public interface OnItemEventListener {
         void onItemLongClick(Item item);
@@ -50,7 +54,7 @@ class WaterfallImageListAdapter extends RecyclerView.Adapter<WaterfallImageListA
 
     OnItemEventListener mOnItemEventListener;
 
-    public WaterfallImageListAdapter setOnItemEventListener(OnItemEventListener onItemEventListener) {
+    public ImageListAdapter setOnItemEventListener(OnItemEventListener onItemEventListener) {
         mOnItemEventListener = onItemEventListener;
         return this;
     }
@@ -147,6 +151,7 @@ class WaterfallImageListAdapter extends RecyclerView.Adapter<WaterfallImageListA
         File mFile;
         ViewHolder mViewHolder;
         boolean mSelected = false;
+        private int mHeight = -1;
 
         Item setViewHolder(ViewHolder viewHolder) {
             mViewHolder = viewHolder;
@@ -182,24 +187,32 @@ class WaterfallImageListAdapter extends RecyclerView.Adapter<WaterfallImageListA
         public void setSelected(boolean selected) {
             mSelected = selected;
         }
+
+        public int getHeight() {
+            return mHeight;
+        }
+
+        public void setHeight(int height) {
+            mHeight = height;
+        }
     }
 
     List<Item> mItems = new LinkedList<>();
 
-    WaterfallImageListAdapter(List<Item> items) {
+    public ImageListAdapter(List<Item> items) {
         if (items != null) {
             mItems = items;
         }
     }
 
-    public WaterfallImageListAdapter setItems(List<Item> items) {
+    public ImageListAdapter setItems(List<Item> items) {
         if (items != null) {
             mItems = items;
         }
         return this;
     }
 
-    public WaterfallImageListAdapter setSpanCount(int spanCount) {
+    public ImageListAdapter setSpanCount(int spanCount) {
         mSpanCount = spanCount;
         return this;
     }
@@ -234,6 +247,7 @@ class WaterfallImageListAdapter extends RecyclerView.Adapter<WaterfallImageListA
                 holder.image.setTag(R.id.item, -1);
             }
         }
+
         super.onViewRecycled(holder);
     }
 
@@ -262,25 +276,36 @@ class WaterfallImageListAdapter extends RecyclerView.Adapter<WaterfallImageListA
             if (item.getFile() != null) {
 
                 if (mRecyclerView != null) {
-
                     Context context = mRecyclerView.getContext();
+
                     float vhMargin = mContext.getResources().getDimension(R.dimen.margin_list_item_image_view);
                     int parentWidth = mRecyclerView.getWidth();
+                    int width = (int) (parentWidth - (vhMargin * 2 * (mSpanCount + 1)) / mSpanCount);
 
                     // Setting image size
                     ViewGroup.LayoutParams layoutParams = holder.image.getLayoutParams();
+//                    if (layoutParams != null) {
+//                        layoutParams.height = 0;
+//                        holder.image.setLayoutParams(layoutParams);
+//                    }
+//                    if (item.getHeight() == -1) {
+//                        initialLoadImage(item, holder, width, position);
+//                    } else {
+                        Glide.with(context)
+                                .load(item.getFile())
+                                .apply(RequestOptions.centerCropTransform())
 
-                    //layoutParams.height = (int) (parentWidth - (vhMargin * 2 * (mSpanCount + 1)) / mSpanCount);
-                    //holder.image.setLayoutParams(layoutParams);
+                                .transition(withCrossFade())
+                                .into(holder.image);
+//                    }
 
-                    Glide.with(context)
-                            .load(item.getFile())
-                            .apply(RequestOptions.centerCropTransform())
-                            .transition(withCrossFade())
-                            .into(holder.image);
+
+                } else {
+                    Log.e(TAG, "onBindViewHolder: mRecyclerView is null." );
                 }
             } else {
                 // todo load default image
+                Log.e(TAG, "onBindViewHolder: No file url for image.");
                 if (mRecyclerView != null) {
                     holder.image.setBackgroundColor(mRecyclerView.getResources().getColor(R.color.colorPrimaryDark));
                 }
@@ -294,6 +319,80 @@ class WaterfallImageListAdapter extends RecyclerView.Adapter<WaterfallImageListA
         // Action
         holder.image.setOnLongClickListener(this);
         holder.image.setOnClickListener(this);
+    }
+
+    private void initialLoadImage(Item item, ViewHolder holder, int imageWidth, int position) {
+        //构造方法中参数view,就是回调方法中的this.view
+        ViewTarget<View, Bitmap> target = new ViewTarget<View, Bitmap>(holder.image) {
+            @Override
+            public void onResourceReady(Bitmap resource, Transition<? super Bitmap> transition) {
+                //加载图片成功后调用
+                float scaleType = ((float) resource.getHeight()) / resource.getWidth();
+                int imageHeight = (int) (imageWidth * scaleType);
+                //获取图片高度，保存在Map中
+
+                item.setHeight(imageHeight);
+
+                //设置图片布局的长宽，Glide会根据布局的自动加载适应大小的图片
+                ViewGroup.LayoutParams lp = this.view.getLayoutParams();
+                lp.width = imageWidth;
+                lp.height = imageHeight;
+                this.view.setLayoutParams(lp);
+                //resource就是加载成功后的图片资源
+                ((ImageView) view).setImageBitmap(resource);
+            }
+
+            @Override
+            public void onLoadFailed(@Nullable Drawable errorDrawable) {
+                super.onLoadFailed(errorDrawable);
+                int imageHeight = imageWidth;
+                item.setHeight(imageHeight);
+                ViewGroup.LayoutParams lp = this.view.getLayoutParams();
+                lp.width = imageWidth;
+                lp.height = imageHeight;
+                this.view.setLayoutParams(lp);
+                ((ImageView) view).setImageResource(R.mipmap.ic_launcher);
+            }
+        };
+
+        ViewTarget<RoundedImageView, Drawable> viewTarget = new ViewTarget<RoundedImageView, Drawable>(holder.image) {
+            @Override
+            public void onResourceReady(Drawable resource, Transition<? super Drawable> transition) {
+                float radio = (float) resource.getIntrinsicHeight() / (float)resource.getIntrinsicWidth();
+                int imageHeight = (int) (imageWidth * radio);
+
+                item.setHeight(imageHeight);
+
+                Log.d(TAG, String.format("onResourceReady: w %d h %d %d %d",
+                        resource.getIntrinsicWidth(), resource.getIntrinsicHeight(),
+                        imageWidth, imageHeight)
+                );
+                //设置图片布局的长宽，Glide会根据布局的自动加载适应大小的图片
+                ViewGroup.LayoutParams lp = this.view.getLayoutParams();
+                lp.width = imageWidth;
+                lp.height = imageHeight;
+                this.view.setLayoutParams(lp);
+                //resource就是加载成功后的图片资源
+                view.setImageDrawable(resource);
+            }
+
+            @Override
+            public void onLoadFailed(@Nullable Drawable errorDrawable) {
+                super.onLoadFailed(errorDrawable);
+
+                int imageHeight = imageWidth;
+                item.setHeight(imageHeight);
+                ViewGroup.LayoutParams lp = this.view.getLayoutParams();
+                lp.width = imageWidth;
+                lp.height = imageHeight;
+                this.view.setLayoutParams(lp);
+                view.setBackgroundColor(mRecyclerView.getResources().getColor(R.color.colorPrimaryDark));
+            }
+        };
+
+        Glide.with(this.mContext)
+                .load(item.getFile())
+                .into(viewTarget);
     }
 
 

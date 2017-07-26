@@ -22,6 +22,11 @@ public class SystemUtils {
         return Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM);
     }
 
+    public static File getPicturesDir() {
+        // digital camera in memory
+        return Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+    }
+
     public static File getCameraDir() {
         File dcimDir = getDCIMDir();
         if (dcimDir == null) {

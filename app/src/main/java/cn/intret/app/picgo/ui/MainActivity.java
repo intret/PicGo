@@ -1,35 +1,48 @@
 package cn.intret.app.picgo.ui;
 
 import android.content.Intent;
+import android.os.Bundle;
 import android.support.annotation.MainThread;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.util.SparseArray;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.Toast;
+
+import com.annimon.stream.Stream;
 
 import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
+import cn.intret.app.picgo.model.FolderInfo;
+import cn.intret.app.picgo.model.FolderModel;
+import cn.intret.app.picgo.model.SystemImageModel;
 import cn.intret.app.picgo.service.GalleryService;
+import cn.intret.app.picgo.ui.adapter.FolderListAdapter;
+import cn.intret.app.picgo.ui.adapter.ImageListAdapter;
+import cn.intret.app.picgo.ui.adapter.SectionDecoration;
+import cn.intret.app.picgo.ui.adapter.SectionFolderListAdapter;
+import cn.intret.app.picgo.ui.floating.FloatWindowService;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
 
-public class MainActivity extends AppCompatActivity implements WaterfallImageListAdapter.OnItemEventListener {
+public class MainActivity extends AppCompatActivity implements ImageListAdapter.OnItemEventListener {
 
     private static final String TAG = "MainActivity";
 
@@ -37,20 +50,21 @@ public class MainActivity extends AppCompatActivity implements WaterfallImageLis
     @BindView(R.id.drawer_layout) DrawerLayout mDrawerLayout;
     @BindView(R.id.drawer_folder_list) RecyclerView mDrawerFolderList;
 
-    private WaterfallImageListAdapter mImageListAdapter;
+    private ImageListAdapter mCurrentImageListAdapter;
     private int mSpanCount;
 
     private ActionBarDrawerToggle mDrawerToggle;
-    private CharSequence mTitle;
-    private CharSequence mDrawerTitle;
+
     private FolderListAdapter mFolderListAdapter;
     private Intent mStartFloatingIntent;
 
     /**
      * Key: file absolute path
-     * Value: WaterfallImageListAdapter
+     * Value: ImageListAdapter
      */
-    Map<String, WaterfallImageListAdapter> mImageAdapters = new LinkedHashMap<>();
+    Map<String, ImageListAdapter> mImageListAdapters = new LinkedHashMap<>();
+    private StaggeredGridLayoutManager mGridLayoutManager;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,6 +88,7 @@ public class MainActivity extends AppCompatActivity implements WaterfallImageLis
     protected void onResume() {
 //        changeFloatingCount(FloatWindowService.MSG_INCREASE);
 
+        mDrawerLayout.openDrawer(Gravity.LEFT);
         super.onResume();
     }
 
@@ -97,7 +112,6 @@ public class MainActivity extends AppCompatActivity implements WaterfallImageLis
     }
 
     private void initAppBar() {
-
 
     }
 
@@ -136,20 +150,92 @@ public class MainActivity extends AppCompatActivity implements WaterfallImageLis
 
         //mTitle = mDrawerTitle = getTitle();
 
-
-        // 初始化相册文件夹列表
-        mDrawerFolderList.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
-        loadFolderList();
+        initFolderList();
     }
 
-    private void loadFolderList() {
-        loadGalleryFolderList()
+    private void initFolderList() {
+        // 初始化相册文件夹列表
+
+
+        SystemImageModel.getInstance().loadAvailableFolderListModel()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .doOnError(throwable -> {
-                    throwable.printStackTrace();
-                })
-                .subscribe(this::showFolderItems);
+                .doOnError(Throwable::printStackTrace)
+                .subscribe(this::showFolderModel);
+
+//        SystemImageModel.getInstance().loadGalleryFolderList()
+//                .subscribeOn(Schedulers.io())
+//                .observeOn(AndroidSchedulers.mainThread())
+//                .doOnError(Throwable::printStackTrace)
+//                .subscribe(this::showFolders);
+    }
+
+    private void showFolderModel(FolderModel model) {
+
+        SparseArray<SectionFolderListAdapter.SectionItem> sectionItemList = new SparseArray<>();
+
+        List<FolderModel.FolderContainerInfo> folderContainerInfos = model.getFolderContainerInfos();
+        for (int i = 0, folderContainerInfosSize = folderContainerInfos.size(); i < folderContainerInfosSize; i++) {
+            FolderModel.FolderContainerInfo folderContainerInfo = folderContainerInfos.get(i);
+            SectionFolderListAdapter.SectionItem sectionItem = folderInfoToFolderListItem(folderContainerInfo);
+            sectionItemList.put(i, sectionItem);
+        }
+
+        List<SectionFolderListAdapter.SectionItem> sectionItems = Stream.of(model.getFolderContainerInfos())
+                .map(this::folderInfoToFolderListItem)
+                .toList();
+
+        SectionFolderListAdapter listAdapter = new SectionFolderListAdapter(sectionItemList);
+        listAdapter.setOnItemClickListener(new SectionFolderListAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(SectionFolderListAdapter.SectionItem sectionItem, SectionFolderListAdapter.Item item) {
+                mDrawerLayout.closeDrawers();
+
+                showImageList(item.getFile());
+            }
+        });
+        mDrawerFolderList.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
+        mDrawerFolderList.setAdapter(listAdapter);
+
+        // show first folder's images in activity content field.
+        if (sectionItemList.size() > 0) {
+
+            SectionFolderListAdapter.SectionItem item = sectionItemList.get(0);
+            List<SectionFolderListAdapter.Item> items = item.getItems();
+            if (items != null && !items.isEmpty()) {
+                showImageList(items.get(0).getFile());
+            }
+        }
+    }
+
+
+
+    private SectionFolderListAdapter.SectionItem folderInfoToFolderListItem(FolderModel.FolderContainerInfo folderContainerInfo) {
+        SectionFolderListAdapter.SectionItem sectionItem = new SectionFolderListAdapter.SectionItem();
+        sectionItem.setName(folderContainerInfo.getName());
+        sectionItem.setFile(folderContainerInfo.getFile());
+        sectionItem.setItems(Stream.of(folderContainerInfo.getFolders())
+                .map(item -> new SectionFolderListAdapter.Item()
+                        .setFile(item.getFile())
+                        .setName(item.getName())
+                        .setCount(item.getCount())).toList()
+        );
+        return sectionItem;
+    }
+
+    private void showFolders(List<FolderInfo> folderInfos) {
+
+
+        List<FolderListAdapter.Item> items = Stream.of(folderInfos)
+                .map(this::folderInfoToFolderListAdapterItem)
+                .toList();
+        showFolderItems(items);
+    }
+
+    private FolderListAdapter.Item folderInfoToFolderListAdapterItem(FolderInfo folderInfo) {
+        return new FolderListAdapter.Item().setName(folderInfo.getName())
+                .setCount(folderInfo.getCount())
+                .setDirectory(folderInfo.getFile());
     }
 
     @MainThread
@@ -157,43 +243,55 @@ public class MainActivity extends AppCompatActivity implements WaterfallImageLis
 
         mFolderListAdapter = new FolderListAdapter(items);
         mFolderListAdapter.setOnItemEventListener(item -> {
-            showImageList(item);
 
             mDrawerLayout.closeDrawers();
-            Log.d(TAG, "initDrawer: 切换显示目录 " + item);
+
+            showImageList(item.getDirectory());
+
         });
+        mDrawerFolderList.addItemDecoration(new SectionDecoration(this, new SectionDecoration.DecorationCallback() {
+            @Override
+            public long getGroupId(int position) {
+                return SystemImageModel.getInstance().getSectionForPosition(position);
+//                return mFolderListAdapter.getItemCount();
+            }
+
+            @Override
+            public String getGroupFirstLine(int position) {
+                return SystemImageModel.getInstance().getSectionFileName(position);
+            }
+        }));
         mDrawerFolderList.setAdapter(mFolderListAdapter);
 
         // show first folder's images in activity content field.
         if (items != null && items.size() > 0) {
 
             FolderListAdapter.Item item = items.get(0);
-            showImageList(item);
+            showImageList(item.getDirectory());
         }
     }
 
-    public void changeTitle(File dir) {
-        if (dir != null) {
-            String name = dir.getName();
-            ActionBar actionBar = getSupportActionBar();
-            if (actionBar != null) {
-                actionBar.setTitle(name);
-            }
+    public void changeTitle(String name) {
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setTitle(name);
         }
     }
 
     @MainThread
-    private void showImageList(FolderListAdapter.Item item) {
+    private void showImageList(File directory) {
 
-        changeTitle(item.getDirectory());
+        changeTitle(directory.getName());
 
-        File file = item.getDirectory();
-        WaterfallImageListAdapter imageListAdapter = mImageAdapters.get(file.getAbsolutePath());
+
+        ImageListAdapter imageListAdapter = mImageListAdapters.get(directory.getAbsolutePath());
         if (imageListAdapter != null) {
+            Log.d(TAG, "showImageList: 切换显示目录 " + directory);
             showImageListAdapter(imageListAdapter);
 
         } else {
-            loadGalleryImages(item.getDirectory())
+            loadGalleryImages(directory)
+                    .delay(50, TimeUnit.MILLISECONDS)
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .doOnError(throwable -> {
@@ -201,9 +299,9 @@ public class MainActivity extends AppCompatActivity implements WaterfallImageLis
                         Toast.makeText(this, R.string.load_gallery_failed, Toast.LENGTH_SHORT).show();
                     })
                     .subscribe(items -> {
-                                WaterfallImageListAdapter adapter = createWaterfallImageListAdapter(items);
+                                ImageListAdapter adapter = createImageListAdapter(items);
 
-                                mImageAdapters.put(item.getDirectory().getAbsolutePath(), adapter);
+                                mImageListAdapters.put(directory.getAbsolutePath(), adapter);
 
                                 showImageListAdapter(adapter);
 
@@ -217,55 +315,39 @@ public class MainActivity extends AppCompatActivity implements WaterfallImageLis
         }
     }
 
-    private void showImageListAdapter(WaterfallImageListAdapter adapter) {
+    private void showImageListAdapter(ImageListAdapter adapter) {
         adapter.setOnItemEventListener(this);
-        mImageListAdapter = adapter;
+        mCurrentImageListAdapter = adapter;
 
-        mImageList.setLayoutManager(new StaggeredGridLayoutManager(mSpanCount, StaggeredGridLayoutManager.VERTICAL));
-        mImageList.swapAdapter(mImageListAdapter, true);
+        mGridLayoutManager = new StaggeredGridLayoutManager(mSpanCount, StaggeredGridLayoutManager.VERTICAL);
+        mImageList.swapAdapter(mCurrentImageListAdapter, false);
     }
 
 
     private void initImageList() {
 
-//        mImageList.addOnScrollListener();
+        mSpanCount = 4; // columns
 
-        mSpanCount = 6; // columns
-        //mImageList.setLayoutManager(new StaggeredGridLayoutManager(mSpanCount, StaggeredGridLayoutManager.VERTICAL));
+        mImageList.setLayoutManager(new StaggeredGridLayoutManager(mSpanCount, StaggeredGridLayoutManager.VERTICAL));
+        mImageList.setAdapter(new ImageListAdapter(new LinkedList<ImageListAdapter.Item>()));
+//        mImageList.addItemDecoration(new GridSpacingItemDecoration(mSpanCount,
+//                getResources().getDimensionPixelSize(R.dimen.image_list_item_space), true));
     }
 
-    private WaterfallImageListAdapter createWaterfallImageListAdapter(List<WaterfallImageListAdapter.Item> items) {
-        return new WaterfallImageListAdapter(items)
+    private ImageListAdapter createImageListAdapter(List<ImageListAdapter.Item> items) {
+        return new ImageListAdapter(items)
                 .setSpanCount(mSpanCount)
                 .setOnItemEventListener(this);
     }
 
-    private Observable<List<FolderListAdapter.Item>> loadGalleryFolderList() {
-        return Observable.create(emitter -> {
-            LinkedList<FolderListAdapter.Item> items = new LinkedList<FolderListAdapter.Item>();
-            List<File> folders = GalleryService.getInstance().getAllGalleryFolders();
 
-            for (File file : folders) {
-                File[] files = file.listFiles();
-                items.add(new FolderListAdapter.Item()
-                        .setDirectory(file)
-                        .setName(file.getName())
-                        .setCount(files == null ? 0 : files.length)
-                );
-            }
-
-            emitter.onNext(items);
-            emitter.onComplete();
-        });
-    }
-
-    private Observable<List<WaterfallImageListAdapter.Item>> loadGalleryImages(File directory) {
-        return Observable.<List<WaterfallImageListAdapter.Item>>create(e -> {
-            LinkedList<WaterfallImageListAdapter.Item> items = new LinkedList<WaterfallImageListAdapter.Item>();
+    private Observable<List<ImageListAdapter.Item>> loadGalleryImages(File directory) {
+        return Observable.<List<ImageListAdapter.Item>>create(e -> {
+            LinkedList<ImageListAdapter.Item> items = new LinkedList<ImageListAdapter.Item>();
             List<File> images = GalleryService.getInstance().loadAllFolderImages(directory);
 
             for (File file : images) {
-                items.add(new WaterfallImageListAdapter.Item().setFile(file));
+                items.add(new ImageListAdapter.Item().setFile(file));
             }
 
             e.onNext(items);
@@ -281,12 +363,12 @@ public class MainActivity extends AppCompatActivity implements WaterfallImageLis
     }
 
     @Override
-    public void onItemLongClick(WaterfallImageListAdapter.Item item) {
+    public void onItemLongClick(ImageListAdapter.Item item) {
         Log.d(TAG, "onItemLongClick: " + item);
     }
 
     @Override
-    public void onItemCheckedChanged(WaterfallImageListAdapter.Item item) {
+    public void onItemCheckedChanged(ImageListAdapter.Item item) {
         Log.d(TAG, "onItemCheckedChanged: " + item);
     }
 

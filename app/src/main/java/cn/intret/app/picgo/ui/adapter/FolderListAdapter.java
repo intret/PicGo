@@ -1,4 +1,4 @@
-package cn.intret.app.picgo.ui;
+package cn.intret.app.picgo.ui.adapter;
 
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -23,6 +23,10 @@ public class FolderListAdapter extends RecyclerView.Adapter<FolderListAdapter.Vi
 
     List<Item> mItems = new LinkedList<>();
 
+    public List<Item> getItems() {
+        return mItems;
+    }
+
     public interface OnItemEventListener {
         void onItemClick(Item item);
     }
@@ -46,7 +50,7 @@ public class FolderListAdapter extends RecyclerView.Adapter<FolderListAdapter.Vi
         }
     }
 
-    static class Item {
+    public static class Item {
         String name;
         long count;
 
@@ -99,7 +103,7 @@ public class FolderListAdapter extends RecyclerView.Adapter<FolderListAdapter.Vi
         }
     }
 
-    FolderListAdapter(List<Item> items) {
+    public FolderListAdapter(List<Item> items) {
         if (items != null) {
             mItems = items;
         } else {
@@ -126,7 +130,7 @@ public class FolderListAdapter extends RecyclerView.Adapter<FolderListAdapter.Vi
 
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.drawer_folder_list_item, null);
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.folder_list_item, null);
         return new ViewHolder(view);
     }
 

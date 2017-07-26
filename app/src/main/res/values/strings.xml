@@ -2,4 +2,6 @@
     <string name="app_name">PicGo</string>
     <string name="drawer_open">打开</string>
     <string name="drawer_close">关闭</string>
+    <string name="gallery">相册</string>
+    <string name="picture">照片</string>
 </resources>

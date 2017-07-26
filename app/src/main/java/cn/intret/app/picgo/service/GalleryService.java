@@ -62,13 +62,21 @@ public class GalleryService {
                 .toList();
     }
 
-    public List<File> getAllGalleryFolders() throws FileNotFoundException {
-        File dcimDir = SystemUtils.getDCIMDir();
-        if (dcimDir == null) {
+    public List<File> getAllPictureFolders() throws FileNotFoundException {
+        return getSortedDirectories(SystemUtils.getDCIMDir());
+    }
+
+    public List<File> getAllDCIMFolders() throws FileNotFoundException {
+        File dcimDir = SystemUtils.getPicturesDir();
+        return getSortedDirectories(dcimDir);
+    }
+
+    private List<File> getSortedDirectories(File directory) throws FileNotFoundException {
+        if (directory == null) {
             throw new FileNotFoundException("Cannot found camera directory.");
         }
 
-        File[] allFiles = dcimDir.listFiles((file) -> file.isDirectory() && !file.getName().startsWith("."));
+        File[] allFiles = directory.listFiles((file) -> file.isDirectory() && !file.getName().startsWith("."));
         if (allFiles == null) {
             return new LinkedList<>();
         }

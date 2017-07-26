@@ -43,7 +43,7 @@
             android:id="@+id/drawer_folder_list"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            tools:listitem="@layout/drawer_folder_list_item"
+            tools:listitem="@layout/folder_list_item"
             tools:visibility="invisible"
             >
         </android.support.v7.widget.RecyclerView>
