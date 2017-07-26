@@ -7,13 +7,13 @@ import java.util.List;
 /**
  * 图片文件夹数据模型，包含多个文件夹。
  */
-public class FolderContainerModel {
+public class FolderModel {
 
 
     /**
      * TODO merge with class {@link ImageFolderModel}
      */
-    public static class FolderContainerInfo {
+    public static class ParentFolderInfo {
         File mFile;
         String mName;
 
@@ -23,7 +23,7 @@ public class FolderContainerModel {
             return mFolders;
         }
 
-        public FolderContainerInfo setFolders(List<ImageFolderModel> folders) {
+        public ParentFolderInfo setFolders(List<ImageFolderModel> folders) {
             mFolders = folders;
             return this;
         }
@@ -32,7 +32,7 @@ public class FolderContainerModel {
             return mFile;
         }
 
-        public FolderContainerInfo setFile(File file) {
+        public ParentFolderInfo setFile(File file) {
             mFile = file;
             return this;
         }
@@ -41,20 +41,20 @@ public class FolderContainerModel {
             return mName;
         }
 
-        public FolderContainerInfo setName(String name) {
+        public ParentFolderInfo setName(String name) {
             mName = name;
             return this;
         }
     }
 
-    List<FolderContainerInfo> mFolderContainerInfos = new LinkedList<>();
+    List<ParentFolderInfo> mParentFolderInfos = new LinkedList<>();
 
-    public List<FolderContainerInfo> getFolderContainerInfos() {
-        return mFolderContainerInfos;
+    public List<ParentFolderInfo> getParentFolderInfos() {
+        return mParentFolderInfos;
     }
 
-    public void addFolderSection(FolderContainerInfo section) {
-        mFolderContainerInfos.add(section);
+    public void addFolderSection(ParentFolderInfo section) {
+        mParentFolderInfos.add(section);
     }
 
 }

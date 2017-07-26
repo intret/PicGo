@@ -12,7 +12,6 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.util.SparseArray;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Toast;
@@ -30,7 +29,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.model.ImageFolderModel;
-import cn.intret.app.picgo.model.FolderContainerModel;
+import cn.intret.app.picgo.model.FolderModel;
 import cn.intret.app.picgo.model.SystemImageService;
 import cn.intret.app.picgo.model.GalleryService;
 import cn.intret.app.picgo.ui.adapter.FolderListAdapter;
@@ -162,13 +161,13 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
                 .subscribe(this::showFolderModel);
     }
 
-    private void showFolderModel(FolderContainerModel model) {
+    private void showFolderModel(FolderModel model) {
 
         List<SectionFolderListAdapter.SectionItem> sectionItems = new LinkedList<>();
 
-        List<FolderContainerModel.FolderContainerInfo> folderContainerInfos = model.getFolderContainerInfos();
-        for (int i = 0, s = folderContainerInfos.size(); i < s; i++) {
-            sectionItems.add(folderInfoToItem(folderContainerInfos.get(i)));
+        List<FolderModel.ParentFolderInfo> parentFolderInfos = model.getParentFolderInfos();
+        for (int i = 0, s = parentFolderInfos.size(); i < s; i++) {
+            sectionItems.add(folderInfoToItem(parentFolderInfos.get(i)));
         }
 
         SectionFolderListAdapter listAdapter = new SectionFolderListAdapter(sectionItems);
@@ -191,11 +190,11 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
     }
 
 
-    private SectionFolderListAdapter.SectionItem folderInfoToItem(FolderContainerModel.FolderContainerInfo folderContainerInfo) {
+    private SectionFolderListAdapter.SectionItem folderInfoToItem(FolderModel.ParentFolderInfo parentFolderInfo) {
         SectionFolderListAdapter.SectionItem sectionItem = new SectionFolderListAdapter.SectionItem();
-        sectionItem.setName(folderContainerInfo.getName());
-        sectionItem.setFile(folderContainerInfo.getFile());
-        sectionItem.setItems(Stream.of(folderContainerInfo.getFolders())
+        sectionItem.setName(parentFolderInfo.getName());
+        sectionItem.setFile(parentFolderInfo.getFile());
+        sectionItem.setItems(Stream.of(parentFolderInfo.getFolders())
                 .map(item -> new SectionFolderListAdapter.Item()
                         .setFile(item.getFile())
                         .setName(item.getName())

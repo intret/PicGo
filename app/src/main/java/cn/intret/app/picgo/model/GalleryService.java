@@ -71,7 +71,7 @@ public class GalleryService {
         return getSortedSubDirectories(SystemUtils.getDCIMDir());
     }
 
-    private List<File> getSortedSubDirectories(File directory) throws FileNotFoundException {
+    public List<File> getSortedSubDirectories(File directory) throws FileNotFoundException {
         if (directory == null) {
             throw new FileNotFoundException("Cannot found camera directory.");
         }
