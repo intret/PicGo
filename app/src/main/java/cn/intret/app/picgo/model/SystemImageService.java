@@ -6,11 +6,8 @@ import android.util.Log;
 
 import com.annimon.stream.Stream;
 
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.filefilter.FileFileFilter;
-import org.apache.commons.io.filefilter.FileFilterUtils;
-
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.security.InvalidParameterException;
 import java.util.LinkedList;
@@ -26,6 +23,16 @@ public class SystemImageService {
 
     private static final SystemImageService ourInstance = new SystemImageService();
     private static final String TAG = SystemImageService.class.getSimpleName();
+    public static final FilenameFilter MEDIA_FILENAME_FILTER = (dir, name) -> {
+        String lname = name.toLowerCase();
+        return lname.endsWith(".png") |
+                lname.endsWith(".jpeg") |
+                lname.endsWith(".jpg") |
+                lname.endsWith(".webp") |
+                lname.endsWith(".gif") |
+                lname.endsWith(".mp4") |
+                lname.endsWith(".avi");
+    };
 
     public static SystemImageService getInstance() {
         return ourInstance;
@@ -88,12 +95,12 @@ public class SystemImageService {
 
             // SDCard/DCIM directory images
             File dcimDir = SystemUtils.getDCIMDir();
-            List<File> allDcimFolders = GalleryService.getInstance().getSortedSubDirectories(dcimDir);
+            List<File> allDcimFolders = getSortedSubDirectories(dcimDir);
             addParentFolderInfo(folderModel, dcimDir, allDcimFolders);
 
             // SDCard/Picture directory images
             File picturesDir = SystemUtils.getPicturesDir();
-            List<File> allPictureFolders = GalleryService.getInstance().getSortedSubDirectories(picturesDir);
+            List<File> allPictureFolders = getSortedSubDirectories(picturesDir);
             addParentFolderInfo(folderModel, picturesDir, allPictureFolders);
 
             emitter.onNext(folderModel);
@@ -138,16 +145,7 @@ public class SystemImageService {
 
     private ImageFolderModel imageFolderOfDir(File folder) {
         // todo merge with getThumbnailListOfDir
-        File[] imageFiles = folder.listFiles((dir, name) -> {
-            String lname = name.toLowerCase();
-            return lname.endsWith(".png") |
-                    lname.endsWith(".jpeg") |
-                    lname.endsWith(".jpg") |
-                    lname.endsWith(".webp") |
-                    lname.endsWith(".gif") |
-                    lname.endsWith(".mp4") |
-                    lname.endsWith(".avi");
-        });
+        File[] imageFiles = folder.listFiles(MEDIA_FILENAME_FILTER);
 
         return new ImageFolderModel()
                 .setFile(folder)
@@ -155,6 +153,36 @@ public class SystemImageService {
                 .setCount(imageFiles == null ? 0 : imageFiles.length)
                 .setThumbList(getThumbnailListOfDir(imageFiles, 3));
 
+    }
+
+    public List<File> listImageFiles(File dir) {
+        if (!dir.isDirectory()) {
+            throw new InvalidParameterException("参数 'dir' 对应的目录（" + dir.getAbsolutePath() + "）不存在：");
+        }
+
+        File[] allFiles = dir.listFiles(MEDIA_FILENAME_FILTER);
+        if (allFiles == null) {
+            return new LinkedList<>();
+        }
+
+        return Stream.of(allFiles)
+                .sorted((file, file2) -> Long.compare(file2.lastModified(), file.lastModified()))
+                .toList();
+    }
+
+    public List<File> getSortedSubDirectories(File directory) throws FileNotFoundException {
+        if (directory == null) {
+            throw new FileNotFoundException("Cannot found camera directory.");
+        }
+
+        File[] allFiles = directory.listFiles((file) -> file.isDirectory() && !file.getName().startsWith("."));
+        if (allFiles == null) {
+            return new LinkedList<>();
+        }
+
+        return Stream.of(allFiles)
+                .sorted((file, file2) -> Long.compare(file2.lastModified(), file.lastModified()))
+                .toList();
     }
 
     public Observable<List<ImageFolderModel>> loadGalleryFolderList() {

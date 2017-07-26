@@ -12,7 +12,6 @@ import java.util.List;
 
 import cn.intret.app.picgo.BuildConfig;
 import cn.intret.app.picgo.model.SystemImageService;
-import cn.intret.app.picgo.model.GalleryService;
 import io.reactivex.plugins.RxJavaPlugins;
 
 /**
@@ -114,7 +113,6 @@ public class AppComponent extends Application {
             if (isMainProcess()) {
                 CoreModule.getInstance().init(getApplicationContext());
 
-                GalleryService.getInstance();
                 SystemImageService.getInstance();
 
 //                initCore();

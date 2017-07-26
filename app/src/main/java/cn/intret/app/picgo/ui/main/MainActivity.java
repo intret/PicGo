@@ -31,7 +31,6 @@ import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.model.ImageFolderModel;
 import cn.intret.app.picgo.model.FolderModel;
 import cn.intret.app.picgo.model.SystemImageService;
-import cn.intret.app.picgo.model.GalleryService;
 import cn.intret.app.picgo.ui.adapter.FolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.ImageListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionDecoration;
@@ -328,7 +327,7 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
     private Observable<List<ImageListAdapter.Item>> loadGalleryImages(File directory) {
         return Observable.<List<ImageListAdapter.Item>>create(e -> {
             LinkedList<ImageListAdapter.Item> items = new LinkedList<ImageListAdapter.Item>();
-            List<File> images = GalleryService.getInstance().loadAllFolderImages(directory);
+            List<File> images = SystemImageService.getInstance().listImageFiles(directory);
 
             for (File file : images) {
                 items.add(new ImageListAdapter.Item().setFile(file));
