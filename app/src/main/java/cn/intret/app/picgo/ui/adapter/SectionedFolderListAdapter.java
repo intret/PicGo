@@ -15,7 +15,6 @@ import com.afollestad.sectionedrecyclerview.SectionedViewHolder;
 import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Stream;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -143,6 +142,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
     public SectionedFolderListAdapter(List<SectionItem> sectionItems) {
         if (sectionItems != null) {
             mSectionItems = sectionItems;
+            notifyDataSetChanged();
         }
     }
 
@@ -189,9 +189,11 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             HorizontalImageListAdapter adapter = new HorizontalImageListAdapter(filesToItems(item.getThumbList()));
 //            adapter.setOnClickListener();
             item.setAdapter(adapter);
+            vh.thumbList.setClickable(false);
             vh.thumbList.setLayoutManager(new LinearLayoutManager(vh.itemView.getContext(), LinearLayoutManager.HORIZONTAL, true));
             vh.thumbList.setAdapter(item.getAdapter());
         } else {
+            vh.thumbList.setClickable(false);
             vh.thumbList.swapAdapter(item.getAdapter(), false);
         }
     }

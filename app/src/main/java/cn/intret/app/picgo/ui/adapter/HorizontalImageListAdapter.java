@@ -89,12 +89,12 @@ public class HorizontalImageListAdapter extends RecyclerView.Adapter<HorizontalI
         public ViewHolder(View itemView) {
             super(itemView);
             ButterKnife.bind(this, itemView);
-            itemView.setOnTouchListener((v, event) -> {
-                // http://stackoverflow.com/questions/8121491/is-it-possible-to-add-a-scrollable-textview-to-a-listview
-                v.getParent().requestDisallowInterceptTouchEvent(true); // needed for complex gestures
-                // simple tap works without the above line as well
-                return image.dispatchTouchEvent(event); // onTouchEvent won't work
-            });
+//            itemView.setOnTouchListener((v, event) -> {
+//                // http://stackoverflow.com/questions/8121491/is-it-possible-to-add-a-scrollable-textview-to-a-listview
+//                v.getParent().requestDisallowInterceptTouchEvent(false); // needed for complex gestures
+//                // simple tap works without the above line as well
+//                return image.dispatchTouchEvent(event); // onTouchEvent won't work
+//            });
         }
     }
 }
