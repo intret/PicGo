@@ -176,6 +176,7 @@ public class SectionFolderListAdapter
     @Override
     protected void onBindSectionHeaderViewHolder(FolderHeaderViewHolder holder, int section) {
         SectionItem sectionItem = mSectionItems.get(section);
+
         holder.name.setText(sectionItem.getName());
     }
 
@@ -203,15 +204,15 @@ public class SectionFolderListAdapter
 
         setViewItemTag(holder.itemView, item);
 
-        holder.itemView.setOnClickListener(v -> {
-            Item i = getViewItemTag(v);
-            if (i != null) {
-                if (mOnItemClickListener != null) {
-                    // todo change the first parameter to section-info class
-                    mOnItemClickListener.onItemClick(mSectionItems.get(section), i);
-                }
-            }
-        });
+//        holder.itemView.setOnClickListener(v -> {
+//            Item i = getViewItemTag(v);
+//            if (i != null) {
+//                if (mOnItemClickListener != null) {
+//                    // todo change the firstOf parameter to section-info class
+//                    mOnItemClickListener.onItemClick(mSectionItems.get(section), i);
+//                }
+//            }
+//        });
 
         holder.thumbList.setLayoutManager(new LinearLayoutManager(holder.itemView.getContext(),
                 LinearLayoutManager.HORIZONTAL, true));

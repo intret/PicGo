@@ -11,19 +11,19 @@ public class FolderModel {
 
 
     /**
-     * TODO merge with class {@link ImageFolderModel}
+     * TODO merge with class {@link ImageFolder}
      */
     public static class ParentFolderInfo {
         File mFile;
         String mName;
 
-        List<ImageFolderModel> mFolders;
+        List<ImageFolder> mFolders;
 
-        public List<ImageFolderModel> getFolders() {
+        public List<ImageFolder> getFolders() {
             return mFolders;
         }
 
-        public ParentFolderInfo setFolders(List<ImageFolderModel> folders) {
+        public ParentFolderInfo setFolders(List<ImageFolder> folders) {
             mFolders = folders;
             return this;
         }

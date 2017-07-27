@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * 图片文件夹模型，也就是这个文件中至少有一张图片。
  */
-public class ImageFolderModel {
+public class ImageFolder {
     File mFile;
     int mCount;
     private String mName;
@@ -18,7 +18,7 @@ public class ImageFolderModel {
         return mThumbList;
     }
 
-    public ImageFolderModel setThumbList(List<File> thumbList) {
+    public ImageFolder setThumbList(List<File> thumbList) {
         this.mThumbList = thumbList;
         return this;
     }
@@ -27,7 +27,7 @@ public class ImageFolderModel {
         return mFile;
     }
 
-    public ImageFolderModel setFile(File file) {
+    public ImageFolder setFile(File file) {
         mFile = file;
         return this;
     }
@@ -36,12 +36,12 @@ public class ImageFolderModel {
         return mCount;
     }
 
-    public ImageFolderModel setCount(int count) {
+    public ImageFolder setCount(int count) {
         mCount = count;
         return this;
     }
 
-    public ImageFolderModel setName(String name) {
+    public ImageFolder setName(String name) {
         mName = name;
         return this;
     }

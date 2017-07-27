@@ -19,8 +19,6 @@ import cn.intret.app.picgo.R;
 /**
  * 抽屉菜单列表
  */
-
-@Deprecated
 public class FolderListAdapter extends RecyclerView.Adapter<FolderListAdapter.ViewHolder> implements View.OnClickListener {
 
     List<Item> mItems = new LinkedList<>();

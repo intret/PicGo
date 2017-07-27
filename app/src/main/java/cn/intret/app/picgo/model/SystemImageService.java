@@ -95,13 +95,13 @@ public class SystemImageService {
 
             // SDCard/DCIM directory images
             File dcimDir = SystemUtils.getDCIMDir();
-            List<File> allDcimFolders = getSortedSubDirectories(dcimDir);
-            addParentFolderInfo(folderModel, dcimDir, allDcimFolders);
+            List<File> dcimSubFolders = getSortedSubDirectories(dcimDir);
+            addParentFolderInfo(folderModel, dcimDir, dcimSubFolders);
 
             // SDCard/Picture directory images
             File picturesDir = SystemUtils.getPicturesDir();
-            List<File> allPictureFolders = getSortedSubDirectories(picturesDir);
-            addParentFolderInfo(folderModel, picturesDir, allPictureFolders);
+            List<File> pictureSubFolders = getSortedSubDirectories(picturesDir);
+            addParentFolderInfo(folderModel, picturesDir, pictureSubFolders);
 
             emitter.onNext(folderModel);
             emitter.onComplete();
@@ -126,16 +126,16 @@ public class SystemImageService {
         return thumbFileList;
     }
 
-    private void addParentFolderInfo(FolderModel model, File dir, List<File> allMediaFolders) {
+    private void addParentFolderInfo(FolderModel model, File dir, List<File> mediaFolders) {
         FolderModel.ParentFolderInfo parentFolderInfo = new FolderModel.ParentFolderInfo();
-        List<ImageFolderModel> subFolders = new LinkedList<>();
+        List<ImageFolder> subFolders = new LinkedList<>();
 
-        subFolders.add(imageFolderOfDir(dir));
-
-        for (int i = 0, s = allMediaFolders.size(); i < s; i++) {
-            File folder = allMediaFolders.get(i);
+        for (int i = 0, s = mediaFolders.size(); i < s; i++) {
+            File folder = mediaFolders.get(i);
             subFolders.add(imageFolderOfDir(folder));
         }
+        subFolders.add(imageFolderOfDir(dir));
+
 
         parentFolderInfo.setName(dir.getName());
         parentFolderInfo.setFolders(subFolders);
@@ -143,11 +143,11 @@ public class SystemImageService {
         model.addFolderSection(parentFolderInfo);
     }
 
-    private ImageFolderModel imageFolderOfDir(File folder) {
+    private ImageFolder imageFolderOfDir(File folder) {
         // todo merge with getThumbnailListOfDir
         File[] imageFiles = folder.listFiles(MEDIA_FILENAME_FILTER);
 
-        return new ImageFolderModel()
+        return new ImageFolder()
                 .setFile(folder)
                 .setName(folder.getName())
                 .setCount(imageFiles == null ? 0 : imageFiles.length)
@@ -185,20 +185,20 @@ public class SystemImageService {
                 .toList();
     }
 
-    public Observable<List<ImageFolderModel>> loadGalleryFolderList() {
+    public Observable<List<ImageFolder>> loadGalleryFolderList() {
 
         return loadAvailableFolderListModel()
                 .map(folderModel -> {
                     List<FolderModel.ParentFolderInfo> parentFolderInfos = folderModel.getParentFolderInfos();
 
-                    List<ImageFolderModel> imageFolderModelList = new LinkedList<ImageFolderModel>();
+                    List<ImageFolder> imageFolderList = new LinkedList<ImageFolder>();
                     for (int i = 0; i < parentFolderInfos.size(); i++) {
                         FolderModel.ParentFolderInfo parentFolderInfo = parentFolderInfos.get(i);
-                        List<ImageFolderModel> folders = parentFolderInfo.getFolders();
-                        imageFolderModelList.addAll(folders);
+                        List<ImageFolder> folders = parentFolderInfo.getFolders();
+                        imageFolderList.addAll(folders);
                     }
 
-                    return imageFolderModelList;
+                    return imageFolderList;
                 })
                 ;
     }
