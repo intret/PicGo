@@ -7,19 +7,24 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.View;
 import android.widget.Toast;
 
 import com.afollestad.sectionedrecyclerview.ItemCoord;
+import com.annimon.stream.Collector;
 import com.annimon.stream.Stream;
+import com.annimon.stream.function.BiConsumer;
+import com.annimon.stream.function.Function;
+import com.annimon.stream.function.Supplier;
 
 import java.io.File;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -28,8 +33,8 @@ import java.util.Map;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
-import cn.intret.app.picgo.model.ImageFolder;
 import cn.intret.app.picgo.model.FolderModel;
+import cn.intret.app.picgo.model.ImageFolder;
 import cn.intret.app.picgo.model.SystemImageService;
 import cn.intret.app.picgo.ui.adapter.FolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.ImageListAdapter;
@@ -37,8 +42,11 @@ import cn.intret.app.picgo.ui.adapter.RecyclerItemClickListener;
 import cn.intret.app.picgo.ui.adapter.SectionDecoration;
 import cn.intret.app.picgo.ui.adapter.SectionFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedFolderListAdapter;
+import cn.intret.app.picgo.ui.adapter.SectionedImageListAdapter;
 import cn.intret.app.picgo.ui.floating.FloatWindowService;
+import cn.intret.app.picgo.utils.DateTimeUtils;
 import cn.intret.app.picgo.utils.ListUtils;
+import cn.intret.app.picgo.utils.SystemUtils;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
@@ -51,7 +59,6 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
     @BindView(R.id.drawer_layout) DrawerLayout mDrawerLayout;
     @BindView(R.id.drawer_folder_list) RecyclerView mDrawerFolderList;
 
-    private ImageListAdapter mCurrentImageListAdapter;
     private int mSpanCount;
 
     private ActionBarDrawerToggle mDrawerToggle;
@@ -64,8 +71,14 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
      * Value: ImageListAdapter
      */
     Map<String, ImageListAdapter> mImageListAdapters = new LinkedHashMap<>();
+    private ImageListAdapter mCurrentImageListAdapter;
     private StaggeredGridLayoutManager mGridLayoutManager;
 
+    Map<String, SectionedImageListAdapter> mSectionedImageListAdapters = new LinkedHashMap<>();
+    private GridLayoutManager mGridLayout;
+    private SectionedImageListAdapter mCurrentAdapter;
+    private boolean mIsFolderListLoaded = false;
+    private boolean mIsImageListLoaded = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,12 +89,17 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
 
         initAppBar();
         initDrawer();
-        initImageList();
+
+
         //showFloatingWindow();
     }
 
     @Override
     protected void onStart() {
+
+        initFolderList();
+        initImageList();
+
         super.onStart();
     }
 
@@ -89,7 +107,7 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
     protected void onResume() {
 //        changeFloatingCount(FloatWindowService.MSG_INCREASE);
 
-        mDrawerLayout.openDrawer(Gravity.LEFT);
+//        mDrawerLayout.openDrawer(Gravity.LEFT);
         super.onResume();
     }
 
@@ -151,19 +169,27 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
 
         //mTitle = mDrawerTitle = getTitle();
 
-        initFolderList();
+
     }
 
     private void initFolderList() {
-        // 初始化相册文件夹列表
-        SystemImageService.getInstance().loadAvailableFolderListModel()
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .doOnError(Throwable::printStackTrace)
-                .subscribe(this::showFolderList);
+        if (mIsFolderListLoaded) {
+            Log.d(TAG, "initFolderList: TODO 检查文件列表变化");
+        } else {
+            // 初始化相册文件夹列表
+            SystemImageService.getInstance()
+                    .loadAvailableFolderListModel()
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .doOnError(Throwable::printStackTrace)
+                    .subscribe(this::showFolderList);
+        }
+
     }
 
     private void showFolderList(FolderModel model) {
+
+        mIsFolderListLoaded = true;
 
         List<SectionedFolderListAdapter.SectionItem> sectionItems = new LinkedList<>();
 
@@ -174,45 +200,38 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
 
         SectionedFolderListAdapter listAdapter = new SectionedFolderListAdapter(sectionItems);
 
-//        listAdapter.setOnItemClickListener((sectionItem, item) -> {
-//            mDrawerLayout.closeDrawers();
-//            showDirectoryImageList(item.getFile());
-//        });
         mDrawerFolderList.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         mDrawerFolderList.setAdapter(listAdapter);
-        mDrawerFolderList.addOnItemTouchListener(new RecyclerItemClickListener(this, new RecyclerItemClickListener.OnItemClickListener() {
-            @Override
-            public void onItemClick(View view, int position) {
-                ItemCoord relativePosition = listAdapter.getRelativePosition(position);
-                boolean header = listAdapter.isHeader(position);
-                boolean footer = listAdapter.isFooter(position);
-                if (header) {
-                    boolean sectionExpanded = listAdapter.isSectionExpanded(relativePosition.section());
-                    if (sectionExpanded) {
-                        listAdapter.collapseSection(relativePosition.section());
-                    } else {
-                        listAdapter.expandSection(relativePosition.section());
-                    }
-                } else if (footer) {
-                    Log.d(TAG, "onItemClick: footer clicked");
+        mDrawerFolderList.addOnItemTouchListener(new RecyclerItemClickListener(this, (view, position) -> {
+            ItemCoord relativePosition = listAdapter.getRelativePosition(position);
+            boolean header = listAdapter.isHeader(position);
+            boolean footer = listAdapter.isFooter(position);
+            if (header) {
+                boolean sectionExpanded = listAdapter.isSectionExpanded(relativePosition.section());
+                if (sectionExpanded) {
+                    listAdapter.collapseSection(relativePosition.section());
                 } else {
-                    SectionedFolderListAdapter.Item item = listAdapter.getItem(relativePosition);
-                    Log.d(TAG, "onItemClick: 显示 " + item.getFile());
-                    mDrawerLayout.closeDrawers();
-                    showDirectoryImageList(item.getFile());
+                    listAdapter.expandSection(relativePosition.section());
                 }
-                Log.d(TAG, "onItemClick() called with: view = [" + view + "], position = [" + position + "]");
+            } else if (footer) {
+                Log.d(TAG, "onItemClick: footer clicked");
+            } else {
+                SectionedFolderListAdapter.Item item = listAdapter.getItem(relativePosition);
+                Log.d(TAG, "onItemClick: 显示 " + item.getFile());
+                mDrawerLayout.closeDrawers();
+                showDirectoryImageList(item.getFile());
             }
+            Log.d(TAG, "onItemClick() called with: view = [" + view + "], position = [" + position + "]");
         }));
 
         // show firstOf folder's images in activity content field.
-        SectionedFolderListAdapter.SectionItem sectionItem = ListUtils.firstOf(sectionItems);
-        if (sectionItem != null) {
-            SectionedFolderListAdapter.Item item = ListUtils.firstOf(sectionItem.getItems());
-            if (item != null) {
-                showDirectoryImageList(item.getFile());
-            }
-        }
+//        SectionedFolderListAdapter.SectionItem sectionItem = ListUtils.firstOf(sectionItems);
+//        if (sectionItem != null) {
+//            SectionedFolderListAdapter.Item item = ListUtils.firstOf(sectionItem.getItems());
+//            if (item != null) {
+//                showDirectoryImageList(item.getFile());
+//            }
+//        }
     }
 
     private SectionedFolderListAdapter.SectionItem parentFolderToItem(FolderModel.ParentFolderInfo parentFolderInfo) {
@@ -249,12 +268,8 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
         });
         mDrawerFolderList.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         mDrawerFolderList.setAdapter(listAdapter);
-        mDrawerFolderList.addOnItemTouchListener(new RecyclerItemClickListener(this, new RecyclerItemClickListener.OnItemClickListener() {
-            @Override
-            public void onItemClick(View view, int position) {
-                Log.d(TAG, "onItemClick() called with: view = [" + view + "], position = [" + position + "]");
-            }
-        }));
+        mDrawerFolderList.addOnItemTouchListener(new RecyclerItemClickListener(this,
+                (view, position) -> Log.d(TAG, "onItemClick() called with: view = [" + view + "], position = [" + position + "]")));
 
         SectionFolderListAdapter.SectionItem sectionItem = ListUtils.firstOf(sectionItems);
         if (sectionItem != null) {
@@ -263,15 +278,15 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
                 showDirectoryImageList(item.getFile());
             }
         }
-        // show firstOf folder's images in activity content field.
-        if (sectionItems.size() > 0) {
-
-            SectionFolderListAdapter.SectionItem item = sectionItems.get(0);
-            List<SectionFolderListAdapter.Item> items = item.getItems();
-            if (items != null && !items.isEmpty()) {
-                showDirectoryImageList(items.get(0).getFile());
-            }
-        }
+//        // show firstOf folder's images in activity content field.
+//        if (sectionItems.size() > 0) {
+//
+//            SectionFolderListAdapter.SectionItem item = sectionItems.get(0);
+//            List<SectionFolderListAdapter.Item> items = item.getItems();
+//            if (items != null && !items.isEmpty()) {
+//                showDirectoryImageList(items.get(0).getFile());
+//            }
+//        }
     }
 
 
@@ -335,12 +350,12 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
         }));
         mDrawerFolderList.setAdapter(mFolderListAdapter);
 
-        // show firstOf folder's images in activity content field.
-        if (items != null && items.size() > 0) {
-
-            FolderListAdapter.Item item = items.get(0);
-            showDirectoryImageList(item.getDirectory());
-        }
+//        // show firstOf folder's images in activity content field.
+//        if (items != null && items.size() > 0) {
+//
+//            FolderListAdapter.Item item = items.get(0);
+//            showDirectoryImageList(item.getDirectory());
+//        }
     }
 
     public void changeTitle(String name) {
@@ -355,6 +370,110 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
 
         changeTitle(directory.getName());
 
+        showSectionedImageList(directory);
+//        showImageListAdapter(directory);
+    }
+
+    private void showSectionedImageList(File directory) {
+        SectionedImageListAdapter listAdapter = mSectionedImageListAdapters.get(directory.getAbsolutePath());
+        if (listAdapter != null) {
+            Log.d(TAG, "showSectionedImageList: showOldAdapter " + directory.getName());
+            showSectionedImageList(listAdapter);
+        } else {
+            loadAdapterSections(directory)
+                    .map(SectionedImageListAdapter::new)
+                    .subscribeOn(Schedulers.io())
+                    .doOnNext(adapter -> {
+                        mSectionedImageListAdapters.put(directory.getAbsolutePath(), adapter);
+                    })
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(this::showSectionedImageList);
+        }
+    }
+
+    private Observable<LinkedList<SectionedImageListAdapter.Section>> loadAdapterSections(File directory) {
+        return Observable.create(e -> {
+
+            List<File> images = SystemImageService.getInstance().listImageFiles(directory);
+            LinkedList<SectionedImageListAdapter.Section> sections = Stream.of(images)
+                    .groupBy(file -> {
+                        long d = file.lastModified();
+                        Date date = new Date(d);
+                        int i = DateTimeUtils.daysFromToday(date);
+                        //Log.d(TAG, "showSectionedImageList: " + "i " + i + " " + date);
+                        return i;
+                    })
+                    .sorted((o1, o2) -> Integer.compare(o1.getKey(), o2.getKey()))
+                    .collect(new Collector<Map.Entry<Integer, List<File>>,
+                            LinkedList<SectionedImageListAdapter.Section>,
+                            LinkedList<SectionedImageListAdapter.Section>>() {
+                        @Override
+                        public Supplier<LinkedList<SectionedImageListAdapter.Section>> supplier() {
+                            return LinkedList::new;
+                        }
+
+                        @Override
+                        public BiConsumer<LinkedList<SectionedImageListAdapter.Section>,
+                                Map.Entry<Integer, List<File>>> accumulator() {
+                            return (sections, entry) -> {
+
+                                SectionedImageListAdapter.Section section = new SectionedImageListAdapter.Section();
+                                List<File> files = entry.getValue();
+                                Log.d(TAG, "accumulator: " + entry.getKey() + " size: " + files.size());
+
+                                List<SectionedImageListAdapter.Item> itemList = Stream.of(files)
+                                        .map(file -> new SectionedImageListAdapter.Item()
+                                                .setFile(file)
+                                                .setDate(new Date(file.lastModified())))
+                                        .toList();
+                                SectionedImageListAdapter.Item firstItem = ListUtils.firstOf(itemList);
+                                SectionedImageListAdapter.Item lastItem = ListUtils.lastOf(itemList);
+
+                                section.setItems(itemList);
+                                section.setStartDate(firstItem.getDate());
+                                section.setEndDate(lastItem.getDate());
+                                section.setDescription(DateTimeUtils.friendlyDayDescription(
+                                        getResources(), firstItem.getDate()));
+
+                                sections.add(section);
+                            };
+                        }
+
+                        @Override
+                        public Function<LinkedList<SectionedImageListAdapter.Section>,
+                                LinkedList<SectionedImageListAdapter.Section>> finisher() {
+                            return sections -> sections;
+                        }
+                    });
+
+            e.onNext(sections);
+            e.onComplete();
+        });
+    }
+
+    private void showSectionedImageList(SectionedImageListAdapter listAdapter) {
+        mCurrentAdapter = listAdapter;
+
+        mGridLayout = new GridLayoutManager(this, mSpanCount, GridLayoutManager.VERTICAL, false);
+        mImageList.setLayoutManager(mGridLayout);
+        listAdapter.setLayoutManager(mGridLayout);
+        if (mImageList.getAdapter() == null) {
+            mImageList.setAdapter(listAdapter);
+        } else {
+            mImageList.swapAdapter(listAdapter, false);
+        }
+//        mImageList.addOnItemTouchListener(new RecyclerItemClickListener(this, (view, position) -> {
+//            if (listAdapter.isHeader(position) || listAdapter.isFooter(position)) {
+//                return;
+//            } else {
+//                ItemCoord relativePosition = listAdapter.getRelativePosition(position);
+//                listAdapter.onClickItem(relativePosition);
+//            }
+//
+//        }));
+    }
+
+    private void showImageListAdapter(File directory) {
         ImageListAdapter imageListAdapter = mImageListAdapters.get(directory.getAbsolutePath());
         if (imageListAdapter != null) {
             Log.d(TAG, "showDirectoryImageList: 切换显示目录 " + directory);
@@ -394,13 +513,24 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
         mImageList.swapAdapter(mCurrentImageListAdapter, false);
     }
 
-
     private void initImageList() {
+        if (mIsImageListLoaded) {
 
-        mSpanCount = 4; // columns
+            Log.d(TAG, "initImageList: TODO 检查并更新图片文件");
+        } else {
+            mSpanCount = 4; // columns
+            showDirectoryImageList(SystemUtils.getCameraDir());
+            mIsImageListLoaded = true;
+        }
 
-        mImageList.setLayoutManager(new StaggeredGridLayoutManager(mSpanCount, StaggeredGridLayoutManager.VERTICAL));
-        mImageList.setAdapter(new ImageListAdapter(new LinkedList<ImageListAdapter.Item>()));
+//        mImageList.setLayoutManager(new StaggeredGridLayoutManager(mSpanCount, StaggeredGridLayoutManager.VERTICAL));
+//        mImageList.setAdapter(new ImageListAdapter(new LinkedList<ImageListAdapter.Item>()));
+//        GridLayoutManager layout = new GridLayoutManager(this, mSpanCount, GridLayoutManager.VERTICAL, false);
+//        mImageList.setLayoutManager(layout);
+        //SectionedImageListAdapter adapter = new SectionedImageListAdapter(new LinkedList<SectionedImageListAdapter.Section>());
+        //adapter.setLayoutManager(layout);
+        //mImageList.setAdapter(adapter);
+
 //        mImageList.addItemDecoration(new GridSpacingItemDecoration(mSpanCount,
 //                getResources().getDimensionPixelSize(R.dimen.image_list_item_space), true));
     }
@@ -413,7 +543,7 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
 
 
     private Observable<List<ImageListAdapter.Item>> loadGalleryImages(File directory) {
-        return Observable.<List<ImageListAdapter.Item>>create(e -> {
+        return Observable.create(e -> {
             LinkedList<ImageListAdapter.Item> items = new LinkedList<ImageListAdapter.Item>();
             List<File> images = SystemImageService.getInstance().listImageFiles(directory);
 

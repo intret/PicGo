@@ -7,4 +7,6 @@
 
     <string name="sdcard_DCIM">DCIM</string>
     <string name="sdcard_pictures">Pictures</string>
+    <string name="today">今天</string>
+    <string name="yesterdy">昨天</string>
 </resources>

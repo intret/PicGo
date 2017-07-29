@@ -6,4 +6,5 @@
     <color name="list_item_text_light">#777777</color>
     <color name="actionBarColor">#FFFFFF</color>
     <color name="colorSectionListHeader">#eee</color>
+    <color name="image_list_item_bg_color">#DDDDDD</color>
 </resources>

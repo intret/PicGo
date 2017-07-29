@@ -14,6 +14,8 @@ import android.widget.ImageView;
 
 import com.annimon.stream.Stream;
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.bitmap.BitmapTransitionOptions;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.request.target.ViewTarget;
 import com.bumptech.glide.request.transition.Transition;
@@ -291,6 +293,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
                         .asBitmap()
                         .load(item.getFile())
                         .apply(RequestOptions.fitCenterTransform())
+                        .transition(BitmapTransitionOptions.withCrossFade())
                         .into(holder.image);
 //                    }
 

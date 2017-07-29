@@ -2,4 +2,5 @@
 <resources>
     <item name="position" type="id"/>
     <item name="item" type="id"/>
+    <item name="today" type="id">今天</item>
 </resources>

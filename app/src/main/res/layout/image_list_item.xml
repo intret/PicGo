@@ -14,12 +14,25 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/margin_list_item_image_view"
+        android:background="@color/image_list_item_bg_color"
         app:siBorderColor="@color/colorAccent"
         app:siBorderWidth="0dp"
         app:siRadius="0dp"
         app:siSquare="true"
-        tools:src="@color/colorPrimaryDark"
+        tools:src="@color/colorAccent"
         />
+
+    <ImageView
+        android:id="@+id/checkbox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginRight="@dimen/margin_top_image_list_item_checkbox"
+        android:layout_marginTop="@dimen/margin_top_image_list_item_checkbox"
+        android:src="@drawable/checkbox"
+        android:visibility="gone"
+        android:contentDescription="CheckBox"/>
 
     <android.support.v7.widget.AppCompatCheckBox
         android:id="@+id/radio"
@@ -27,12 +40,12 @@
         android:layout_height="wrap_content"
         android:layout_alignParentRight="true"
         android:layout_alignParentTop="true"
-        android:layout_marginRight="@dimen/mt_imagelist_item_checkbox"
-        android:layout_marginTop="@dimen/mt_imagelist_item_checkbox"
+        android:layout_marginRight="@dimen/margin_top_image_list_item_checkbox"
+        android:layout_marginTop="@dimen/margin_top_image_list_item_checkbox"
         android:checked="true"
         android:visibility="gone"
         tools:checked="true"
-        tools:visibility="visible"
+        tools:visibility="gone"
         tools:ignore="RtlHardcoded"/>
 
     <!--<ImageView-->

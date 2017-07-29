@@ -166,7 +166,7 @@ public class SystemImageService {
         }
 
         return Stream.of(allFiles)
-                .sorted((file, file2) -> Long.compare(file2.lastModified(), file.lastModified()))
+                .sorted((file1, file2) -> Long.compare(file2.lastModified(), file1.lastModified()))
                 .toList();
     }
 
