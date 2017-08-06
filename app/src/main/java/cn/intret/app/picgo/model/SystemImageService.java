@@ -4,20 +4,27 @@ package cn.intret.app.picgo.model;
 import android.content.Context;
 import android.util.Log;
 
+import com.annimon.stream.Collector;
 import com.annimon.stream.Stream;
+import com.annimon.stream.function.BiConsumer;
+import com.annimon.stream.function.Function;
+import com.annimon.stream.function.Supplier;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.security.InvalidParameterException;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import cn.intret.app.picgo.app.CoreModule;
+import cn.intret.app.picgo.utils.DateTimeUtils;
+import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
 import io.reactivex.Observable;
-
 
 public class SystemImageService {
 
@@ -155,6 +162,70 @@ public class SystemImageService {
 
     }
 
+    public Observable<List<ImageGroup>> loadImageGroupList(File directory, GroupMode mode) {
+        return Observable.create(e -> {
+
+            List<File> imageFiles = SystemImageService.getInstance().listImageFiles(directory);
+            LinkedList<ImageGroup> sections = Stream.of(imageFiles)
+                    .groupBy(file -> {
+                        long d = file.lastModified();
+                        Date date = new Date(d);
+
+                        switch (mode) {
+                            case DAY:
+                                return DateTimeUtils.daysBeforeToday(date);
+                            case WEEK:
+                                return DateTimeUtils.weeksBeforeCurrentWeek(date);
+                            case MONTH:
+                                return DateTimeUtils.monthsBeforeCurrentMonth(date);
+                            default:
+                                return 0;
+                        }
+                    })
+                    .sorted((o1, o2) -> Integer.compare(o1.getKey(), o2.getKey()))
+                    .collect(new Collector<Map.Entry<Integer, List<File>>,
+                            LinkedList<ImageGroup>,
+                            LinkedList<ImageGroup>>() {
+                        @Override
+                        public Supplier<LinkedList<ImageGroup>> supplier() {
+                            return LinkedList::new;
+                        }
+
+                        @Override
+                        public BiConsumer<LinkedList<ImageGroup>,
+                                Map.Entry<Integer, List<File>>> accumulator() {
+                            return (sections, entry) -> {
+
+                                ImageGroup section = new ImageGroup();
+                                List<File> files = entry.getValue();
+                                List<ImageGroup.Image> itemList = Stream.of(files)
+                                        .map(file -> new ImageGroup.Image()
+                                                .setFile(file)
+                                                .setDate(new Date(file.lastModified())))
+                                        .toList();
+                                ImageGroup.Image firstItem = ListUtils.firstOf(itemList);
+                                ImageGroup.Image lastItem = ListUtils.lastOf(itemList);
+
+                                section.setImages(itemList);
+                                section.setStartDate(firstItem.getDate());
+                                section.setEndDate(lastItem.getDate());
+
+                                sections.add(section);
+                            };
+                        }
+
+                        @Override
+                        public Function<LinkedList<ImageGroup>,
+                                LinkedList<ImageGroup>> finisher() {
+                            return sections -> sections;
+                        }
+                    });
+
+            e.onNext(sections);
+            e.onComplete();
+        });
+    }
+    
     public List<File> listImageFiles(File dir) {
         if (!dir.isDirectory()) {
             throw new InvalidParameterException("参数 'dir' 对应的目录（" + dir.getAbsolutePath() + "）不存在：");

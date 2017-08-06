@@ -3,17 +3,17 @@ package cn.intret.app.picgo.ui.main;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.MainThread;
+import android.support.annotation.Nullable;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
+import android.widget.RadioGroup;
 import android.widget.Toast;
 
 import com.afollestad.sectionedrecyclerview.ItemCoord;
@@ -34,7 +34,9 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.model.FolderModel;
+import cn.intret.app.picgo.model.GroupMode;
 import cn.intret.app.picgo.model.ImageFolder;
+import cn.intret.app.picgo.model.ImageGroup;
 import cn.intret.app.picgo.model.SystemImageService;
 import cn.intret.app.picgo.ui.adapter.FolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.ImageListAdapter;
@@ -47,17 +49,20 @@ import cn.intret.app.picgo.ui.floating.FloatWindowService;
 import cn.intret.app.picgo.utils.DateTimeUtils;
 import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
+import cn.intret.app.picgo.utils.ToastUtils;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
 
-public class MainActivity extends AppCompatActivity implements ImageListAdapter.OnItemEventListener {
+public class MainActivity extends BaseAppCompatActivity implements ImageListAdapter.OnItemEventListener {
 
     private static final String TAG = "MainActivity";
 
     @BindView(R.id.img_list) RecyclerView mImageList;
     @BindView(R.id.drawer_layout) DrawerLayout mDrawerLayout;
     @BindView(R.id.drawer_folder_list) RecyclerView mDrawerFolderList;
+
+    @BindView(R.id.view_mode) RadioGroup mModeRadioGroup;
 
     private int mSpanCount;
 
@@ -72,13 +77,18 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
      */
     Map<String, ImageListAdapter> mImageListAdapters = new LinkedHashMap<>();
     private ImageListAdapter mCurrentImageListAdapter;
-    private StaggeredGridLayoutManager mGridLayoutManager;
+    private GridLayoutManager mGridLayoutManager;
 
     Map<String, SectionedImageListAdapter> mSectionedImageListAdapters = new LinkedHashMap<>();
+    Map<String, SectionedImageListAdapter> mWeekSectionedImageListAdapters = new LinkedHashMap<>();
+    Map<String, SectionedImageListAdapter> mDaySectionedImageListAdapters = new LinkedHashMap<>();
+    Map<String, SectionedImageListAdapter> mMonthSectionedImageListAdapters = new LinkedHashMap<>();
     private GridLayoutManager mGridLayout;
     private SectionedImageListAdapter mCurrentAdapter;
     private boolean mIsFolderListLoaded = false;
     private boolean mIsImageListLoaded = false;
+    private GroupMode mGroupMode = GroupMode.DEFAULT;
+    private File mCurrentFolder;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,9 +99,33 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
 
         initAppBar();
         initDrawer();
-
-
+        initListViewHeader();
         //showFloatingWindow();
+    }
+
+    private void initListViewHeader() {
+
+        mModeRadioGroup.setOnCheckedChangeListener((group, checkedId) -> {
+            switch (checkedId) {
+                case R.id.btn_default: {
+                    switchToViewMode(GroupMode.DEFAULT);
+                }
+                break;
+                case R.id.btn_week: {
+                    switchToViewMode(GroupMode.WEEK);
+                }
+                break;
+                case R.id.btn_month: {
+                    switchToViewMode(GroupMode.MONTH);
+                }
+                break;
+            }
+        });
+    }
+
+    private void switchToViewMode(GroupMode mode) {
+        mGroupMode = mode;
+        showDirectoryImageList(mCurrentFolder);
     }
 
     @Override
@@ -367,41 +401,155 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
 
     @MainThread
     private void showDirectoryImageList(File directory) {
+        mCurrentFolder = directory;
 
         changeTitle(directory.getName());
-
-        showSectionedImageList(directory);
-//        showImageListAdapter(directory);
-    }
-
-    private void showSectionedImageList(File directory) {
-        SectionedImageListAdapter listAdapter = mSectionedImageListAdapters.get(directory.getAbsolutePath());
-        if (listAdapter != null) {
-            Log.d(TAG, "showSectionedImageList: showOldAdapter " + directory.getName());
-            showSectionedImageList(listAdapter);
+        if (mGroupMode == GroupMode.DEFAULT) {
+            showImageList(directory);
         } else {
-            loadAdapterSections(directory)
-                    .map(SectionedImageListAdapter::new)
-                    .subscribeOn(Schedulers.io())
-                    .doOnNext(adapter -> {
-                        mSectionedImageListAdapters.put(directory.getAbsolutePath(), adapter);
-                    })
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(this::showSectionedImageList);
+            showSectionedImageList(directory, mGroupMode);
         }
     }
 
-    private Observable<LinkedList<SectionedImageListAdapter.Section>> loadAdapterSections(File directory) {
+    private void showSectionedImageList(File directory, GroupMode groupMode) {
+        if (groupMode == GroupMode.DEFAULT) {
+            throw new IllegalStateException("Group mode shouldn't be 'DEFAULT'.");
+        }
+
+        Log.d(TAG, "showSectionedImageList() called with: directory = [" + directory + "], groupMode = [" + groupMode + "]");
+
+        {
+            SectionedImageListAdapter listAdapter = getSectionedImageListAdapter(directory, mGroupMode);
+            if (listAdapter != null) {
+                Log.d(TAG, "show cached sectioned list adapter : " + directory.getName());
+                showSectionedImageList(listAdapter);
+            } else {
+                SystemImageService.getInstance()
+                        .loadImageGroupList(directory, groupMode)
+                        .map(this::imageGroupsToAdapter)
+                        .map((sectionList) -> {
+                            SectionedImageListAdapter adapter = new SectionedImageListAdapter(sectionList);
+                            adapter.setDirectory(directory);
+                            adapter.setGroupMode(groupMode);
+                            return adapter;
+                        })
+                        .compose(workAndShow())
+                        .subscribe(adapter -> {
+                            putGroupMode(directory, groupMode, adapter);
+                            Log.d(TAG, "show newly sectioned list adapter : " + directory.getName());
+                            showSectionedImageList(adapter);
+                        }, throwable -> {
+                            ToastUtils.toastLong(MainActivity.this, R.string.load_pictures_failed);
+                        });
+
+//            loadAdapterSections(directory, groupMode)
+//                    .map(SectionedImageListAdapter::new)
+//                    .subscribeOn(Schedulers.io())
+//                    .doOnNext(adapter -> {
+//                        putGroupMode(directory, groupMode, adapter);
+//                    })
+//                    .observeOn(AndroidSchedulers.mainThread())
+//                    .subscribe(this::showSectionedImageList);
+            }
+        }
+    }
+
+    private void putGroupMode(File directory, GroupMode groupMode, SectionedImageListAdapter adapter) {
+        switch (groupMode) {
+
+            case DEFAULT:
+                break;
+            case DAY: {
+                mDaySectionedImageListAdapters.put(directory.getAbsolutePath(), adapter);
+            }
+            break;
+            case WEEK: {
+                mWeekSectionedImageListAdapters.put(directory.getAbsolutePath(), adapter);
+            }
+            break;
+            case MONTH: {
+                mMonthSectionedImageListAdapters.put(directory.getAbsolutePath(), adapter);
+            }
+            break;
+        }
+    }
+
+    private List<SectionedImageListAdapter.Section> imageGroupsToAdapter(List<ImageGroup> imageGroups) {
+        List<SectionedImageListAdapter.Section> sections = new LinkedList<>();
+        for (int i = 0, imageGroupsSize = imageGroups.size(); i < imageGroupsSize; i++) {
+            ImageGroup imageGroup = imageGroups.get(i);
+            sections.add(imageGroupToAdapterSection(imageGroup));
+        }
+        return sections;
+    }
+
+    private SectionedImageListAdapter.Section imageGroupToAdapterSection(ImageGroup imageGroup) {
+        SectionedImageListAdapter.Section section = new SectionedImageListAdapter.Section();
+
+        section.setStartDate(imageGroup.getStartDate());
+        section.setEndDate(imageGroup.getEndDate());
+
+        List<ImageGroup.Image> images = imageGroup.getImages();
+        if (images != null) {
+            List<SectionedImageListAdapter.Item> items = new LinkedList<>();
+            for (int i = 0, imagesSize = images.size(); i < imagesSize; i++) {
+                ImageGroup.Image image = images.get(i);
+                items.add(new SectionedImageListAdapter.Item()
+                        .setFile(image.getFile())
+                        .setDate(image.getDate())
+                );
+            }
+            section.setItems(items);
+        }
+        section.setDescription(getDescription(section.getStartDate(), MainActivity.this.mGroupMode));
+        return section;
+    }
+
+    @Nullable
+    private SectionedImageListAdapter getSectionedImageListAdapter(File directory, GroupMode groupMode) {
+        SectionedImageListAdapter listAdapter = null;
+
+        switch (groupMode) {
+
+            case DEFAULT: {
+                throw new IllegalStateException("groupMode parameter shouldn't be 'DEFAULT'.");
+            }
+            case DAY:
+                listAdapter = mDaySectionedImageListAdapters.get(directory.getAbsolutePath());
+                break;
+            case WEEK: {
+                listAdapter = mWeekSectionedImageListAdapters.get(directory.getAbsolutePath());
+            }
+            break;
+            case MONTH: {
+                listAdapter = mMonthSectionedImageListAdapters.get(directory.getAbsolutePath());
+            }
+            break;
+        }
+        return listAdapter;
+    }
+
+    private Observable<LinkedList<SectionedImageListAdapter.Section>> loadAdapterSections(File directory, GroupMode mode) {
         return Observable.create(e -> {
 
-            List<File> images = SystemImageService.getInstance().listImageFiles(directory);
-            LinkedList<SectionedImageListAdapter.Section> sections = Stream.of(images)
+            List<File> imageFiles = SystemImageService.getInstance().listImageFiles(directory);
+            LinkedList<SectionedImageListAdapter.Section> sections = Stream.of(imageFiles)
                     .groupBy(file -> {
                         long d = file.lastModified();
                         Date date = new Date(d);
-                        int i = DateTimeUtils.daysFromToday(date);
-                        //Log.d(TAG, "showSectionedImageList: " + "i " + i + " " + date);
-                        return i;
+
+                        Log.d(TAG, "loadAdapterSections() called with: directory = [" + directory + "], mode = [" + mode + "]");
+
+                        switch (mode) {
+                            case DAY:
+                                return DateTimeUtils.daysBeforeToday(date);
+                            case WEEK:
+                                return DateTimeUtils.weeksBeforeCurrentWeek(date);
+                            case MONTH:
+                                return DateTimeUtils.monthsBeforeCurrentMonth(date);
+                            default:
+                                return DateTimeUtils.daysBeforeToday(date);
+                        }
                     })
                     .sorted((o1, o2) -> Integer.compare(o1.getKey(), o2.getKey()))
                     .collect(new Collector<Map.Entry<Integer, List<File>>,
@@ -419,8 +567,6 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
 
                                 SectionedImageListAdapter.Section section = new SectionedImageListAdapter.Section();
                                 List<File> files = entry.getValue();
-                                Log.d(TAG, "accumulator: " + entry.getKey() + " size: " + files.size());
-
                                 List<SectionedImageListAdapter.Item> itemList = Stream.of(files)
                                         .map(file -> new SectionedImageListAdapter.Item()
                                                 .setFile(file)
@@ -432,8 +578,7 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
                                 section.setItems(itemList);
                                 section.setStartDate(firstItem.getDate());
                                 section.setEndDate(lastItem.getDate());
-                                section.setDescription(DateTimeUtils.friendlyDayDescription(
-                                        getResources(), firstItem.getDate()));
+                                section.setDescription(getDescription(firstItem.getDate(), MainActivity.this.mGroupMode));
 
                                 sections.add(section);
                             };
@@ -451,6 +596,23 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
         });
     }
 
+    private String getDescription(Date date, GroupMode groupMode) {
+
+        switch (groupMode) {
+
+            case DEFAULT:
+                return "";
+            case DAY:
+                return DateTimeUtils.friendlyDayDescription(getResources(), date);
+            case WEEK:
+                return DateTimeUtils.friendlyWeekDescription(getResources(), date);
+            case MONTH:
+                return DateTimeUtils.friendlyMonthDescription(getResources(), date);
+            default:
+                return "";
+        }
+    }
+
     private void showSectionedImageList(SectionedImageListAdapter listAdapter) {
         mCurrentAdapter = listAdapter;
 
@@ -458,8 +620,10 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
         mImageList.setLayoutManager(mGridLayout);
         listAdapter.setLayoutManager(mGridLayout);
         if (mImageList.getAdapter() == null) {
+            Log.d(TAG, "setAdapter() called with: listAdapter = [" + listAdapter + "]");
             mImageList.setAdapter(listAdapter);
         } else {
+            Log.d(TAG, "swapAdapter() called with: listAdapter = [" + listAdapter + "]");
             mImageList.swapAdapter(listAdapter, false);
         }
 //        mImageList.addOnItemTouchListener(new RecyclerItemClickListener(this, (view, position) -> {
@@ -473,11 +637,11 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
 //        }));
     }
 
-    private void showImageListAdapter(File directory) {
-        ImageListAdapter imageListAdapter = mImageListAdapters.get(directory.getAbsolutePath());
-        if (imageListAdapter != null) {
+    private void showImageList(File directory) {
+        ImageListAdapter listAdapter = mImageListAdapters.get(directory.getAbsolutePath());
+        if (listAdapter != null) {
             Log.d(TAG, "showDirectoryImageList: 切换显示目录 " + directory);
-            showImageListAdapter(imageListAdapter);
+            showImageListAdapter(listAdapter);
 
         } else {
             loadGalleryImages(directory)
@@ -485,7 +649,7 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
                     .observeOn(AndroidSchedulers.mainThread())
                     .doOnError(throwable -> {
                         throwable.printStackTrace();
-                        Toast.makeText(this, R.string.load_gallery_failed, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, R.string.load_pictures_failed, Toast.LENGTH_SHORT).show();
                     })
                     .subscribe(items -> {
                                 ImageListAdapter adapter = createImageListAdapter(items);
@@ -509,8 +673,14 @@ public class MainActivity extends AppCompatActivity implements ImageListAdapter.
 
         mCurrentImageListAdapter = adapter;
 
-        mGridLayoutManager = new StaggeredGridLayoutManager(mSpanCount, StaggeredGridLayoutManager.VERTICAL);
-        mImageList.swapAdapter(mCurrentImageListAdapter, false);
+        mGridLayoutManager = new GridLayoutManager(this, mSpanCount, GridLayoutManager.VERTICAL, false);
+        mImageList.setLayoutManager(mGridLayoutManager);
+        if (mImageList.getAdapter() == null) {
+            mImageList.setAdapter(adapter);
+        } else {
+            mImageList.swapAdapter(adapter, false);
+        }
+
     }
 
     private void initImageList() {

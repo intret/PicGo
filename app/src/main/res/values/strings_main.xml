@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="load_gallery_failed">加载相册失败</string>
+    <string name="load_pictures_failed">加载图片失败</string>
 </resources>

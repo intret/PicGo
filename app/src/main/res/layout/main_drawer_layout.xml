@@ -9,12 +9,50 @@
     tools:showIn="@layout/activity_main">
 
     <!--内容-->
-    <FrameLayout
+    <LinearLayout
         android:id="@+id/content_frame"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:orientation="vertical"
         tools:visibility="visible"
         >
+
+        <RadioGroup
+            android:id="@+id/view_mode"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_gravity="center_vertical"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingBottom="8dp"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:paddingTop="8dp"
+            >
+
+            <RadioButton
+                android:id="@+id/btn_default"
+                style="@style/btn_view_mode"
+                android:checked="true"
+                android:drawableLeft="@drawable/selector_view_mode_default"
+                android:text="@string/mode_default"
+                />
+
+            <RadioButton
+                android:id="@+id/btn_week"
+                style="@style/btn_view_mode"
+                android:drawableLeft="@drawable/selector_view_mode_week"
+                android:text="@string/view_mode_week"
+                />
+
+            <RadioButton
+                android:id="@+id/btn_month"
+                style="@style/btn_view_mode"
+                android:drawableLeft="@drawable/selector_view_mode_month"
+                android:text="@string/view_mode_month"
+                />
+
+        </RadioGroup>
 
         <!--图片列表-->
         <android.support.v7.widget.RecyclerView
@@ -27,16 +65,15 @@
             >
 
         </android.support.v7.widget.RecyclerView>
-
-    </FrameLayout>
+    </LinearLayout>
 
     <!--抽屉菜单-->
     <LinearLayout
         android:layout_width="@dimen/main_drawer_width"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        android:orientation="vertical"
         android:background="#FFF"
+        android:orientation="vertical"
         >
 
         <android.support.v7.widget.RecyclerView

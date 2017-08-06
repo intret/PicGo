@@ -4,9 +4,10 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     app:cardCornerRadius="0dp"
     app:cardElevation="0dp"
+    tools:showIn="@layout/activity_main"
     >
 
     <com.github.siyamed.shapeimageview.RoundedImageView
@@ -33,6 +34,24 @@
         android:src="@drawable/checkbox"
         android:visibility="gone"
         android:contentDescription="CheckBox"/>
+
+    <TextView
+        android:id="@+id/file_type"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentBottom="true"
+        tools:text="GIF"
+        android:textSize="12dp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        android:alpha="0.85"
+        android:background="@drawable/bg_label"
+        android:paddingLeft="4dp"
+        android:paddingRight="4dp"
+        android:layout_marginRight="5dp"
+        android:layout_marginBottom="5dp"
+        tools:ignore="SpUsage"/>
 
     <android.support.v7.widget.AppCompatCheckBox
         android:id="@+id/radio"

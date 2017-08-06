@@ -19,6 +19,8 @@ import com.bumptech.glide.load.resource.transcode.BitmapDrawableTranscoder;
 import com.bumptech.glide.request.RequestOptions;
 import com.github.siyamed.shapeimageview.RoundedImageView;
 
+import org.apache.commons.io.FilenameUtils;
+
 import java.io.File;
 import java.util.Date;
 import java.util.LinkedList;
@@ -27,6 +29,7 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
+import cn.intret.app.picgo.model.GroupMode;
 
 /**
  * 分段图片列表
@@ -35,6 +38,18 @@ public class SectionedImageListAdapter extends SectionedRecyclerViewAdapter<Sect
 
     private static final String TAG = SectionedImageListAdapter.class.getSimpleName();
     private List<Section> mSectionList = new LinkedList<>();
+
+    private File directory;
+    private GroupMode mGroupMode;
+
+    public File getDirectory() {
+        return directory;
+    }
+
+    public SectionedImageListAdapter setDirectory(File directory) {
+        this.directory = directory;
+        return this;
+    }
 
     public void onClickItem(ItemCoord relativePosition) {
         Section section = mSectionList.get(relativePosition.section());
@@ -45,6 +60,14 @@ public class SectionedImageListAdapter extends SectionedRecyclerViewAdapter<Sect
             item.setSelected(!item.isSelected());
             viewHolder.checkbox.setVisibility(item.isSelected() ? View.VISIBLE : View.GONE);
         }
+    }
+
+    public void setGroupMode(GroupMode groupMode) {
+        mGroupMode = groupMode;
+    }
+
+    public GroupMode getGroupMode() {
+        return mGroupMode;
     }
 
     public static class Section {
@@ -197,6 +220,28 @@ public class SectionedImageListAdapter extends SectionedRecyclerViewAdapter<Sect
         // Checkbox selectable status
         vh.checkbox.setVisibility(item.isSelected() ? View.VISIBLE : View.GONE);
 
+        // File type
+        // Show file type
+        String extension = FilenameUtils.getExtension(item.getFile().getAbsolutePath());
+        if (extension != null) {
+            switch (extension.toLowerCase()) {
+                case "mp4":
+                case "avi":
+                case "mov":
+                case "mpg":
+                case "mpeg":
+                case "rmvb":
+                case "gif": {
+                    vh.fileType.setText(extension.toUpperCase());
+                    vh.fileType.setVisibility(View.VISIBLE);
+                }
+                break;
+                default:
+                    vh.fileType.setVisibility(View.GONE);
+                    break;
+            }
+        }
+
         // Image
         Context context = vh.itemView.getContext();
         Glide.with(context)
@@ -245,6 +290,7 @@ public class SectionedImageListAdapter extends SectionedRecyclerViewAdapter<Sect
 
         @BindView(R.id.img) RoundedImageView image;
         @BindView(R.id.checkbox) ImageView checkbox;
+        @BindView(R.id.file_type) TextView fileType;
 
         SectionItemViewHolder(View itemView) {
             super(itemView);

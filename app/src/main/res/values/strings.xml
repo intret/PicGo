@@ -1,12 +1,19 @@
 <resources>
     <string name="app_name">PicGo</string>
-    <string name="drawer_open">打开</string>
+    <string name="current_month">本月</string>
+    <string name="current_week">本周</string>
     <string name="drawer_close">关闭</string>
+    <string name="drawer_open">打开</string>
     <string name="gallery">相册</string>
+    <string name="last_month">上个月</string>
+    <string name="last_week">上周</string>
+    <string name="mode_default">默认</string>
     <string name="picture">照片</string>
-
-    <string name="sdcard_DCIM">DCIM</string>
+    <string name="sdcard_dcim">DCIM</string>
     <string name="sdcard_pictures">Pictures</string>
     <string name="today">今天</string>
-    <string name="yesterdy">昨天</string>
+    <string name="view_mode_month">月视图</string>
+    <string name="view_mode_week">周视图</string>
+    <string name="yesterday">昨天</string>
+    <string name="file_type_lable_gif">GIF</string>
 </resources>

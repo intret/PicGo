@@ -11,6 +11,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.annimon.stream.Stream;
 import com.bumptech.glide.Glide;
@@ -20,6 +21,8 @@ import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.request.target.ViewTarget;
 import com.bumptech.glide.request.transition.Transition;
 import com.github.siyamed.shapeimageview.RoundedImageView;
+
+import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
 import java.util.LinkedList;
@@ -245,6 +248,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
     public void onViewRecycled(ViewHolder holder) {
         if (holder != null) {
             holder.radio.setVisibility(View.GONE);
+            holder.fileType.setVisibility(View.GONE);
 
             if (holder.image != null) {
                 holder.image.setTag(R.id.item, -1);
@@ -312,7 +316,28 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         holder.radio.setVisibility(item.isSelected() ? View.VISIBLE : View.GONE);
         holder.radio.setChecked(true);
 
-        // Action
+        // Show file type
+        String extension = FilenameUtils.getExtension(item.getFile().getAbsolutePath());
+        if (extension != null) {
+            switch (extension.toLowerCase()) {
+                case "mp4":
+                case "avi":
+                case "mov":
+                case "mpg":
+                case "mpeg":
+                case "rmvb":
+                case "gif": {
+                    holder.fileType.setText(extension.toUpperCase());
+                    holder.fileType.setVisibility(View.VISIBLE);
+                }
+                break;
+                default:
+                    holder.fileType.setVisibility(View.GONE);
+                    break;
+            }
+        }
+
+        // Image clicking
         holder.image.setOnLongClickListener(this);
         holder.image.setOnClickListener(this);
     }
@@ -402,6 +427,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
 
         @BindView(R.id.img) RoundedImageView image;
         @BindView(R.id.radio) AppCompatCheckBox radio;
+        @BindView(R.id.file_type) TextView fileType;
 
         ViewHolder(View itemView) {
             super(itemView);

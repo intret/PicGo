@@ -4,7 +4,7 @@
              android:layout_height="match_parent">
 
     <com.github.siyamed.shapeimageview.RoundedImageView
-        android:id="@id/image"
+        android:id="@+id/image"
         android:layout_width="32dp"
         android:layout_height="32dp"
         android:clickable="false"
