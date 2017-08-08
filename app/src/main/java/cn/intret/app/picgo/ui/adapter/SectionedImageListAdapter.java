@@ -230,9 +230,13 @@ public class SectionedImageListAdapter extends SectionedRecyclerViewAdapter<Sect
                 case "mov":
                 case "mpg":
                 case "mpeg":
-                case "rmvb":
+                case "rmvb": {
+                    vh.fileType.setVisibility(View.VISIBLE);
+                    vh.fileType.setImageResource(R.drawable.ic_videocam);
+                }
+                break;
                 case "gif": {
-                    vh.fileType.setText(extension.toUpperCase());
+                    vh.fileType.setImageResource(R.drawable.ic_gif);
                     vh.fileType.setVisibility(View.VISIBLE);
                 }
                 break;
@@ -240,16 +244,18 @@ public class SectionedImageListAdapter extends SectionedRecyclerViewAdapter<Sect
                     vh.fileType.setVisibility(View.GONE);
                     break;
             }
+        } else {
+            vh.fileType.setVisibility(View.GONE);
         }
 
         // Image
-        Context context = vh.itemView.getContext();
-        Glide.with(context)
-                .asBitmap()
-                .load(item.getFile())
-                .apply(RequestOptions.fitCenterTransform())
-                .transition(BitmapTransitionOptions.withCrossFade())
-                .into(vh.image);
+//        Context context = vh.itemView.getContext();
+//        Glide.with(context)
+//                .asBitmap()
+//                .load(item.getFile())
+//                .apply(RequestOptions.fitCenterTransform())
+//                .transition(BitmapTransitionOptions.withCrossFade())
+//                .into(vh.image)
     }
 
     @Override
@@ -263,10 +269,10 @@ public class SectionedImageListAdapter extends SectionedRecyclerViewAdapter<Sect
             case VIEW_TYPE_HEADER:
                 View view = LayoutInflater.from(parent.getContext()).inflate(
                         R.layout.image_list_section_header, parent, false);
-            return new SectionHeaderViewHolder(view);
+                return new SectionHeaderViewHolder(view);
             case VIEW_TYPE_FOOTER:
                 return null;
-            default:{
+            default: {
                 View itemView = LayoutInflater.from(parent.getContext()).inflate(
                         R.layout.image_list_item, parent, false
                 );
@@ -290,7 +296,7 @@ public class SectionedImageListAdapter extends SectionedRecyclerViewAdapter<Sect
 
         @BindView(R.id.img) RoundedImageView image;
         @BindView(R.id.checkbox) ImageView checkbox;
-        @BindView(R.id.file_type) TextView fileType;
+        @BindView(R.id.file_type) ImageView fileType;
 
         SectionItemViewHolder(View itemView) {
             super(itemView);

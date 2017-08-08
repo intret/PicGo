@@ -16,4 +16,7 @@
     <string name="view_mode_week">周视图</string>
     <string name="yesterday">昨天</string>
     <string name="file_type_lable_gif">GIF</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

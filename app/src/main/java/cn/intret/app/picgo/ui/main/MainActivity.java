@@ -54,7 +54,7 @@ import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
 
-public class MainActivity extends BaseAppCompatActivity implements ImageListAdapter.OnItemEventListener {
+public class MainActivity extends BaseAppCompatActivity implements ImageListAdapter.OnItemInteractionListener {
 
     private static final String TAG = "MainActivity";
 
@@ -626,15 +626,15 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
             Log.d(TAG, "swapAdapter() called with: listAdapter = [" + listAdapter + "]");
             mImageList.swapAdapter(listAdapter, false);
         }
-//        mImageList.addOnItemTouchListener(new RecyclerItemClickListener(this, (view, position) -> {
-//            if (listAdapter.isHeader(position) || listAdapter.isFooter(position)) {
-//                return;
-//            } else {
-//                ItemCoord relativePosition = listAdapter.getRelativePosition(position);
-//                listAdapter.onClickItem(relativePosition);
-//            }
-//
-//        }));
+        mImageList.addOnItemTouchListener(new RecyclerItemClickListener(this, (view, position) -> {
+            if (listAdapter.isHeader(position) || listAdapter.isFooter(position)) {
+                return;
+            } else {
+                ItemCoord relativePosition = listAdapter.getRelativePosition(position);
+                listAdapter.onClickItem(relativePosition);
+            }
+
+        }));
     }
 
     private void showImageList(File directory) {
@@ -669,7 +669,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     }
 
     private void showImageListAdapter(ImageListAdapter adapter) {
-        adapter.setOnItemEventListener(this);
+        adapter.setOnItemInteractionListener(this);
 
         mCurrentImageListAdapter = adapter;
 
@@ -708,7 +708,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     private ImageListAdapter createImageListAdapter(List<ImageListAdapter.Item> items) {
         return new ImageListAdapter(items)
                 .setSpanCount(mSpanCount)
-                .setOnItemEventListener(this);
+                .setOnItemInteractionListener(this);
     }
 
 
@@ -741,6 +741,12 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     @Override
     public void onItemCheckedChanged(ImageListAdapter.Item item) {
         Log.d(TAG, "onItemCheckedChanged: " + item);
+    }
+
+    @Override
+    public void onItemClicked(ImageListAdapter.Item item) {
+        Intent intent = ImageViewerActivity.newIntentViewSingleFile(this, item.getFile());
+        startActivity(intent);
     }
 
     @Override

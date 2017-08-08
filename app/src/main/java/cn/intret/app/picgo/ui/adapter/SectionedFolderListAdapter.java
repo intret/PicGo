@@ -29,7 +29,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
     public Item getItem(ItemCoord relativePosition) {
         int section = relativePosition.section();
-        if (section >= 0 && section< mSectionItems.size()) {
+        if (section >= 0 && section < mSectionItems.size()) {
             SectionItem sectionItem = mSectionItems.get(section);
             List<Item> items = sectionItem.getItems();
 
@@ -187,13 +187,15 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         vh.count.setText(String.valueOf(item.getCount()));
         if (item.getAdapter() == null) {
             HorizontalImageListAdapter adapter = new HorizontalImageListAdapter(filesToItems(item.getThumbList()));
-//            adapter.setOnClickListener();
+
             item.setAdapter(adapter);
             vh.thumbList.setClickable(false);
-            vh.thumbList.setLayoutManager(new LinearLayoutManager(vh.itemView.getContext(), LinearLayoutManager.HORIZONTAL, true));
+
+            vh.thumbList.setLayoutManager(vh.getLayout());
             vh.thumbList.setAdapter(item.getAdapter());
         } else {
             vh.thumbList.setClickable(false);
+            vh.thumbList.setLayoutManager(vh.getLayout());
             vh.thumbList.swapAdapter(item.getAdapter(), false);
         }
     }
@@ -248,14 +250,10 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
         private static final String TAG = "SectionViewHolder";
 
-        @BindView(R.id.name)
-        TextView name;
-
-        @BindView(R.id.count)
-        TextView count;
-
-        @BindView(R.id.thumb_list)
-        RecyclerView thumbList;
+        @BindView(R.id.name) TextView name;
+        @BindView(R.id.count) TextView count;
+        @BindView(R.id.thumb_list) RecyclerView thumbList;
+        private LinearLayoutManager mLinearLayoutManager;
 
         ItemViewHolder(View itemView) {
             super(itemView);
@@ -283,6 +281,13 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             if (mOnItemClickListener != null) {
                 mOnItemClickListener.onItemClick(sectionItem, section, item, relativePos);
             }
+        }
+
+        public RecyclerView.LayoutManager getLayout() {
+            if (mLinearLayoutManager == null) {
+                mLinearLayoutManager = new LinearLayoutManager(itemView.getContext(), LinearLayoutManager.HORIZONTAL, true);
+            }
+            return mLinearLayoutManager;
         }
     }
 }

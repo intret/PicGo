@@ -11,12 +11,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.TextView;
 
 import com.annimon.stream.Stream;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.BitmapTransitionOptions;
-import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.request.target.ViewTarget;
 import com.bumptech.glide.request.transition.Transition;
@@ -39,11 +37,12 @@ import static com.bumptech.glide.load.resource.drawable.DrawableTransitionOption
  */
 public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.ViewHolder> implements View.OnLongClickListener, View.OnClickListener {
 
-    public interface OnItemEventListener {
+    public interface OnItemInteractionListener {
         void onItemLongClick(Item item);
 
         void onItemCheckedChanged(Item item);
 
+        void onItemClicked(Item item);
         void onSelectionModeChange(boolean isSelectionMode);
 
         void onDragStared();
@@ -57,10 +56,10 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
 
     boolean mIsSelectionMode = false;
 
-    OnItemEventListener mOnItemEventListener;
+    OnItemInteractionListener mOnItemInteractionListener;
 
-    public ImageListAdapter setOnItemEventListener(OnItemEventListener onItemEventListener) {
-        mOnItemEventListener = onItemEventListener;
+    public ImageListAdapter setOnItemInteractionListener(OnItemInteractionListener onItemInteractionListener) {
+        mOnItemInteractionListener = onItemInteractionListener;
         return this;
     }
 
@@ -101,9 +100,9 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
 
             if (isLongClick) {
                 // Entering drap-and-drop mode
-                Log.d(TAG, "handleItemSelectAction: Drap started");
-                if (mOnItemEventListener != null) {
-                    mOnItemEventListener.onDragStared();
+                Log.d(TAG, "handleItemSelectAction: Drag started");
+                if (mOnItemInteractionListener != null) {
+                    mOnItemInteractionListener.onDragStared();
                 }
                 return true;
             } else {
@@ -111,9 +110,9 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
                 if (item.isSelected() && selectedCount == 1) {
 
                     // Notify leaving selection mode
-                    if (mOnItemEventListener != null) {
+                    if (mOnItemInteractionListener != null) {
                         mIsSelectionMode = false;
-                        mOnItemEventListener.onSelectionModeChange(false);
+                        mOnItemInteractionListener.onSelectionModeChange(false);
                     }
                     item.setSelected(false);
 
@@ -128,24 +127,28 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
                 mIsSelectionMode = true;
 
                 // Notify entering selection mode
-                if (mOnItemEventListener != null) {
-                    mOnItemEventListener.onSelectionModeChange(true);
+                if (mOnItemInteractionListener != null) {
+                    mOnItemInteractionListener.onSelectionModeChange(true);
                 }
                 item.setSelected(true);
+            } else {
+
+                // 单击图片
+                if (mOnItemInteractionListener != null) {
+                    mOnItemInteractionListener.onItemClicked(item);
+                }
             }
         }
 
 
         ViewHolder viewHolder = item.getViewHolder();
         if (viewHolder != null) {
-
-            viewHolder.radio.setChecked(true); // Always checked
-            viewHolder.radio.setVisibility(item.isSelected() ? View.VISIBLE : View.GONE);
+            viewHolder.setChecked(item.isSelected());
         }
 
 
-        if (mOnItemEventListener != null) {
-            mOnItemEventListener.onItemLongClick(item);
+        if (mOnItemInteractionListener != null) {
+            mOnItemInteractionListener.onItemLongClick(item);
         }
 
         return true;
@@ -202,7 +205,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         }
     }
 
-    List<Item> mItems = new LinkedList<>();
+    private List<Item> mItems = new LinkedList<>();
 
     public ImageListAdapter(List<Item> items) {
         if (items != null) {
@@ -313,9 +316,9 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         }
 
         // Checked status
-        holder.radio.setVisibility(item.isSelected() ? View.VISIBLE : View.GONE);
-        holder.radio.setChecked(true);
+        holder.setChecked(item.isSelected());
 
+        // File type
         // Show file type
         String extension = FilenameUtils.getExtension(item.getFile().getAbsolutePath());
         if (extension != null) {
@@ -325,9 +328,13 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
                 case "mov":
                 case "mpg":
                 case "mpeg":
-                case "rmvb":
+                case "rmvb": {
+                    holder.fileType.setVisibility(View.VISIBLE);
+                    holder.fileType.setImageResource(R.drawable.ic_videocam);
+                }
+                break;
                 case "gif": {
-                    holder.fileType.setText(extension.toUpperCase());
+                    holder.fileType.setImageResource(R.drawable.ic_gif);
                     holder.fileType.setVisibility(View.VISIBLE);
                 }
                 break;
@@ -335,6 +342,8 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
                     holder.fileType.setVisibility(View.GONE);
                     break;
             }
+        } else {
+            holder.fileType.setVisibility(View.GONE);
         }
 
         // Image clicking
@@ -427,7 +436,8 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
 
         @BindView(R.id.img) RoundedImageView image;
         @BindView(R.id.radio) AppCompatCheckBox radio;
-        @BindView(R.id.file_type) TextView fileType;
+        @BindView(R.id.file_type) ImageView fileType;
+        @BindView(R.id.checkbox) ImageView checkBox;
 
         ViewHolder(View itemView) {
             super(itemView);
@@ -435,5 +445,8 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
             ButterKnife.bind(this, itemView);
         }
 
+        public void setChecked(boolean selected) {
+            checkBox.setVisibility(selected ? View.VISIBLE : View.GONE);
+        }
     }
 }

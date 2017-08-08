@@ -19,6 +19,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 
 import cn.intret.app.picgo.app.CoreModule;
 import cn.intret.app.picgo.utils.DateTimeUtils;
@@ -114,6 +115,22 @@ public class SystemImageService {
             emitter.onComplete();
         })
                 .doOnNext(folderModel -> mFolderModel = folderModel);
+    }
+
+    public Observable<File> loadRandomImage() {
+        return Observable.create(e -> {
+
+            File cameraDir = SystemUtils.getCameraDir();
+            File[] files = cameraDir.listFiles();
+            if (files == null) {
+                e.onError(new Exception("No files in Camera folder."));
+                return;
+            }
+
+            File file = files[new Random().nextInt() % files.length];
+            e.onNext(file);
+            e.onComplete();
+        });
     }
 
     private List<File> getThumbnailListOfDir(File[] files, final int thumbnailCount) {

@@ -1,71 +1,75 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
+<android.support.v7.widget.CardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     app:cardCornerRadius="0dp"
     app:cardElevation="0dp"
-    tools:showIn="@layout/activity_main"
     >
 
-    <com.github.siyamed.shapeimageview.RoundedImageView
-        android:id="@+id/img"
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="@dimen/margin_list_item_image_view"
-        android:background="@color/image_list_item_bg_color"
-        app:siBorderColor="@color/colorAccent"
-        app:siBorderWidth="0dp"
-        app:siRadius="0dp"
-        app:siSquare="true"
-        tools:src="@color/colorAccent"
-        />
+        android:layout_height="match_parent">
 
-    <ImageView
-        android:id="@+id/checkbox"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentTop="true"
-        android:layout_marginRight="@dimen/margin_top_image_list_item_checkbox"
-        android:layout_marginTop="@dimen/margin_top_image_list_item_checkbox"
-        android:src="@drawable/checkbox"
-        android:visibility="gone"
-        android:contentDescription="CheckBox"/>
+        <com.github.siyamed.shapeimageview.RoundedImageView
+            android:id="@+id/img"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/margin_list_item_image_view"
+            app:siBorderColor="@color/colorAccent"
+            app:siBorderWidth="0dp"
+            app:siRadius="0dp"
+            app:siSquare="true"
+            tools:src="@color/colorAccent"
+            />
 
-    <TextView
-        android:id="@+id/file_type"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentBottom="true"
-        tools:text="GIF"
-        android:textSize="12dp"
-        android:textStyle="bold"
-        android:textColor="#FFFFFF"
-        android:alpha="0.85"
-        android:background="@drawable/bg_label"
-        android:paddingLeft="4dp"
-        android:paddingRight="4dp"
-        android:layout_marginRight="5dp"
-        android:layout_marginBottom="5dp"
-        tools:ignore="SpUsage"/>
+        <ImageView
+            android:id="@+id/checkbox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginRight="@dimen/margin_top_image_list_item_checkbox"
+            android:layout_marginTop="@dimen/margin_top_image_list_item_checkbox"
+            android:contentDescription="CheckBox"
+            android:src="@drawable/ic_checkbox"
+            android:visibility="gone"/>
 
-    <android.support.v7.widget.AppCompatCheckBox
-        android:id="@+id/radio"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentTop="true"
-        android:layout_marginRight="@dimen/margin_top_image_list_item_checkbox"
-        android:layout_marginTop="@dimen/margin_top_image_list_item_checkbox"
-        android:checked="true"
-        android:visibility="gone"
-        tools:checked="true"
-        tools:visibility="gone"
-        tools:ignore="RtlHardcoded"/>
+        <ImageView
+            android:id="@+id/file_type"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentLeft="true"
+
+            android:alpha="0.85"
+            android:scaleType="fitEnd"
+            android:foregroundGravity="bottom"
+            android:paddingLeft="8dp"
+            android:paddingBottom="8dp"
+            android:src="@drawable/ic_videocam"
+            android:textColor="#FFFFFF"
+            android:textSize="12dp"
+            android:textStyle="bold"
+            tools:ignore="SpUsage"/>
+
+        <android.support.v7.widget.AppCompatCheckBox
+            android:id="@+id/radio"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginRight="@dimen/margin_top_image_list_item_checkbox"
+            android:layout_marginTop="@dimen/margin_top_image_list_item_checkbox"
+            android:checked="true"
+            android:visibility="gone"
+            tools:checked="true"
+            tools:ignore="RtlHardcoded"
+            tools:visibility="gone"/>
+    </RelativeLayout>
+
 
     <!--<ImageView-->
     <!--android:id="@+id/img"-->
@@ -73,4 +77,4 @@
     <!--android:layout_height="match_parent"-->
     <!--tools:src="@color/colorAccent"-->
     <!--/>-->
-</RelativeLayout>
+</android.support.v7.widget.CardView>
