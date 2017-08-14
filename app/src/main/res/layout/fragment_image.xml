@@ -3,6 +3,9 @@
              android:layout_width="match_parent"
              android:layout_height="match_parent"
              tools:context="cn.intret.app.picgo.ui.main.ImageFragment">
-
-
+    <com.github.chrisbanes.photoview.PhotoView
+        android:id="@+id/image"
+        android:background="@color/translucent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
 </FrameLayout>

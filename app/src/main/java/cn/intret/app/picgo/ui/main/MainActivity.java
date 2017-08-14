@@ -1,9 +1,15 @@
 package cn.intret.app.picgo.ui.main;
 
+import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.support.annotation.MainThread;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.ActivityOptionsCompat;
+import android.support.v4.util.Pair;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -22,6 +28,7 @@ import com.annimon.stream.Stream;
 import com.annimon.stream.function.BiConsumer;
 import com.annimon.stream.function.Function;
 import com.annimon.stream.function.Supplier;
+import com.thekhaeng.recyclerviewmargin.LayoutMarginDecoration;
 
 import java.io.File;
 import java.util.Date;
@@ -668,13 +675,33 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         }
     }
 
+    /**
+     * https://stackoverflow.com/questions/24618829/how-to-add-dividers-and-spaces-between-items-in-recyclerview
+     */
+    public class VerticalSpaceItemDecoration extends RecyclerView.ItemDecoration {
+
+        private final int verticalSpaceHeight;
+
+        public VerticalSpaceItemDecoration(int verticalSpaceHeight) {
+            this.verticalSpaceHeight = verticalSpaceHeight;
+        }
+
+        @Override
+        public void getItemOffsets(Rect outRect, View view, RecyclerView parent,
+                                   RecyclerView.State state) {
+            outRect.bottom = verticalSpaceHeight;
+        }
+    }
+
     private void showImageListAdapter(ImageListAdapter adapter) {
         adapter.setOnItemInteractionListener(this);
 
         mCurrentImageListAdapter = adapter;
 
+
         mGridLayoutManager = new GridLayoutManager(this, mSpanCount, GridLayoutManager.VERTICAL, false);
         mImageList.setLayoutManager(mGridLayoutManager);
+
         if (mImageList.getAdapter() == null) {
             mImageList.setAdapter(adapter);
         } else {
@@ -689,6 +716,12 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
             Log.d(TAG, "initImageList: TODO 检查并更新图片文件");
         } else {
             mSpanCount = 4; // columns
+
+            LayoutMarginDecoration marginDecoration =
+                    new LayoutMarginDecoration(mSpanCount, getResources().getDimensionPixelSize(R.dimen.image_list_item_space));
+
+            mImageList.addItemDecoration(marginDecoration);
+
             showDirectoryImageList(SystemUtils.getCameraDir());
             mIsImageListLoaded = true;
         }
@@ -744,9 +777,54 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     }
 
     @Override
-    public void onItemClicked(ImageListAdapter.Item item) {
-        Intent intent = ImageViewerActivity.newIntentViewSingleFile(this, item.getFile());
-        startActivity(intent);
+    public void onItemClicked(ImageListAdapter.Item item, View view) {
+
+        startDetailActivity(this, item, view);
+
+        //startPhotoActivity(this, item.getFile(), view);
+//        Intent intent = ImageViewerActivity.newIntentViewFile(this, item.getFile());
+//        startActivity(intent);
+    }
+
+    private void startDetailActivity(Context context, ImageListAdapter.Item item, View view) {
+
+        // Construct an Intent as normal
+        Intent intent = ImageViewerActivity.newIntentViewFile(this, item.getFile());
+
+        // BEGIN_INCLUDE(start_activity)
+        /**
+         * Now create an {@link android.app.ActivityOptions} instance using the
+         * {@link ActivityOptionsCompat#makeSceneTransitionAnimation(Activity, Pair[])} factory
+         * method.
+         */
+        ActivityOptionsCompat activityOptions = ActivityOptionsCompat.makeSceneTransitionAnimation(
+                this,
+
+                // Now we provide a list of Pair items which contain the view we can transitioning
+                // from, and the name of the view it is transitioning to, in the launched activity
+                new Pair<View, String>(item.getViewHolder().getImage(),
+                        ImageViewerActivity.TRANSITION_NAME_IMAGE));
+        // Now we can start the Activity, providing the activity options as a bundle
+        ActivityCompat.startActivity(this, intent, activityOptions.toBundle());
+        // END_INCLUDE(start_activity)
+    }
+
+    public void startPhotoActivity(Context context, File file, View imageView) {
+        Intent intent = new Intent(context, DragPhotoActivity.class);
+        int location[] = new int[2];
+
+        //imageView.getLocationOnScreen(location);
+        imageView.getLocationInWindow(location);
+
+        intent.putExtra(DragPhotoActivity.EXTRA_LEFT, location[0]);
+        intent.putExtra(DragPhotoActivity.EXTRA_TOP, location[1]);
+        intent.putExtra(DragPhotoActivity.EXTRA_HEIGHT, imageView.getHeight());
+        intent.putExtra(DragPhotoActivity.EXTRA_WIDTH, imageView.getWidth());
+        intent.putExtra(DragPhotoActivity.EXTRA_FILE_PATH, file.getAbsolutePath());
+        intent.putExtra(DragPhotoActivity.EXTRA_FULLSCREEN, false);
+
+        context.startActivity(intent);
+        overridePendingTransition(0, 0);
     }
 
     @Override

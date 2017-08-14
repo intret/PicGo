@@ -1,80 +1,85 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.v7.widget.CardView
+<RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     app:cardCornerRadius="0dp"
     app:cardElevation="0dp"
     >
 
-    <RelativeLayout
+    <!--图片-->
+    <com.github.siyamed.shapeimageview.RoundedImageView
+        android:id="@+id/img"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:layout_marginBottom="0dp"
+        android:layout_marginLeft="0dp"
+        android:layout_marginRight="0dp"
+        android:layout_marginTop="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:siBorderColor="@color/colorAccent"
+        app:siBorderWidth="0dp"
+        app:siRadius="0dp"
+        app:siSquare="true"
+        tools:layout_conversion_absoluteHeight="380dp"
+        tools:layout_conversion_absoluteWidth="380dp"
+        tools:layout_conversion_absoluteX="2dp"
+        tools:layout_conversion_absoluteY="2dp"
+        tools:src="@color/colorAccent"/>
 
-        <com.github.siyamed.shapeimageview.RoundedImageView
-            android:id="@+id/img"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="@dimen/margin_list_item_image_view"
-            app:siBorderColor="@color/colorAccent"
-            app:siBorderWidth="0dp"
-            app:siRadius="0dp"
-            app:siSquare="true"
-            tools:src="@color/colorAccent"
-            />
+    <!--选中-->
+    <ImageView
+        android:id="@+id/checkbox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginRight="8dp"
+        android:layout_marginTop="8dp"
+        android:contentDescription="CheckBox"
+        android:src="@drawable/ic_checkbox"
+        android:visibility="gone"
+        app:layout_constraintRight_toRightOf="@+id/img"
+        app:layout_constraintTop_toTopOf="@+id/img"
+        tools:layout_conversion_absoluteHeight="0dp"
+        tools:layout_conversion_absoluteWidth="0dp"
+        tools:layout_conversion_absoluteX="0dp"
+        tools:layout_conversion_absoluteY="0dp"/>
 
-        <ImageView
-            android:id="@+id/checkbox"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentRight="true"
-            android:layout_alignParentTop="true"
-            android:layout_marginRight="@dimen/margin_top_image_list_item_checkbox"
-            android:layout_marginTop="@dimen/margin_top_image_list_item_checkbox"
-            android:contentDescription="CheckBox"
-            android:src="@drawable/ic_checkbox"
-            android:visibility="gone"/>
+    <!--文件类型-->
+    <ImageView
+        android:id="@+id/file_type"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_marginBottom="8dp"
+        android:layout_marginLeft="8dp"
+        android:alpha="0.85"
+        android:contentDescription="file type"
+        android:foregroundGravity="bottom"
+        android:paddingBottom="8dp"
+        android:paddingLeft="8dp"
+        android:scaleType="fitEnd"
+        android:src="@drawable/ic_videocam"
+        android:textColor="#FFFFFF"
+        android:textSize="12dp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@+id/img"
+        app:layout_constraintLeft_toLeftOf="@+id/img"
+        tools:ignore="SpUsage"
+        tools:layout_conversion_absoluteHeight="20dp"
+        tools:layout_conversion_absoluteWidth="26dp"
+        tools:layout_conversion_absoluteX="0dp"
+        tools:layout_conversion_absoluteY="547dp"
+        tools:layout_editor_absoluteX="0dp"
+        tools:layout_editor_absoluteY="547dp"/>
 
-        <ImageView
-            android:id="@+id/file_type"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
-            android:layout_alignParentLeft="true"
-
-            android:alpha="0.85"
-            android:scaleType="fitEnd"
-            android:foregroundGravity="bottom"
-            android:paddingLeft="8dp"
-            android:paddingBottom="8dp"
-            android:src="@drawable/ic_videocam"
-            android:textColor="#FFFFFF"
-            android:textSize="12dp"
-            android:textStyle="bold"
-            tools:ignore="SpUsage"/>
-
-        <android.support.v7.widget.AppCompatCheckBox
-            android:id="@+id/radio"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentRight="true"
-            android:layout_alignParentTop="true"
-            android:layout_marginRight="@dimen/margin_top_image_list_item_checkbox"
-            android:layout_marginTop="@dimen/margin_top_image_list_item_checkbox"
-            android:checked="true"
-            android:visibility="gone"
-            tools:checked="true"
-            tools:ignore="RtlHardcoded"
-            tools:visibility="gone"/>
-    </RelativeLayout>
-
-
-    <!--<ImageView-->
-    <!--android:id="@+id/img"-->
-    <!--android:layout_width="match_parent"-->
-    <!--android:layout_height="match_parent"-->
-    <!--tools:src="@color/colorAccent"-->
-    <!--/>-->
-</android.support.v7.widget.CardView>
+</RelativeLayout>

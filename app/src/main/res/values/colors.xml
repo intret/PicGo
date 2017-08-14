@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="actionBarColor">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="colorAccent">#ffffff</color>
     <color name="colorPrimary">#555555</color>
     <color name="colorPrimaryDark">#303030</color>
-    <color name="colorAccent">#ffffff</color>
-    <color name="list_item_text_light">#777777</color>
-    <color name="actionBarColor">#FFFFFF</color>
     <color name="colorSectionListHeader">#eee</color>
     <color name="image_list_item_bg_color">#DDDDDD</color>
+    <color name="list_item_text_light">#777777</color>
     <color name="text_normal">#b1b1b1</color>
     <color name="text_selected">#4d4d4d</color>
-    <color name="black">#000000</color>
+    <color name="translucent">#00000000</color>
     <color name="white">#FFFFFF</color>
 </resources>

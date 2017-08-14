@@ -248,14 +248,14 @@ public class SectionedImageListAdapter extends SectionedRecyclerViewAdapter<Sect
             vh.fileType.setVisibility(View.GONE);
         }
 
-        // Image
-//        Context context = vh.itemView.getContext();
-//        Glide.with(context)
-//                .asBitmap()
-//                .load(item.getFile())
-//                .apply(RequestOptions.fitCenterTransform())
-//                .transition(BitmapTransitionOptions.withCrossFade())
-//                .into(vh.image)
+        // Load Image
+        Context context = vh.itemView.getContext();
+        Glide.with(context)
+                .asBitmap()
+                .load(item.getFile())
+                .apply(RequestOptions.fitCenterTransform())
+                .transition(BitmapTransitionOptions.withCrossFade())
+                .into(vh.image);
     }
 
     @Override

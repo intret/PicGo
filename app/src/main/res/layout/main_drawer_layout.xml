@@ -2,6 +2,7 @@
 
 <android.support.v4.widget.DrawerLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
@@ -9,26 +10,35 @@
     tools:showIn="@layout/activity_main">
 
     <!--内容-->
-    <LinearLayout
-        android:id="@+id/content_frame"
+    <android.support.constraint.ConstraintLayout
+        android:id="@+id/content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
         tools:visibility="visible"
         >
 
+        <!--视图模式-->
         <RadioGroup
             android:id="@+id/view_mode"
-            android:layout_width="match_parent"
-            android:layout_height="44dp"
-            android:layout_gravity="center_vertical"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:checkedButton="@+id/btn_default"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingBottom="8dp"
             android:paddingLeft="16dp"
             android:paddingRight="16dp"
             android:paddingTop="8dp"
-            >
+            android:visibility="gone"
+            app:layout_constraintBottom_toTopOf="parent"
+            app:layout_constraintLeft_toLeftOf="@+id/img_list"
+            app:layout_constraintRight_toLeftOf="@+id/img_list"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:layout_constraintBottom_creator="1"
+            tools:layout_constraintLeft_creator="1"
+            tools:layout_constraintRight_creator="1"
+            tools:layout_constraintTop_creator="1">
 
             <RadioButton
                 android:id="@+id/btn_default"
@@ -57,34 +67,54 @@
         <!--图片列表-->
         <android.support.v7.widget.RecyclerView
             android:id="@+id/img_list"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginEnd="0dp"
+            android:layout_marginStart="0dp"
             android:clipToPadding="false"
-            android:padding="@dimen/margin_list_item_image_view"
+            android:padding="4dp"
+            android:scrollbarStyle="outsideOverlay"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:layout_constraintBottom_creator="1"
+            tools:layout_constraintLeft_creator="1"
+            tools:layout_constraintRight_creator="1"
+            tools:layout_constraintTop_creator="1"
             tools:listitem="@layout/image_list_item"
             >
 
         </android.support.v7.widget.RecyclerView>
-    </LinearLayout>
+    </android.support.constraint.ConstraintLayout>
 
     <!--抽屉菜单-->
-    <LinearLayout
+    <android.support.constraint.ConstraintLayout
+        android:id="@+id/drawer"
         android:layout_width="@dimen/main_drawer_width"
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:background="#FFF"
         android:orientation="vertical"
-        >
+        android:visibility="visible">
 
+        <!--文件夹列表-->
         <android.support.v7.widget.RecyclerView
             android:id="@+id/drawer_folder_list"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:layout_margin="0dp"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:layout_constraintBottom_creator="1"
+            tools:layout_constraintRight_creator="1"
+            tools:layout_constraintTop_creator="1"
             tools:listitem="@layout/folder_list_item"
-            tools:visibility="invisible"
-            >
+            tools:visibility="visible">
         </android.support.v7.widget.RecyclerView>
-    </LinearLayout>
+    </android.support.constraint.ConstraintLayout>
 
 
 </android.support.v4.widget.DrawerLayout>

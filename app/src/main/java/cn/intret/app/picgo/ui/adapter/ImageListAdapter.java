@@ -42,7 +42,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
 
         void onItemCheckedChanged(Item item);
 
-        void onItemClicked(Item item);
+        void onItemClicked(Item item, View view);
         void onSelectionModeChange(boolean isSelectionMode);
 
         void onDragStared();
@@ -71,7 +71,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         }
 
         Item item = (Item) tag;
-        handleItemSelectAction(item, false);
+        handleItemSelectAction(v, item, false);
     }
 
     @Override
@@ -80,7 +80,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         Object tag = v.getTag(R.id.item);
         if (tag != null) {
             Item item = (Item) tag;
-            return handleItemSelectAction(item, true);
+            return handleItemSelectAction(v, item, true);
         }
         return true;
     }
@@ -88,11 +88,13 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
     /**
      * A click or long click perform on an item
      *
+     *
+     * @param view
      * @param item
      * @param isLongClick
      * @return true, if action has been handled.
      */
-    private boolean handleItemSelectAction(Item item, boolean isLongClick) {
+    private boolean handleItemSelectAction(View view, Item item, boolean isLongClick) {
         int selectedCount = getSelectedCount();
 
         // Update item selected status
@@ -135,7 +137,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
 
                 // 单击图片
                 if (mOnItemInteractionListener != null) {
-                    mOnItemInteractionListener.onItemClicked(item);
+                    mOnItemInteractionListener.onItemClicked(item,view );
                 }
             }
         }
@@ -160,6 +162,10 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         ViewHolder mViewHolder;
         boolean mSelected = false;
         private int mHeight = -1;
+
+        String getTransitionName() {
+            return "imagelist:item:" + mFile.getName().toLowerCase();
+        }
 
         Item setViewHolder(ViewHolder viewHolder) {
             mViewHolder = viewHolder;
@@ -250,7 +256,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
     @Override
     public void onViewRecycled(ViewHolder holder) {
         if (holder != null) {
-            holder.radio.setVisibility(View.GONE);
+            holder.checkBox.setVisibility(View.GONE);
             holder.fileType.setVisibility(View.GONE);
 
             if (holder.image != null) {
@@ -276,6 +282,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
 
         // Bind data to image view
         holder.image.setTag(R.id.item, item);
+        holder.image.setTransitionName(item.getTransitionName());
 
         // Layout
         if (item.getFile() != null) {
@@ -385,7 +392,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
             }
         };
 
-        ViewTarget<RoundedImageView, Drawable> viewTarget = new ViewTarget<RoundedImageView, Drawable>(holder.image) {
+        ViewTarget<ImageView, Drawable> viewTarget = new ViewTarget<ImageView, Drawable>(holder.image) {
             @Override
             public void onResourceReady(Drawable resource, Transition<? super Drawable> transition) {
                 float radio = (float) resource.getIntrinsicHeight() / (float) resource.getIntrinsicWidth();
@@ -432,12 +439,16 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
     }
 
 
-    class ViewHolder extends RecyclerView.ViewHolder {
+    public class ViewHolder extends RecyclerView.ViewHolder {
 
-        @BindView(R.id.img) RoundedImageView image;
-        @BindView(R.id.radio) AppCompatCheckBox radio;
+        @BindView(R.id.img) ImageView image;
         @BindView(R.id.file_type) ImageView fileType;
         @BindView(R.id.checkbox) ImageView checkBox;
+
+        public ImageView getImage() {
+            return image;
+        }
+
 
         ViewHolder(View itemView) {
             super(itemView);

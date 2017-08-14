@@ -6,14 +6,28 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@android:color/holo_blue_light</item>
+        <item name="android:windowContentTransitions">true</item>
+    </style>
+
+    <style name="AppImageViewerTheme" parent="AppTheme">
+        <!-- Customize your theme here. -->
+        <item name="android:windowContentTransitions">true</item>
+        <item name="android:windowActivityTransitions">true</item>
+        <item name="android:windowSharedElementEnterTransition">@transition/transition_image</item>
+        <item name="android:windowSharedElementExitTransition">@transition/transition_image</item>
     </style>
 
     <style name="MDLightBlue" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="colorAccent">@android:color/holo_blue_light</item>
+        <item name="android:windowContentTransitions">true</item>
+    </style>
+
+    <style name="translucent" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowBackground" >@color/translucent</item>
+        <item name="android:windowIsTranslucent">true</item>
     </style>
 
     <style name="btn_view_mode">
-
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_weight">1</item>
