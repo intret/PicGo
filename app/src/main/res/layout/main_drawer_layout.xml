@@ -86,6 +86,13 @@
             >
 
         </android.support.v7.widget.RecyclerView>
+
+        <ImageView
+            android:id="@+id/test_image"
+            android:scaleType="centerCrop"
+            android:layout_width="200dp"
+            android:layout_height="200dp"
+            />
     </android.support.constraint.ConstraintLayout>
 
     <!--抽屉菜单-->

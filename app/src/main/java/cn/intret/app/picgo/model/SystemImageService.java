@@ -8,6 +8,7 @@ import com.annimon.stream.Collector;
 import com.annimon.stream.Stream;
 import com.annimon.stream.function.BiConsumer;
 import com.annimon.stream.function.Function;
+import com.annimon.stream.function.IndexedPredicate;
 import com.annimon.stream.function.Supplier;
 
 import java.io.File;
@@ -15,6 +16,8 @@ import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.security.InvalidParameterException;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -41,6 +44,12 @@ public class SystemImageService {
                 lname.endsWith(".mp4") |
                 lname.endsWith(".avi");
     };
+
+    HashMap<String, List<Image>> mImageListMap = new LinkedHashMap<>();
+    HashMap<String, List<ImageGroup>> mDayImageGroupsMap = new LinkedHashMap<>();
+    HashMap<String, List<ImageGroup>> mWeekImageGroupsMap = new LinkedHashMap<>();
+    HashMap<String, List<ImageGroup>> mMonthImageGroupsMap = new LinkedHashMap<>();
+
 
     public static SystemImageService getInstance() {
         return ourInstance;
@@ -133,6 +142,21 @@ public class SystemImageService {
         });
     }
 
+    public Observable<File> loadFirstCameraImageFile() {
+        return Observable.create(e -> {
+
+            File cameraDir = SystemUtils.getCameraDir();
+            File[] files = cameraDir.listFiles();
+            if (files == null || files.length == 0) {
+                e.onError(new Exception("No files in Camera folder."));
+                return;
+            }
+
+            e.onNext(files[0]);
+            e.onComplete();
+        });
+    }
+
     private List<File> getThumbnailListOfDir(File[] files, final int thumbnailCount) {
         // TODO: filter image
 
@@ -179,8 +203,48 @@ public class SystemImageService {
 
     }
 
+    private void cacheImageGroupList(GroupMode mode) {
+
+    }
+
+    /**
+     * Load grouped image list
+     * @param directory
+     * @param mode
+     * @return
+     */
     public Observable<List<ImageGroup>> loadImageGroupList(File directory, GroupMode mode) {
-        return Observable.create(e -> {
+        return Observable.<List<ImageGroup>>create(e -> {
+            String absolutePath = directory.getAbsolutePath();
+            switch (mode) {
+                case DAY: {
+                    List<ImageGroup> imageGroups = mDayImageGroupsMap.get(absolutePath);
+                    if (imageGroups != null) {
+                        e.onNext(imageGroups);
+                        e.onComplete();
+                        return;
+                    }
+                }
+                break;
+                case WEEK: {
+                    List<ImageGroup> imageGroups = mWeekImageGroupsMap.get(absolutePath);
+                    if (imageGroups != null) {
+                        e.onNext(imageGroups);
+                        e.onComplete();
+                        return;
+                    }
+                }
+                break;
+                case MONTH: {
+                    List<ImageGroup> imageGroups = mMonthImageGroupsMap.get(absolutePath);
+                    if (imageGroups != null) {
+                        e.onNext(imageGroups);
+                        e.onComplete();
+                        return;
+                    }
+                }
+                break;
+            }
 
             List<File> imageFiles = SystemImageService.getInstance().listImageFiles(directory);
             LinkedList<ImageGroup> sections = Stream.of(imageFiles)
@@ -215,13 +279,13 @@ public class SystemImageService {
 
                                 ImageGroup section = new ImageGroup();
                                 List<File> files = entry.getValue();
-                                List<ImageGroup.Image> itemList = Stream.of(files)
-                                        .map(file -> new ImageGroup.Image()
+                                List<Image> itemList = Stream.of(files)
+                                        .map(file -> new Image()
                                                 .setFile(file)
                                                 .setDate(new Date(file.lastModified())))
                                         .toList();
-                                ImageGroup.Image firstItem = ListUtils.firstOf(itemList);
-                                ImageGroup.Image lastItem = ListUtils.lastOf(itemList);
+                                Image firstItem = ListUtils.firstOf(itemList);
+                                Image lastItem = ListUtils.lastOf(itemList);
 
                                 section.setImages(itemList);
                                 section.setStartDate(firstItem.getDate());
@@ -240,9 +304,77 @@ public class SystemImageService {
 
             e.onNext(sections);
             e.onComplete();
-        });
+        }).doOnNext(imageGroups -> cacheSectionedImageGroup(directory.getAbsolutePath(), mode, imageGroups));
     }
-    
+
+
+    private void cacheSectionedImageGroup(String directory, GroupMode mode, List<ImageGroup> imageGroups) {
+        Log.d(TAG, "cacheSectionedImageGroup() called with: directory = [" + directory + "], mode = [" + mode + "], imageGroups = [" + imageGroups + "]");
+
+        if (directory == null || imageGroups == null) {
+            return;
+        }
+
+        switch (mode) {
+            case DEFAULT:
+                break;
+            case DAY:
+                mDayImageGroupsMap.put(directory, imageGroups);
+                break;
+            case WEEK:
+                mWeekImageGroupsMap.put(directory, imageGroups);
+                break;
+            case MONTH:
+                mMonthImageGroupsMap.put(directory, imageGroups);
+                break;
+        }
+    }
+
+    /**
+     * TODO add fromCache param
+     * TODO add override method for diff-ing cached list to newly one, trigger changing action
+     * @param directory
+     * @return
+     */
+    public Observable<List<Image>> loadImageList(File directory) {
+        return Observable.<List<Image>>create(
+                e -> {
+                    if (directory == null) {
+                        e.onError(new IllegalArgumentException("Invalid argument 'directory' value '" + directory + "'"));
+                        return;
+                    }
+                    if (!directory.exists()) {
+                        e.onError(new FileNotFoundException("Directory not found : " + directory));
+                        return;
+                    }
+
+                    List<Image> images = mImageListMap.get(directory.getAbsolutePath());
+                    if (images != null) {
+                        e.onNext(images);
+                        e.onComplete();
+                        return;
+                    }
+
+                    List<File> imageFiles = SystemImageService.getInstance().listImageFiles(directory);
+                    List<Image> sortedImages = Stream.of(imageFiles)
+                            .map(file -> new Image().setFile(file).setDate(new Date(file.lastModified())))
+                            .sorted((o1, o2) -> o2.getDate().compareTo(o1.getDate()))
+                            .toList();
+
+                    e.onNext(sortedImages);
+                    e.onComplete();
+                })
+                .doOnNext(images -> cacheImageList(directory.getAbsolutePath(), images));
+    }
+
+    private void cacheImageList(String dirPath, List<Image> images) {
+
+        if (dirPath != null && images != null) {
+            Log.d(TAG, "cacheImageList() called with: dirPath = [" + dirPath + "], images = [" + images.size() + "]");
+            mImageListMap.put(dirPath, images);
+        }
+    }
+
     public List<File> listImageFiles(File dir) {
         if (!dir.isDirectory()) {
             throw new InvalidParameterException("参数 'dir' 对应的目录（" + dir.getAbsolutePath() + "）不存在：");

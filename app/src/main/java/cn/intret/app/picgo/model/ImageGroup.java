@@ -1,6 +1,5 @@
 package cn.intret.app.picgo.model;
 
-import java.io.File;
 import java.util.Date;
 import java.util.List;
 
@@ -9,29 +8,6 @@ import java.util.List;
  */
 
 public class ImageGroup {
-
-    public static class Image {
-        File mFile;
-        Date mDate;
-
-        public File getFile() {
-            return mFile;
-        }
-
-        public Image setFile(File file) {
-            mFile = file;
-            return this;
-        }
-
-        public Date getDate() {
-            return mDate;
-        }
-
-        public Image setDate(Date date) {
-            mDate = date;
-            return this;
-        }
-    }
 
     Date mStartDate;
     Date mEndDate;

@@ -15,6 +15,7 @@ import android.widget.ImageView;
 import com.annimon.stream.Stream;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.BitmapTransitionOptions;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.request.target.ViewTarget;
 import com.bumptech.glide.request.transition.Transition;
@@ -37,23 +38,33 @@ import static com.bumptech.glide.load.resource.drawable.DrawableTransitionOption
  */
 public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.ViewHolder> implements View.OnLongClickListener, View.OnClickListener {
 
-    public interface OnItemInteractionListener {
-        void onItemLongClick(Item item);
+    private File mDirecotry;
 
+    public void setDirecotry(File direcotry) {
+        mDirecotry = direcotry;
+    }
+
+    public File getDirectory() {
+        return mDirecotry;
+    }
+
+    public interface OnItemInteractionListener {
+
+        void onItemLongClick(Item item);
         void onItemCheckedChanged(Item item);
 
         void onItemClicked(Item item, View view);
+
         void onSelectionModeChange(boolean isSelectionMode);
-
         void onDragStared();
-    }
 
+    }
     public static final String TAG = "WaterfallListAdapter";
+
     private Context mContext;
     private RecyclerView mRecyclerView;
     private int mSpanCount = 2;
     private int mGutterWidth = 6; // in dps
-
     boolean mIsSelectionMode = false;
 
     OnItemInteractionListener mOnItemInteractionListener;
@@ -61,6 +72,13 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
     public ImageListAdapter setOnItemInteractionListener(OnItemInteractionListener onItemInteractionListener) {
         mOnItemInteractionListener = onItemInteractionListener;
         return this;
+    }
+
+    public Item getItem(int position) {
+        if (position < 0 || position >= mItems.size()) {
+            throw new IllegalArgumentException("Invalid argument 'position' value '" + position + "'.");
+        }
+        return mItems.get(position);
     }
 
     @Override
@@ -163,8 +181,8 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         boolean mSelected = false;
         private int mHeight = -1;
 
-        String getTransitionName() {
-            return "imagelist:item:" + mFile.getName().toLowerCase();
+        public String getTransitionName() {
+            return ImageTransitionNameGenerator.generateTransitionName(mFile.getAbsolutePath());
         }
 
         Item setViewHolder(ViewHolder viewHolder) {
@@ -295,19 +313,21 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
                 int width = (int) (parentWidth - (vhMargin * 2 * (mSpanCount + 1)) / mSpanCount);
 
                 // Setting image size
-                ViewGroup.LayoutParams layoutParams = holder.image.getLayoutParams();
-                if (layoutParams != null) {
-                    layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT;
-                    holder.image.setLayoutParams(layoutParams);
-                }
+//                ViewGroup.LayoutParams layoutParams = holder.image.getLayoutParams();
+//                if (layoutParams != null) {
+//                    layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+//                    holder.image.setLayoutParams(layoutParams);
+//                }
 //                    if (item.getHeight() == -1) {
 //                        initialLoadImage(item, holder, width, position);
 //                    } else {
+
+                holder.image.setScaleType(ImageView.ScaleType.CENTER_CROP);
                 Glide.with(context)
-                        .asBitmap()
+                        .asDrawable()
                         .load(item.getFile())
-                        .apply(RequestOptions.fitCenterTransform())
-                        .transition(BitmapTransitionOptions.withCrossFade())
+//                        .apply(RequestOptions.fitCenterTransform())
+                        .transition(DrawableTransitionOptions.withCrossFade())
                         .into(holder.image);
 //                    }
 
@@ -354,8 +374,8 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         }
 
         // Image clicking
-        holder.image.setOnLongClickListener(this);
-        holder.image.setOnClickListener(this);
+//        holder.image.setOnLongClickListener(this);
+//        holder.image.setOnClickListener(this);
     }
 
     private void initialLoadImage(Item item, ViewHolder holder, int imageWidth, int position) {

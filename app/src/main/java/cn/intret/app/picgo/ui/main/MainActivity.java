@@ -9,6 +9,7 @@ import android.support.annotation.MainThread;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.ActivityOptionsCompat;
+import android.support.v4.app.SharedElementCallback;
 import android.support.v4.util.Pair;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
@@ -19,6 +20,7 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.RadioGroup;
 import android.widget.Toast;
 
@@ -28,7 +30,13 @@ import com.annimon.stream.Stream;
 import com.annimon.stream.function.BiConsumer;
 import com.annimon.stream.function.Function;
 import com.annimon.stream.function.Supplier;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
 import com.thekhaeng.recyclerviewmargin.LayoutMarginDecoration;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.File;
 import java.util.Date;
@@ -42,16 +50,19 @@ import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.model.FolderModel;
 import cn.intret.app.picgo.model.GroupMode;
+import cn.intret.app.picgo.model.Image;
 import cn.intret.app.picgo.model.ImageFolder;
 import cn.intret.app.picgo.model.ImageGroup;
 import cn.intret.app.picgo.model.SystemImageService;
 import cn.intret.app.picgo.ui.adapter.FolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.ImageListAdapter;
+import cn.intret.app.picgo.ui.adapter.ImageTransitionNameGenerator;
 import cn.intret.app.picgo.ui.adapter.RecyclerItemClickListener;
 import cn.intret.app.picgo.ui.adapter.SectionDecoration;
 import cn.intret.app.picgo.ui.adapter.SectionFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedImageListAdapter;
+import cn.intret.app.picgo.ui.event.CurrentImageChangeMessage;
 import cn.intret.app.picgo.ui.floating.FloatWindowService;
 import cn.intret.app.picgo.utils.DateTimeUtils;
 import cn.intret.app.picgo.utils.ListUtils;
@@ -68,6 +79,8 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     @BindView(R.id.img_list) RecyclerView mImageList;
     @BindView(R.id.drawer_layout) DrawerLayout mDrawerLayout;
     @BindView(R.id.drawer_folder_list) RecyclerView mDrawerFolderList;
+
+    @BindView(R.id.test_image) ImageView mTestImage;
 
     @BindView(R.id.view_mode) RadioGroup mModeRadioGroup;
 
@@ -96,6 +109,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     private boolean mIsImageListLoaded = false;
     private GroupMode mGroupMode = GroupMode.DEFAULT;
     private File mCurrentFolder;
+    private int mCurrentShownImageIndex = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -107,7 +121,97 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         initAppBar();
         initDrawer();
         initListViewHeader();
+
+        initTransition();
+
+        EventBus.getDefault().register(this);
+        //testSingleImageTransition();
+
         //showFloatingWindow();
+    }
+
+    private void initTransition() {
+
+        ActivityCompat.setEnterSharedElementCallback(this, new SharedElementCallback() {
+            @Override
+            public void onMapSharedElements(List<String> names, Map<String, View> sharedElements) {
+                Log.d(TAG, "enter onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
+                super.onMapSharedElements(names, sharedElements);
+            }
+        });
+
+
+        ActivityCompat.setExitSharedElementCallback(this, new SharedElementCallback() {
+            @Override
+            public void onMapSharedElements(List<String> names, Map<String, View> sharedElements) {
+
+                Log.d(TAG, "exit before onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
+                if (mCurrentShownImageIndex != -1) {
+                    ImageListAdapter.Item item = mCurrentImageListAdapter.getItem(mCurrentShownImageIndex);
+                    String transitionName = ImageTransitionNameGenerator.generateTransitionName(item.getFile().getAbsolutePath());
+
+                    ImageListAdapter.ViewHolder viewHolder = item.getViewHolder();
+                    if (viewHolder != null) {
+                        sharedElements.put(transitionName, viewHolder.getImage());
+                    }
+
+                    names.clear();
+                    names.add(transitionName);
+                }
+                Log.d(TAG, "exit after onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
+
+                super.onMapSharedElements(names, sharedElements);
+            }
+        });
+
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onEvent(CurrentImageChangeMessage message) {
+        Log.d(TAG, "onEvent() called with: message = [" + message + "]");
+        mCurrentShownImageIndex = message.getPosition();
+
+        mImageList.scrollToPosition(mCurrentShownImageIndex);
+    }
+
+    private void testSingleImageTransition() {
+        SystemImageService.getInstance()
+                .loadFirstCameraImageFile()
+                .subscribe(file -> {
+
+                            Glide.with(MainActivity.this)
+                                    .asDrawable()
+                                    .load(file)
+                                    .apply(RequestOptions.fitCenterTransform())
+                                    .into(mTestImage)
+                            ;
+
+                            mTestImage.setOnClickListener(v -> {
+                                startTestDetailActivity(this, file, v);
+                            });
+                        }
+                );
+    }
+
+    public String getTransitionName(String filename) {
+        return "imagelist:item:" + filename.toLowerCase();
+    }
+
+    private void startTestDetailActivity(Context context, File file, View view) {
+
+        // Construct an Intent as normal
+        Intent intent = ImageViewerActivity.newIntentViewFile(this, file, getTransitionName(file.getName()));
+
+        // BEGIN_INCLUDE(start_activity)
+        ActivityOptionsCompat activityOptions = ActivityOptionsCompat.makeSceneTransitionAnimation(
+                this,
+
+                // Now we provide a list of Pair items which contain the view we can transitioning
+                // from, and the name of the view it is transitioning to, in the launched activity
+                new Pair<View, String>(view, getTransitionName(file.getName())));
+        // Now we can start the Activity, providing the activity options as a bundle
+        ActivityCompat.startActivity(this, intent, activityOptions.toBundle());
+        // END_INCLUDE(start_activity)
     }
 
     private void initListViewHeader() {
@@ -137,11 +241,13 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
     @Override
     protected void onStart() {
+        Log.d(TAG, "onStart: ");
 
         initFolderList();
         initImageList();
 
         super.onStart();
+
     }
 
     @Override
@@ -154,16 +260,30 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
     @Override
     protected void onStop() {
-        super.onStop();
+        Log.d(TAG, "onStop: ");
+
 
 //        changeFloatingCount(FloatWindowService.MSG_DECREASE);
+        super.onStop();
     }
 
     @Override
     protected void onDestroy() {
 //        stopService(mStartFloatingIntent);
-
+        EventBus.getDefault().unregister(this);
         super.onDestroy();
+    }
+
+    @Override
+    public void onBackPressed() {
+        backToLauncher(this);
+    }
+
+    public void backToLauncher(Context context) {
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.addCategory(Intent.CATEGORY_HOME);
+        context.startActivity(intent);
     }
 
     private void showFloatingWindow() {
@@ -232,14 +352,14 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
         mIsFolderListLoaded = true;
 
-        List<SectionedFolderListAdapter.SectionItem> sectionItems = new LinkedList<>();
+        List<SectionedFolderListAdapter.Section> sections = new LinkedList<>();
 
         List<FolderModel.ParentFolderInfo> parentFolderInfos = model.getParentFolderInfos();
         for (int i = 0, s = parentFolderInfos.size(); i < s; i++) {
-            sectionItems.add(parentFolderToItem(parentFolderInfos.get(i)));
+            sections.add(parentFolderToItem(parentFolderInfos.get(i)));
         }
 
-        SectionedFolderListAdapter listAdapter = new SectionedFolderListAdapter(sectionItems);
+        SectionedFolderListAdapter listAdapter = new SectionedFolderListAdapter(sections);
 
         mDrawerFolderList.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         mDrawerFolderList.setAdapter(listAdapter);
@@ -266,7 +386,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         }));
 
         // show firstOf folder's images in activity content field.
-//        SectionedFolderListAdapter.SectionItem sectionItem = ListUtils.firstOf(sectionItems);
+//        SectionedFolderListAdapter.Section sectionItem = ListUtils.firstOf(sections);
 //        if (sectionItem != null) {
 //            SectionedFolderListAdapter.Item item = ListUtils.firstOf(sectionItem.getItems());
 //            if (item != null) {
@@ -275,10 +395,10 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 //        }
     }
 
-    private SectionedFolderListAdapter.SectionItem parentFolderToItem(FolderModel.ParentFolderInfo parentFolderInfo) {
-        SectionedFolderListAdapter.SectionItem sectionItem = new SectionedFolderListAdapter.SectionItem();
+    private SectionedFolderListAdapter.Section parentFolderToItem(FolderModel.ParentFolderInfo parentFolderInfo) {
+        SectionedFolderListAdapter.Section section = new SectionedFolderListAdapter.Section();
 
-        return sectionItem.setName(parentFolderInfo.getName())
+        return section.setName(parentFolderInfo.getName())
                 .setFile(parentFolderInfo.getFile())
                 .setItems(
                         Stream.of(parentFolderInfo.getFolders())
@@ -322,14 +442,13 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 //        // show firstOf folder's images in activity content field.
 //        if (sectionItems.size() > 0) {
 //
-//            SectionFolderListAdapter.SectionItem item = sectionItems.get(0);
+//            SectionFolderListAdapter.Section item = sectionItems.get(0);
 //            List<SectionFolderListAdapter.Item> items = item.getItems();
 //            if (items != null && !items.isEmpty()) {
 //                showDirectoryImageList(items.get(0).getFile());
 //            }
 //        }
     }
-
 
     private SectionFolderListAdapter.SectionItem folderInfoToItem(FolderModel.ParentFolderInfo parentFolderInfo) {
         SectionFolderListAdapter.SectionItem sectionItem = new SectionFolderListAdapter.SectionItem();
@@ -496,11 +615,11 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         section.setStartDate(imageGroup.getStartDate());
         section.setEndDate(imageGroup.getEndDate());
 
-        List<ImageGroup.Image> images = imageGroup.getImages();
+        List<Image> images = imageGroup.getImages();
         if (images != null) {
             List<SectionedImageListAdapter.Item> items = new LinkedList<>();
             for (int i = 0, imagesSize = images.size(); i < imagesSize; i++) {
-                ImageGroup.Image image = images.get(i);
+                Image image = images.get(i);
                 items.add(new SectionedImageListAdapter.Item()
                         .setFile(image.getFile())
                         .setDate(image.getDate())
@@ -647,32 +766,42 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     private void showImageList(File directory) {
         ImageListAdapter listAdapter = mImageListAdapters.get(directory.getAbsolutePath());
         if (listAdapter != null) {
-            Log.d(TAG, "showDirectoryImageList: 切换显示目录 " + directory);
+            Log.d(TAG, "showImageList 切换显示目录 " + directory);
             showImageListAdapter(listAdapter);
 
         } else {
-            loadGalleryImages(directory)
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
+
+            Log.d(TAG, "showImageList 加载并显示目录 " + directory);
+
+            SystemImageService.getInstance()
+                    .loadImageList(directory)
+                    .compose(workAndShow())
+                    .map(this::imagesToListItems)
+                    .map(items -> itemsToAdapter(directory, items))
+                    .doOnNext(adapter -> cacheImageAdapter(directory, adapter))
                     .doOnError(throwable -> {
                         throwable.printStackTrace();
                         Toast.makeText(this, R.string.load_pictures_failed, Toast.LENGTH_SHORT).show();
                     })
-                    .subscribe(items -> {
-                                ImageListAdapter adapter = createImageListAdapter(items);
-
-                                mImageListAdapters.put(directory.getAbsolutePath(), adapter);
-
-                                showImageListAdapter(adapter);
-
-                            }, throwable -> {
-
-                            }, () -> {
-
-                            }
-                    );
+                    .subscribe(this::showImageListAdapter,
+                            throwable -> {
+                    });
 
         }
+    }
+
+    private void cacheImageAdapter(File directory, ImageListAdapter adapter) {
+        mImageListAdapters.put(directory.getAbsolutePath(), adapter);
+    }
+
+    private ImageListAdapter itemsToAdapter(File directory, List<ImageListAdapter.Item> items) {
+        ImageListAdapter adapter = createImageListAdapter(items);
+        adapter.setDirecotry(directory);
+        return adapter;
+    }
+
+    private List<ImageListAdapter.Item> imagesToListItems(List<Image> images) {
+        return Stream.of(images).map(image -> new ImageListAdapter.Item().setFile(image.getFile())).toList();
     }
 
     /**
@@ -698,16 +827,23 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
         mCurrentImageListAdapter = adapter;
 
-
+        // RecyclerView Layout
         mGridLayoutManager = new GridLayoutManager(this, mSpanCount, GridLayoutManager.VERTICAL, false);
         mImageList.setLayoutManager(mGridLayoutManager);
+
+
+        // Item event
+        mImageList.addOnItemTouchListener(new RecyclerItemClickListener(this, (view, position) -> {
+            ImageListAdapter.Item item = mCurrentImageListAdapter.getItem(position);
+            Log.d(TAG, "showImageListAdapter: clicked item at position " + position + " " + item.getFile() + " " + item.getTransitionName());
+            startImageViewerActivity(item, mCurrentImageListAdapter.getDirectory(), view, position);
+        }));
 
         if (mImageList.getAdapter() == null) {
             mImageList.setAdapter(adapter);
         } else {
             mImageList.swapAdapter(adapter, false);
         }
-
     }
 
     private void initImageList() {
@@ -745,7 +881,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     }
 
 
-    private Observable<List<ImageListAdapter.Item>> loadGalleryImages(File directory) {
+    private Observable<List<ImageListAdapter.Item>> loadImages(File directory) {
         return Observable.create(e -> {
             LinkedList<ImageListAdapter.Item> items = new LinkedList<ImageListAdapter.Item>();
             List<File> images = SystemImageService.getInstance().listImageFiles(directory);
@@ -767,6 +903,16 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     }
 
     @Override
+    public void onItemClicked(ImageListAdapter.Item item, View view) {
+
+        //startImageViewerActivity(item, mCurrentImageListAdapter.getDirectory(), view, 0);
+
+        //startPhotoActivity(this, item.getFile(), view);
+//        Intent intent = ImageViewerActivity.newIntentViewFile(this, item.getFile());
+//        startActivity(intent);
+    }
+
+    @Override
     public void onItemLongClick(ImageListAdapter.Item item) {
         Log.d(TAG, "onItemLongClick: " + item);
     }
@@ -776,20 +922,13 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         Log.d(TAG, "onItemCheckedChanged: " + item);
     }
 
-    @Override
-    public void onItemClicked(ImageListAdapter.Item item, View view) {
+    private void startImageViewerActivity(ImageListAdapter.Item item, File directory, View view, int position) {
 
-        startDetailActivity(this, item, view);
-
-        //startPhotoActivity(this, item.getFile(), view);
-//        Intent intent = ImageViewerActivity.newIntentViewFile(this, item.getFile());
-//        startActivity(intent);
-    }
-
-    private void startDetailActivity(Context context, ImageListAdapter.Item item, View view) {
+        mCurrentShownImageIndex = position;
 
         // Construct an Intent as normal
-        Intent intent = ImageViewerActivity.newIntentViewFile(this, item.getFile());
+        Intent intent = ImageViewerActivity.newIntentViewFileList(this, directory.getAbsolutePath(),
+                position, item.getTransitionName());
 
         // BEGIN_INCLUDE(start_activity)
         /**
@@ -803,7 +942,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                 // Now we provide a list of Pair items which contain the view we can transitioning
                 // from, and the name of the view it is transitioning to, in the launched activity
                 new Pair<View, String>(item.getViewHolder().getImage(),
-                        ImageViewerActivity.TRANSITION_NAME_IMAGE));
+                        item.getTransitionName()));
         // Now we can start the Activity, providing the activity options as a bundle
         ActivityCompat.startActivity(this, intent, activityOptions.toBundle());
         // END_INCLUDE(start_activity)

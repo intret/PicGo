@@ -209,7 +209,7 @@ public class SectionFolderListAdapter
 //            if (i != null) {
 //                if (mOnItemClickListener != null) {
 //                    // todo change the firstOf parameter to section-info class
-//                    mOnItemClickListener.onItemClick(mSectionItems.get(section), i);
+//                    mOnItemClickListener.onItemClick(mSections.get(section), i);
 //                }
 //            }
 //        });

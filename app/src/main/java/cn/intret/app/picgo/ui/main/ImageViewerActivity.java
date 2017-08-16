@@ -2,37 +2,54 @@ package cn.intret.app.picgo.ui.main;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Matrix;
+import android.graphics.RectF;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
+import android.os.Parcelable;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
-import android.os.Bundle;
+import android.support.v4.app.SharedElementCallback;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.transition.Transition;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.annimon.stream.Stream;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.BitmapTransitionOptions;
 import com.bumptech.glide.request.RequestOptions;
 import com.github.chrisbanes.photoview.PhotoView;
 
 import org.apache.commons.io.FilenameUtils;
+import org.greenrobot.eventbus.EventBus;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
+import cn.intret.app.picgo.model.SystemImageService;
+import cn.intret.app.picgo.ui.adapter.ImageListAdapter;
+import cn.intret.app.picgo.ui.adapter.ImageTransitionNameGenerator;
+import cn.intret.app.picgo.ui.event.CancelExitTransitionMessage;
+import cn.intret.app.picgo.ui.event.CurrentImageChangeMessage;
+import cn.intret.app.picgo.ui.event.ImageFragmentSelectionChangeMessage;
+import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.widget.HackyViewPager;
 import io.reactivex.Observable;
 import pl.droidsonroids.gif.GifDrawable;
@@ -40,33 +57,36 @@ import pl.droidsonroids.gif.GifDrawable;
 
 public class ImageViewerActivity extends BaseAppCompatActivity implements ImageFragment.OnFragmentInteractionListener {
 
-    private static final String TAG = "ImageView";
-    private static final String EXTRA_FILE_NAME = "EXTRA_FILE_NAME";
-    public static final String EXTRA_PARAM_FILE_PATH = "viewer:param:filepath";
+    private static final String TAG = ImageViewerActivity.class.getSimpleName();
+    private static final String EXTRA_IMAGE_FILE_PATH = "extra:file_name";
+    private static final String EXTRA_IMAGE_DIR_PATH = "extra:dir_path";
+    private static final String EXTRA_IMAGE_ITEM_POSITION = "extra:image_item_position";
+
+    private static final String EXTRA_TRANSITION_NAME = "transition_name";
+    private static final String EXTRA_PARAM_FILE_PATH = "viewer:param:filepath";
     public static final String TRANSITION_NAME_IMAGE = "viewer:image";
 
-        @BindView(R.id.viewpager) HackyViewPager mViewPager;
+    @BindView(R.id.viewpager) HackyViewPager mViewPager;
         @BindView(R.id.brief) TextView mBrief;
         private PagerAdapter mImageAdapter;
-        private String mFile;
+        private String mImageFilePath;
         private ImagePagerAdapter mImagePagerAdapter;
         private LinkedList<Image> mImages;
         private PhotoView mPhotoView;
     private ImageFragmentStatePagerAdapter mPagerAdapter;
-
-    public static Intent newIntentViewFile(Context context, File file) {
-        Intent intent = new Intent(context, ImageViewerActivity.class);
-        intent.setAction(Intent.ACTION_VIEW);
-        intent.putExtra(EXTRA_FILE_NAME, file.getAbsolutePath());
-        return intent;
-    }
+    private String mTransitionName;
+    private String mDirPath;
+    private int mItemPosition;
+    private boolean mCancelExitTransition;
+    private int mCurrentItem = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        supportPostponeEnterTransition();
+
         // https://stackoverflow.com/questions/30628543/fragment-shared-element-transitions-dont-work-with-viewpager
-        ActivityCompat.postponeEnterTransition(this);
 
         setContentView(R.layout.activity_image_viewer);
 
@@ -74,50 +94,196 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
         extractIntentData();
 
-        {
-            Observable.just(mFile)
+        showImageFile();
+
+        ActivityCompat.setEnterSharedElementCallback(this, new SharedElementCallback() {
+
+            @Override
+            public void onMapSharedElements(List<String> names, Map<String, View> sharedElements) {
+
+                if (mCurrentItem != -1) {
+                    Image item = mPagerAdapter.getItemAt(mCurrentItem);
+
+                    ImageFragment fragment = mPagerAdapter.getRegisteredFragment(mCurrentItem);
+
+                    String absolutePath = item.getFile().getAbsolutePath();
+                    String transitionName = ImageTransitionNameGenerator.generateTransitionName(absolutePath);
+                    if (!names.contains(transitionName)) {
+                        names.add(transitionName);
+                    }
+
+                    PhotoView image = fragment.getImage();
+                    if (image != null) {
+                        sharedElements.put(transitionName, fragment.getImage());
+                    } else {
+                        View iv = null;
+                        View root = fragment.getView();
+                        if (root != null) {
+                            iv = root.findViewById(R.id.image);
+                        }
+
+                        if (iv != null) {
+                            sharedElements.put(transitionName, iv);
+                        } else {
+                            Log.e(TAG, "imageView enter onMapSharedElements: cannot get PhotoView instance." );
+                        }
+                    }
+                }
+                Log.d(TAG, "imageView enter onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
+                super.onMapSharedElements(names, sharedElements);
+            }
+        });
+
+        ActivityCompat.setExitSharedElementCallback(this, new SharedElementCallback() {
+            @Override
+            public void onMapSharedElements(List<String> names, Map<String, View> sharedElements) {
+                Log.d(TAG, "imageView enter before onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
+                int currentItem = mViewPager.getCurrentItem();
+                if (currentItem != -1) {
+                    Image item = mPagerAdapter.getItemAt(currentItem);
+                    sharedElements.clear();
+                    String transitionName = ImageTransitionNameGenerator.generateTransitionName(item.getFile().getAbsolutePath());
+                    sharedElements.put(transitionName, ((ImageFragment) mPagerAdapter.getItem(currentItem)).getImage());
+                }
+                Log.d(TAG, "imageView enter after onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
+                super.onMapSharedElements(names, sharedElements);
+            }
+        });
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+//        showRandomImage();
+        //EventBus.getDefault().register(this);
+    }
+
+    @Override
+    protected void onStop() {
+        //
+        // EventBus.getDefault().unregister(this);
+
+        super.onStop();
+    }
+
+    public static Intent newIntentViewFile(Context context, File file, String transitionName) {
+        Intent intent = new Intent(context, ImageViewerActivity.class);
+        intent.setAction(Intent.ACTION_VIEW);
+        intent.putExtra(EXTRA_IMAGE_FILE_PATH, file.getAbsolutePath());
+        intent.putExtra(EXTRA_TRANSITION_NAME, transitionName);
+        return intent;
+    }
+
+    public static Intent newIntentViewFileList(Context context, String dirAbsolutePath, int itemModelPosition,
+                                               String transitionName) {
+        Intent intent = new Intent(context, ImageViewerActivity.class);
+        intent.setAction(Intent.ACTION_VIEW);
+        intent.putExtra(EXTRA_IMAGE_DIR_PATH, dirAbsolutePath);
+        intent.putExtra(EXTRA_IMAGE_ITEM_POSITION, itemModelPosition);
+
+        intent.putExtra(EXTRA_TRANSITION_NAME, transitionName);
+        return intent;
+    }
+
+
+    private void showImageFile() {
+
+        if (mDirPath != null && mItemPosition != -1) {
+
+            SystemImageService.getInstance()
+                    .loadImageList(new File(mDirPath))
+                    .compose(workAndShow())
+                    .map(this::imageListToImageListAdapter)
+                    .subscribe(adapter -> {
+                        showImageAdapter(adapter, mItemPosition);
+                    }, throwable -> {
+
+                    });
+
+        } else if (mImageFilePath != null){
+
+            Observable.just(mImageFilePath)
                     .map(File::new)
-                    .map(file -> new Image().setFile(file))
-                    .subscribe(image -> {
-                        mImages = new LinkedList<>();
-                        mImages.add(image);
-
-                        mPagerAdapter = new ImageFragmentStatePagerAdapter(getSupportFragmentManager());
-                        mPagerAdapter.setImages(mImages);
-
-//                        mImagePagerAdapter = new ImagePagerAdapter(mImages);
-                        mViewPager.setAdapter(mPagerAdapter);
-                        mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-                            @Override
-                            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-
-                            }
-
-                            @Override
-                            public void onPageSelected(int position) {
-
-                            }
-
-                            @Override
-                            public void onPageScrollStateChanged(int state) {
-
-                            }
-                        });
-
-                        mViewPager.setCurrentItem(0);
+                    .map(file -> new cn.intret.app.picgo.model.Image().setFile(file).setDate(new Date(file.lastModified())))
+                    .map(ListUtils::objectToLinkedList)
+                    .map(this::imageListToImageListAdapter)
+                    .subscribe(adapter -> {
+                        showImageAdapter(adapter, 0);
                     })
             ;
         }
 
-//        int id = mImagePagerAdapter.getViewId(0);
-//
-//        mPhotoView = (PhotoView) findViewById(id);
-//        if (mPhotoView != null) {
-//            ViewCompat.setTransitionName(mPhotoView, TRANSITION_NAME_IMAGE);
-//            loadItem();
-//        } else {
-//            Log.e(TAG, String.format("onCreate: cannot found view id %d.", id));
-//        }
+    }
+
+    private void showImageAdapter(ImageFragmentStatePagerAdapter adapter, int position) {
+        Log.d(TAG, "showImageAdapter() called with: adapter = [" + adapter + "], position = [" + position + "]");
+
+        mPagerAdapter = adapter;
+        mPagerAdapter.setAnimatedItemPosition(position);
+
+        mViewPager.setAdapter(mPagerAdapter);
+        mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+            }
+
+            @Override
+            public void onPageSelected(int position) {
+
+                Log.d(TAG, "onPageSelected() called with: position = [" + position + "]");
+
+                if (mItemPosition != position) {
+                    mCancelExitTransition = true;
+                    EventBus.getDefault().post(new CancelExitTransitionMessage());
+                }
+
+                mCurrentItem = position;
+
+                Image image = adapter.getItemAt(position);
+                EventBus.getDefault().post(
+                        new ImageFragmentSelectionChangeMessage()
+                        .setCurrentCode(image.getFile()
+                        .getAbsolutePath()
+                        .hashCode())
+                );
+
+                EventBus.getDefault().post(new CurrentImageChangeMessage().setPosition(position));
+
+//                Log.d(TAG, "onPageSelected() called with: position = [" + position + "]");
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+
+            }
+        });
+
+        if (position != -1) {
+            mViewPager.setCurrentItem(position);
+        } else {
+            mViewPager.setCurrentItem(0);
+        }
+    }
+
+    @NonNull
+    private ImageFragmentStatePagerAdapter imageListToImageListAdapter(List<cn.intret.app.picgo.model.Image> images) {
+        ImageFragmentStatePagerAdapter adapter = new ImageFragmentStatePagerAdapter(getSupportFragmentManager());
+        adapter.setImages(imagesToImages(images));
+        return adapter;
+    }
+
+
+    private List<ImageListAdapter.Item> imagesToItems(List<cn.intret.app.picgo.model.Image> images) {
+        return Stream.of(images)
+                .map(image -> new ImageListAdapter.Item().setFile(image.getFile()))
+                .toList();
+    }
+
+    private List<Image> imagesToImages(List<cn.intret.app.picgo.model.Image> images) {
+        return Stream.of(images)
+                .map(image -> new Image().setFile(image.getFile()))
+                .toList();
     }
 
     private void loadItem() {
@@ -208,20 +374,18 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
     private void extractIntentData() {
         Intent intent = getIntent();
-        mFile = intent.getStringExtra(EXTRA_FILE_NAME);
-    }
+        mImageFilePath = intent.getStringExtra(EXTRA_IMAGE_FILE_PATH);
 
-    @Override
-    protected void onStart() {
-        super.onStart();
+        mDirPath = intent.getStringExtra(EXTRA_IMAGE_DIR_PATH);
+        mItemPosition = intent.getIntExtra(EXTRA_IMAGE_ITEM_POSITION, -1);
 
-//        showRandomImage();
+        mTransitionName = intent.getStringExtra(EXTRA_TRANSITION_NAME);
     }
 
     private void showRandomImage() {
-        mBrief.setText(mFile);
+        mBrief.setText(mImageFilePath);
 //        SystemImageService.getInstance().loadRandomImage()
-        Observable.just(mFile)
+        Observable.just(mImageFilePath)
                 .map(File::new)
                 .compose(workAndShow())
                 .map(file -> new Image().setFile(file))
@@ -248,7 +412,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
     }
 
-    static class Image {
+    private static class Image {
         File mFile;
         Type mType;
         int mViewId;
@@ -290,7 +454,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
         }
     }
 
-    static class ImagePagerAdapter extends PagerAdapter {
+    private static class ImagePagerAdapter extends PagerAdapter {
 
         public interface OnClickImageListener {
             void onClick(Image image);
@@ -424,18 +588,37 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
     /**
      * 大量图片列表适配器
      */
-    class ImageFragmentStatePagerAdapter extends FragmentStatePagerAdapter {
+    private class ImageFragmentStatePagerAdapter extends FragmentStatePagerAdapter {
 
         List<Image> mImages = new LinkedList<>();
 
-        public ImageFragmentStatePagerAdapter setImages(List<Image> images) {
+        Image getItemAt(int position) {
+            if (position < 0 || position >= mImages.size()) {
+                throw new IndexOutOfBoundsException(String.format("Position %d out of bounds(0,%d)", position, mImages.size() - 1));
+            }
+            return mImages.get(position);
+        }
+
+        int mAnimatedItemPosition = -1;
+        private SparseArray<ImageFragment> registeredFragments = new SparseArray<>();
+
+        public ImageFragment getRegisteredFragment(int position) {
+            return registeredFragments.get(position);
+        }
+
+        public ImageFragmentStatePagerAdapter setAnimatedItemPosition(int animatedItemPosition) {
+            mAnimatedItemPosition = animatedItemPosition;
+            return this;
+        }
+
+        ImageFragmentStatePagerAdapter setImages(List<Image> images) {
             if (images != null) {
                 mImages = images;
             }
             return this;
         }
 
-        public ImageFragmentStatePagerAdapter(FragmentManager fm) {
+        ImageFragmentStatePagerAdapter(FragmentManager fm) {
             super(fm);
         }
 
@@ -443,8 +626,23 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
         public Fragment getItem(int position) {
 
             Image image = mImages.get(position);
+            String absolutePath = image.getFile().getAbsolutePath();
+            String transitionName = ImageTransitionNameGenerator.generateTransitionName(absolutePath);
+            boolean performEnterTransition = position == mAnimatedItemPosition;
+            if (performEnterTransition) {
+                Log.d(TAG, "getItem: PerformEnterTransition for position " + position + " " + transitionName);
+            }
 
-            return ImageFragment.newInstance(image.getFile().getAbsolutePath(), TRANSITION_NAME_IMAGE);
+            ImageFragment fragment = ImageFragment.newInstance(absolutePath, transitionName, performEnterTransition);
+            registeredFragments.put(position, fragment);
+
+            return fragment;
+        }
+
+        @Override
+        public void destroyItem(ViewGroup container, int position, Object object) {
+            registeredFragments.remove(position);
+            super.destroyItem(container, position, object);
         }
 
         @Override

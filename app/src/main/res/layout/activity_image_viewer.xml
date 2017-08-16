@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/black"
+
     tools:context="cn.intret.app.picgo.ui.main.ImageViewerActivity">
 
     <LinearLayout
@@ -18,13 +18,13 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="1"
+            android:background="@color/black"
             >
         </cn.intret.app.picgo.widget.HackyViewPager>
 
         <RelativeLayout
-            android:layout_weight="0"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="400dp"
             >
             <TextView
                 android:id="@+id/brief"

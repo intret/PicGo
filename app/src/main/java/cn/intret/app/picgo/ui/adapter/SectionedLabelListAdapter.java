@@ -21,9 +21,9 @@ import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
 
 /**
- * 分段文件夹列表
+ * 分段标签列表
  */
-public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<SectionedViewHolder> {
+public class SectionedLabelListAdapter extends SectionedRecyclerViewAdapter<SectionedViewHolder> {
 
     List<Section> mSections = new LinkedList<>();
 
@@ -77,29 +77,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
     public static class Item {
         String mName;
-        int mCount;
         File mFile;
-        List<File> mThumbList;
-
-        public List<File> getThumbList() {
-            return mThumbList;
-        }
-
-        public Item setThumbList(List<File> thumbList) {
-            mThumbList = thumbList;
-            return this;
-        }
-
-        HorizontalImageListAdapter mAdapter;
-
-        public HorizontalImageListAdapter getAdapter() {
-            return mAdapter;
-        }
-
-        public Item setAdapter(HorizontalImageListAdapter adapter) {
-            mAdapter = adapter;
-            return this;
-        }
 
         public String getName() {
             return mName;
@@ -107,15 +85,6 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
         public Item setName(String name) {
             mName = name;
-            return this;
-        }
-
-        public int getCount() {
-            return mCount;
-        }
-
-        public Item setCount(int count) {
-            mCount = count;
             return this;
         }
 
@@ -135,18 +104,18 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
     OnItemClickListener mOnItemClickListener;
 
-    SectionedFolderListAdapter() {
+    SectionedLabelListAdapter() {
 
     }
 
-    public SectionedFolderListAdapter(List<Section> sections) {
+    public SectionedLabelListAdapter(List<Section> sections) {
         if (sections != null) {
             mSections = sections;
             notifyDataSetChanged();
         }
     }
 
-    SectionedFolderListAdapter setSections(List<Section> sections) {
+    SectionedLabelListAdapter setSections(List<Section> sections) {
         if (sections != null) {
             this.mSections = sections;
         }
@@ -184,20 +153,6 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         Item item = sectionItem.getItems().get(relativePosition);
 
         vh.name.setText(item.getName());
-        vh.count.setText(String.valueOf(item.getCount()));
-        if (item.getAdapter() == null) {
-            HorizontalImageListAdapter adapter = new HorizontalImageListAdapter(filesToItems(item.getThumbList()));
-
-            item.setAdapter(adapter);
-            vh.thumbList.setClickable(false);
-
-            vh.thumbList.setLayoutManager(vh.getLayout());
-            vh.thumbList.setAdapter(item.getAdapter());
-        } else {
-            vh.thumbList.setClickable(false);
-            vh.thumbList.setLayoutManager(vh.getLayout());
-            vh.thumbList.swapAdapter(item.getAdapter(), false);
-        }
     }
 
     private List<HorizontalImageListAdapter.Item> filesToItems(List<File> thumbList) {
@@ -248,7 +203,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
     class ItemViewHolder extends SectionedViewHolder implements View.OnClickListener {
 
-        private static final String TAG = "SectionViewHolder";
+        private static final String TAG = "ItemViewHolder";
 
         @BindView(R.id.name) TextView name;
         @BindView(R.id.count) TextView count;
