@@ -96,6 +96,10 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
         showImageFile();
 
+        initImageTransition();
+    }
+
+    private void initImageTransition() {
         ActivityCompat.setEnterSharedElementCallback(this, new SharedElementCallback() {
 
             @Override
@@ -241,12 +245,16 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
                 mCurrentItem = position;
 
                 Image image = adapter.getItemAt(position);
+                String absolutePath = image.getFile().getAbsolutePath();
+
+                mBrief.setText(absolutePath);
+
                 EventBus.getDefault().post(
                         new ImageFragmentSelectionChangeMessage()
-                        .setCurrentCode(image.getFile()
-                        .getAbsolutePath()
+                        .setCurrentCode(absolutePath
                         .hashCode())
                 );
+
 
                 EventBus.getDefault().post(new CurrentImageChangeMessage().setPosition(position));
 
@@ -272,7 +280,6 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
         adapter.setImages(imagesToImages(images));
         return adapter;
     }
-
 
     private List<ImageListAdapter.Item> imagesToItems(List<cn.intret.app.picgo.model.Image> images) {
         return Stream.of(images)

@@ -8,7 +8,7 @@
 
     tools:context="cn.intret.app.picgo.ui.main.ImageViewerActivity">
 
-    <LinearLayout
+    <FrameLayout
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
@@ -23,8 +23,12 @@
         </cn.intret.app.picgo.widget.HackyViewPager>
 
         <RelativeLayout
+            android:gravity="left"
+            android:layout_gravity="bottom"
             android:layout_width="match_parent"
-            android:layout_height="400dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0"
+            android:background="@color/translucent"
             >
             <TextView
                 android:id="@+id/brief"
@@ -33,8 +37,9 @@
                 android:lines="1"
                 android:textColor="@color/white"
                 tools:text="128x111"
+                android:background="@color/translucent"
                 />
         </RelativeLayout>
-    </LinearLayout>
+    </FrameLayout>
 
 </android.support.constraint.ConstraintLayout>
