@@ -69,8 +69,6 @@
             android:id="@+id/img_list"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:layout_marginEnd="0dp"
-            android:layout_marginStart="0dp"
             android:clipToPadding="false"
             android:padding="4dp"
             android:scrollbarStyle="outsideOverlay"
@@ -87,12 +85,6 @@
 
         </android.support.v7.widget.RecyclerView>
 
-        <ImageView
-            android:id="@+id/test_image"
-            android:scaleType="centerCrop"
-            android:layout_width="200dp"
-            android:layout_height="200dp"
-            />
     </android.support.constraint.ConstraintLayout>
 
     <!--抽屉菜单-->
@@ -108,8 +100,8 @@
         <!--文件夹列表-->
         <android.support.v7.widget.RecyclerView
             android:id="@+id/drawer_folder_list"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
             android:layout_margin="0dp"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"

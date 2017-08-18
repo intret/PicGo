@@ -80,8 +80,6 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     @BindView(R.id.drawer_layout) DrawerLayout mDrawerLayout;
     @BindView(R.id.drawer_folder_list) RecyclerView mDrawerFolderList;
 
-    @BindView(R.id.test_image) ImageView mTestImage;
-
     @BindView(R.id.view_mode) RadioGroup mModeRadioGroup;
 
     private int mSpanCount;
@@ -125,9 +123,40 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         initTransition();
 
         EventBus.getDefault().register(this);
-        //testSingleImageTransition();
-
         //showFloatingWindow();
+    }
+
+    @Override
+    protected void onStart() {
+        Log.d(TAG, "onStart: ");
+        super.onStart();
+
+        initFolderList();
+        initImageList();
+    }
+
+    @Override
+    protected void onResume() {
+//        changeFloatingCount(FloatWindowService.MSG_INCREASE);
+
+//        mDrawerLayout.openDrawer(Gravity.LEFT);
+        super.onResume();
+    }
+
+    @Override
+    protected void onStop() {
+        Log.d(TAG, "onStop: ");
+
+
+//        changeFloatingCount(FloatWindowService.MSG_DECREASE);
+        super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+//        stopService(mStartFloatingIntent);
+        EventBus.getDefault().unregister(this);
+        super.onDestroy();
     }
 
     private void initTransition() {
@@ -175,25 +204,6 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         mImageList.scrollToPosition(mCurrentShownImageIndex);
     }
 
-    private void testSingleImageTransition() {
-        SystemImageService.getInstance()
-                .loadFirstCameraImageFile()
-                .subscribe(file -> {
-
-                            Glide.with(MainActivity.this)
-                                    .asDrawable()
-                                    .load(file)
-                                    .apply(RequestOptions.fitCenterTransform())
-                                    .into(mTestImage)
-                            ;
-
-                            mTestImage.setOnClickListener(v -> {
-                                startTestDetailActivity(this, file, v);
-                            });
-                        }
-                );
-    }
-
     public String getTransitionName(String filename) {
         return "imagelist:item:" + filename.toLowerCase();
     }
@@ -238,41 +248,6 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     private void switchToViewMode(GroupMode mode) {
         mGroupMode = mode;
         showDirectoryImageList(mCurrentFolder);
-    }
-
-    @Override
-    protected void onStart() {
-        Log.d(TAG, "onStart: ");
-
-        initFolderList();
-        initImageList();
-
-        super.onStart();
-
-    }
-
-    @Override
-    protected void onResume() {
-//        changeFloatingCount(FloatWindowService.MSG_INCREASE);
-
-//        mDrawerLayout.openDrawer(Gravity.LEFT);
-        super.onResume();
-    }
-
-    @Override
-    protected void onStop() {
-        Log.d(TAG, "onStop: ");
-
-
-//        changeFloatingCount(FloatWindowService.MSG_DECREASE);
-        super.onStop();
-    }
-
-    @Override
-    protected void onDestroy() {
-//        stopService(mStartFloatingIntent);
-        EventBus.getDefault().unregister(this);
-        super.onDestroy();
     }
 
     @Override
