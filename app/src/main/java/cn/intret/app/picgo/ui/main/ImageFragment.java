@@ -24,6 +24,7 @@ import com.bumptech.glide.request.target.ViewTarget;
 import com.bumptech.glide.request.transition.Transition;
 import com.github.chrisbanes.photoview.PhotoView;
 
+import org.apache.commons.lang3.StringUtils;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
@@ -94,9 +95,9 @@ public class ImageFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_image, container, false);
         ButterKnife.bind(this, view);
 
-        if (mPerformEnterTransition) {
+        //if (mPerformEnterTransition) {
             tryToSetTransitionNameFromIntent();
-        }
+        //}
 
         mImage.setOnClickListener(v -> {
             if (mPerformExitTransition) {
@@ -149,24 +150,25 @@ public class ImageFragment extends Fragment {
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(ImageFragmentSelectionChangeMessage message) {
         // Clear transition name
-        if (message.getCurrentCode() != mFilePath.hashCode()) {
-            Log.d(TAG, "onEvent() called with: message = [" + message + "]" + " 清理" + mFilePath);
-            mImage.setTransitionName(null);
+        if (StringUtils.equals(message.getTransitionName(), mTransitionName)) {
+            Log.d(TAG, "onEvent() 设置 transition name:" + mFilePath);
+            //tryToSetTransitionNameFromIntent();
         } else {
-            tryToSetTransitionNameFromIntent();
+            Log.d(TAG, "onEvent() 清理 transition name:" + mFilePath);
+            //mImage.setTransitionName(null);
         }
     }
 
 
     private void tryToSetTransitionNameFromIntent() {
         if (mTransitionName != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            Log.d(TAG, "tryToSetTransitionNameFromIntent() called 设置 " + mFilePath);
             setTransitionNamesLollipop();
         }
     }
 
     @Override
     public void onStart() {
+        Log.d(TAG, "onStart() called " + mTransitionName);
         super.onStart();
 
         EventBus.getDefault().register(this);
@@ -174,6 +176,8 @@ public class ImageFragment extends Fragment {
 
     @Override
     public void onStop() {
+        Log.d(TAG, "onStop() called " + mTransitionName);
+
         EventBus.getDefault().unregister(this);
 
         super.onStop();
@@ -181,12 +185,13 @@ public class ImageFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
+        Log.d(TAG, "onDestroyView: " + mTransitionName);
         super.onDestroyView();
-
     }
 
     @Override
     public void onDetach() {
+        Log.d(TAG, "onDetach: " + mTransitionName);
         super.onDetach();
         mListener = null;
     }

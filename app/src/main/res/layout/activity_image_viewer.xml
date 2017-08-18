@@ -34,7 +34,6 @@
                 android:id="@+id/brief"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:lines="1"
                 android:textColor="@color/white"
                 tools:text="128x111"
                 android:background="@color/translucent"

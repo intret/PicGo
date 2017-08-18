@@ -279,6 +279,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
 
             if (holder.image != null) {
                 holder.image.setTag(R.id.item, -1);
+                holder.image.setTransitionName(null);
             }
         }
 

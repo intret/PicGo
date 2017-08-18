@@ -2,12 +2,9 @@ package cn.intret.app.picgo.ui.main;
 
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Matrix;
-import android.graphics.RectF;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
@@ -48,7 +45,6 @@ import cn.intret.app.picgo.ui.adapter.ImageListAdapter;
 import cn.intret.app.picgo.ui.adapter.ImageTransitionNameGenerator;
 import cn.intret.app.picgo.ui.event.CancelExitTransitionMessage;
 import cn.intret.app.picgo.ui.event.CurrentImageChangeMessage;
-import cn.intret.app.picgo.ui.event.ImageFragmentSelectionChangeMessage;
 import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.widget.HackyViewPager;
 import io.reactivex.Observable;
@@ -66,7 +62,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
     private static final String EXTRA_PARAM_FILE_PATH = "viewer:param:filepath";
     public static final String TRANSITION_NAME_IMAGE = "viewer:image";
 
-    @BindView(R.id.viewpager) HackyViewPager mViewPager;
+    @BindView(R.id.viewpager) ViewPager mViewPager;
         @BindView(R.id.brief) TextView mBrief;
         private PagerAdapter mImageAdapter;
         private String mImageFilePath;
@@ -105,17 +101,18 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
             @Override
             public void onMapSharedElements(List<String> names, Map<String, View> sharedElements) {
 
+                Log.d(TAG, "imageView enter before onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
                 if (mCurrentItem != -1) {
-                    Image item = mPagerAdapter.getItemAt(mCurrentItem);
+                    Image item = mPagerAdapter.getImage(mCurrentItem);
 
                     ImageFragment fragment = mPagerAdapter.getRegisteredFragment(mCurrentItem);
 
                     String absolutePath = item.getFile().getAbsolutePath();
                     String transitionName = ImageTransitionNameGenerator.generateTransitionName(absolutePath);
-                    if (!names.contains(transitionName)) {
-                        names.add(transitionName);
-                    }
+                    names.clear();
+                    names.add(transitionName);
 
+                    sharedElements.clear();
                     PhotoView image = fragment.getImage();
                     if (image != null) {
                         sharedElements.put(transitionName, fragment.getImage());
@@ -133,7 +130,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
                         }
                     }
                 }
-                Log.d(TAG, "imageView enter onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
+                Log.d(TAG, "imageView enter after onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
                 super.onMapSharedElements(names, sharedElements);
             }
         });
@@ -144,7 +141,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
                 Log.d(TAG, "imageView enter before onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
                 int currentItem = mViewPager.getCurrentItem();
                 if (currentItem != -1) {
-                    Image item = mPagerAdapter.getItemAt(currentItem);
+                    Image item = mPagerAdapter.getImage(currentItem);
                     sharedElements.clear();
                     String transitionName = ImageTransitionNameGenerator.generateTransitionName(item.getFile().getAbsolutePath());
                     sharedElements.put(transitionName, ((ImageFragment) mPagerAdapter.getItem(currentItem)).getImage());
@@ -165,10 +162,17 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
     @Override
     protected void onStop() {
+        Log.d(TAG, "onStop: ");
         //
         // EventBus.getDefault().unregister(this);
 
         super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        Log.d(TAG, "onDestroy: ");
+        super.onDestroy();
     }
 
     public static Intent newIntentViewFile(Context context, File file, String transitionName) {
@@ -237,23 +241,23 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
                 Log.d(TAG, "onPageSelected() called with: position = [" + position + "]");
 
-                if (mItemPosition != position) {
-                    mCancelExitTransition = true;
-                    EventBus.getDefault().post(new CancelExitTransitionMessage());
-                }
+//                if (mItemPosition != position) {
+//                    mCancelExitTransition = true;
+//                    EventBus.getDefault().post(new CancelExitTransitionMessage());
+//                }
 
                 mCurrentItem = position;
 
-                Image image = adapter.getItemAt(position);
+                Image image = adapter.getImage(position);
+                showImageBriefInfo(position);
                 String absolutePath = image.getFile().getAbsolutePath();
 
-                mBrief.setText(absolutePath);
-
-                EventBus.getDefault().post(
-                        new ImageFragmentSelectionChangeMessage()
-                        .setCurrentCode(absolutePath
-                        .hashCode())
-                );
+//                ImageFragmentSelectionChangeMessage event = new ImageFragmentSelectionChangeMessage()
+//                        .setTransitionName(ImageTransitionNameGenerator.generateTransitionName(absolutePath))
+//                        .setCurrentCode(absolutePath
+//                                .hashCode());
+//
+//                EventBus.getDefault().post(event);
 
 
                 EventBus.getDefault().post(new CurrentImageChangeMessage().setPosition(position));
@@ -268,10 +272,20 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
         });
 
         if (position != -1) {
+            mCurrentItem = position;
             mViewPager.setCurrentItem(position);
+
+            showImageBriefInfo(position);
         } else {
+            mCurrentItem = 0;
             mViewPager.setCurrentItem(0);
+            showImageBriefInfo(0);
         }
+    }
+
+    private void showImageBriefInfo(int position) {
+        Image image = mPagerAdapter.getImage(position);
+        mBrief.setText(image.getFile().getAbsolutePath());
     }
 
     @NonNull
@@ -599,7 +613,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
         List<Image> mImages = new LinkedList<>();
 
-        Image getItemAt(int position) {
+        Image getImage(int position) {
             if (position < 0 || position >= mImages.size()) {
                 throw new IndexOutOfBoundsException(String.format("Position %d out of bounds(0,%d)", position, mImages.size() - 1));
             }
@@ -631,13 +645,15 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
         @Override
         public Fragment getItem(int position) {
-
             Image image = mImages.get(position);
+
+            Log.d(TAG, "get fragment item for file " + image.getFile());
+
             String absolutePath = image.getFile().getAbsolutePath();
             String transitionName = ImageTransitionNameGenerator.generateTransitionName(absolutePath);
             boolean performEnterTransition = position == mAnimatedItemPosition;
             if (performEnterTransition) {
-                Log.d(TAG, "getItem: PerformEnterTransition for position " + position + " " + transitionName);
+                Log.d(TAG, "get fragment item : PerformEnterTransition for position " + position + " " + transitionName);
             }
 
             ImageFragment fragment = ImageFragment.newInstance(absolutePath, transitionName, performEnterTransition);
@@ -648,6 +664,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
         @Override
         public void destroyItem(ViewGroup container, int position, Object object) {
+            Log.d(TAG, "remove fragment at position " + position + " " + object);
             registeredFragments.remove(position);
             super.destroyItem(container, position, object);
         }

@@ -44,6 +44,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -150,6 +151,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                     ImageListAdapter.Item item = mCurrentImageListAdapter.getItem(mCurrentShownImageIndex);
                     String transitionName = ImageTransitionNameGenerator.generateTransitionName(item.getFile().getAbsolutePath());
 
+                    sharedElements.clear();
                     ImageListAdapter.ViewHolder viewHolder = item.getViewHolder();
                     if (viewHolder != null) {
                         sharedElements.put(transitionName, viewHolder.getImage());
@@ -833,16 +835,11 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
 
         // Item event
-        mImageList.addOnItemTouchListener(new RecyclerItemClickListener(this, (view, position) -> {
-            ImageListAdapter.Item item = mCurrentImageListAdapter.getItem(position);
-            Log.d(TAG, "showImageListAdapter: clicked item at position " + position + " " + item.getFile() + " " + item.getTransitionName());
-            startImageViewerActivity(item, mCurrentImageListAdapter.getDirectory(), view, position);
-        }));
 
         if (mImageList.getAdapter() == null) {
             mImageList.setAdapter(adapter);
         } else {
-            mImageList.swapAdapter(adapter, false);
+            mImageList.setAdapter(adapter);
         }
     }
 
@@ -851,8 +848,23 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
             Log.d(TAG, "initImageList: TODO 检查并更新图片文件");
         } else {
-            mSpanCount = 4; // columns
+            mSpanCount = 3; // columns
 
+            // Item Click event
+            mImageList.addOnItemTouchListener(new RecyclerItemClickListener(this, (view, position) -> {
+                if (mCurrentImageListAdapter != null) {
+                    try {
+                        ImageListAdapter.Item item = mCurrentImageListAdapter.getItem(position);
+
+                        Log.d(TAG, "showImageListAdapter: clicked item at position " + position + " " + item.getFile() + " " + item.getTransitionName());
+                        startImageViewerActivity(item, mCurrentImageListAdapter.getDirectory(), view, position);
+                    } catch (Exception e) {
+                        Log.e(TAG, "image list item click exception : " + e.getMessage());
+                    }
+                }
+            }));
+
+            // Item spacing
             LayoutMarginDecoration marginDecoration =
                     new LayoutMarginDecoration(mSpanCount, getResources().getDimensionPixelSize(R.dimen.image_list_item_space));
 
