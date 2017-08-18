@@ -867,19 +867,15 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
             mSpanCount = 3; // columns
 
             // Item Click event
+            // TODO: move code to adapter
             mImageList.addOnItemTouchListener(new RecyclerItemTouchListener(this,
                     mImageList,
                     (view, position) -> {
 
                         if (mCurrentImageListAdapter != null) {
-                            try {
-                                ImageListAdapter.Item item = mCurrentImageListAdapter.getItem(position);
 
-                                Log.d(TAG, "Clicked item at position " + position + " " + item.getFile() + " " + item.getTransitionName());
-                                startImageViewerActivity(item, mCurrentImageListAdapter.getDirectory(), view, position);
-                            } catch (Exception e) {
-                                Log.e(TAG, "image list item click exception : " + e.getMessage());
-                            }
+                            // let adapter consume click event
+                            mCurrentImageListAdapter.handleItemClickEvent(view, position);
                         }
                     },
                     ((view, position) -> {
@@ -940,13 +936,21 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     }
 
     @Override
-    public void onItemClicked(ImageListAdapter.Item item, View view) {
+    public void onItemClicked(ImageListAdapter.Item item, View view, int position) {
 
         //startImageViewerActivity(item, mCurrentImageListAdapter.getDirectory(), view, 0);
 
         //startPhotoActivity(this, item.getFile(), view);
 //        Intent intent = ImageViewerActivity.newIntentViewFile(this, item.getFile());
 //        startActivity(intent);
+
+        // handle event
+        try {
+            Log.d(TAG, "Clicked item at position " + position + " " + item.getFile() + " " + item.getTransitionName());
+            startImageViewerActivity(item, mCurrentImageListAdapter.getDirectory(), view, position);
+        } catch (Exception e) {
+            Log.e(TAG, "image list item click exception : " + e.getMessage());
+        }
     }
 
     @Override

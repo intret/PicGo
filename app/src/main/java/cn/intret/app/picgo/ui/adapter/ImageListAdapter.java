@@ -49,7 +49,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         void onItemLongClick(Item item);
 
         void onItemCheckedChanged(Item item);
-        void onItemClicked(Item item, View view);
+        void onItemClicked(Item item, View view, int position);
 
         void onSelectionModeChange(boolean isSelectionMode);
 
@@ -100,7 +100,70 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
     }
 
     public void handleItemLongClickEvent(View view, int position) {
+        Log.d(TAG, "handleItemLongClickEvent() called with: view = [" + view + "], position = [" + position + "]");
+
         ImageListAdapter.Item item = getItem(position);
+        if (mIsSelectionMode) {
+            Log.d(TAG, "handleItemLongClickEvent: ignore long click on item " + position);
+
+            if (mOnItemInteractionListener != null) {
+                mOnItemInteractionListener.onDragStared();
+            }
+        } else {
+            Log.d(TAG, "handleItemLongClickEvent: entered selection mode from item (" + position + ") click");
+
+            // Notify entering selecting mode
+            if (mOnItemInteractionListener != null) {
+                mOnItemInteractionListener.onSelectionModeChange(true);
+            }
+
+            // Update item ui
+            ViewHolder holder = item.getViewHolder();
+            if (holder != null) {
+                holder.setChecked(true);
+            }
+
+            // update item data
+            item.setSelected(true);
+
+            mIsSelectionMode = true;
+        }
+    }
+
+    public void handleItemClickEvent(View view, int position) {
+        Log.d(TAG, "handleItemClickEvent() called with: view = [" + view + "], position = [" + position + "]");
+
+        if (mIsSelectionMode) {
+            int selectedCount = getSelectedCount();
+            Item item = mItems.get(position);
+
+            // The last item has been clicked
+            if (item.isSelected() && selectedCount == 1) {
+
+                // Notify leaving selection mode
+                if (mOnItemInteractionListener != null) {
+                    mIsSelectionMode = false;
+                    mOnItemInteractionListener.onSelectionModeChange(false);
+                }
+                item.setSelected(false);
+
+            } else {
+                item.setSelected(!item.isSelected());
+            }
+
+            // update item ui
+            ViewHolder viewHolder = item.getViewHolder();
+            if (viewHolder != null) {
+                viewHolder.setChecked(item.isSelected());
+            }
+
+        } else {
+
+            if (mOnItemInteractionListener != null) {
+                Item item = mItems.get(position);
+                mOnItemInteractionListener.onItemClicked(item, view, position);
+            }
+        }
     }
 
     private void onItemClick(int position) {
@@ -163,7 +226,9 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
 
                 // 单击图片
                 if (mOnItemInteractionListener != null) {
-                    mOnItemInteractionListener.onItemClicked(item,view );
+                    ViewHolder viewHolder = item.getViewHolder();
+                    int position = viewHolder.getAdapterPosition();
+                    mOnItemInteractionListener.onItemClicked(item,view, position);
                 }
             }
         }
