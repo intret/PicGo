@@ -43,14 +43,16 @@ import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.model.SystemImageService;
 import cn.intret.app.picgo.ui.adapter.ImageListAdapter;
 import cn.intret.app.picgo.ui.adapter.ImageTransitionNameGenerator;
-import cn.intret.app.picgo.ui.event.CancelExitTransitionMessage;
 import cn.intret.app.picgo.ui.event.CurrentImageChangeMessage;
 import cn.intret.app.picgo.utils.ListUtils;
-import cn.intret.app.picgo.widget.HackyViewPager;
 import io.reactivex.Observable;
 import pl.droidsonroids.gif.GifDrawable;
 
-
+/**
+ * Image viewer with view pager.
+ *
+ * @implNote FIXED problems at : https://stackoverflow.com/questions/30628543/fragment-shared-element-transitions-dont-work-with-viewpager
+ */
 public class ImageViewerActivity extends BaseAppCompatActivity implements ImageFragment.OnFragmentInteractionListener {
 
     private static final String TAG = ImageViewerActivity.class.getSimpleName();
@@ -82,7 +84,6 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
         supportPostponeEnterTransition();
 
-        // https://stackoverflow.com/questions/30628543/fragment-shared-element-transitions-dont-work-with-viewpager
 
         setContentView(R.layout.activity_image_viewer);
 
@@ -241,28 +242,12 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
                 Log.d(TAG, "onPageSelected() called with: position = [" + position + "]");
 
-//                if (mItemPosition != position) {
-//                    mCancelExitTransition = true;
-//                    EventBus.getDefault().post(new CancelExitTransitionMessage());
-//                }
-
                 mCurrentItem = position;
 
                 Image image = adapter.getImage(position);
                 showImageBriefInfo(position);
-                String absolutePath = image.getFile().getAbsolutePath();
-
-//                ImageFragmentSelectionChangeMessage event = new ImageFragmentSelectionChangeMessage()
-//                        .setTransitionName(ImageTransitionNameGenerator.generateTransitionName(absolutePath))
-//                        .setCurrentCode(absolutePath
-//                                .hashCode());
-//
-//                EventBus.getDefault().post(event);
-
 
                 EventBus.getDefault().post(new CurrentImageChangeMessage().setPosition(position));
-
-//                Log.d(TAG, "onPageSelected() called with: position = [" + position + "]");
             }
 
             @Override

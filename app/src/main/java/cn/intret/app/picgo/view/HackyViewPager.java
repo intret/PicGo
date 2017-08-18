@@ -1,4 +1,4 @@
-package cn.intret.app.picgo.widget;
+package cn.intret.app.picgo.view;
 
 import android.content.Context;
 import android.support.v4.view.ViewPager;

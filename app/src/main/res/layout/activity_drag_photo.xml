@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     tools:context=".ui.main.DragPhotoActivity">
 
-    <cn.intret.app.picgo.widget.FixMultiViewPager
+    <cn.intret.app.picgo.view.FixMultiViewPager
         android:id="@+id/viewpager"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>

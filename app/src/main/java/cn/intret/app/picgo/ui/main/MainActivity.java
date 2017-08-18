@@ -44,7 +44,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -58,8 +57,8 @@ import cn.intret.app.picgo.model.SystemImageService;
 import cn.intret.app.picgo.ui.adapter.FolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.ImageListAdapter;
 import cn.intret.app.picgo.ui.adapter.ImageTransitionNameGenerator;
-import cn.intret.app.picgo.ui.adapter.RecyclerItemClickListener;
-import cn.intret.app.picgo.ui.adapter.SectionDecoration;
+import cn.intret.app.picgo.widget.RecyclerItemTouchListener;
+import cn.intret.app.picgo.widget.SectionDecoration;
 import cn.intret.app.picgo.ui.adapter.SectionFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedImageListAdapter;
@@ -365,27 +364,33 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
         mDrawerFolderList.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         mDrawerFolderList.setAdapter(listAdapter);
-        mDrawerFolderList.addOnItemTouchListener(new RecyclerItemClickListener(this, (view, position) -> {
-            ItemCoord relativePosition = listAdapter.getRelativePosition(position);
-            boolean header = listAdapter.isHeader(position);
-            boolean footer = listAdapter.isFooter(position);
-            if (header) {
-                boolean sectionExpanded = listAdapter.isSectionExpanded(relativePosition.section());
-                if (sectionExpanded) {
-                    listAdapter.collapseSection(relativePosition.section());
-                } else {
-                    listAdapter.expandSection(relativePosition.section());
-                }
-            } else if (footer) {
-                Log.d(TAG, "onItemClick: footer clicked");
-            } else {
-                SectionedFolderListAdapter.Item item = listAdapter.getItem(relativePosition);
-                Log.d(TAG, "onItemClick: 显示 " + item.getFile());
-                mDrawerLayout.closeDrawers();
-                showDirectoryImageList(item.getFile());
-            }
-            Log.d(TAG, "onItemClick() called with: view = [" + view + "], position = [" + position + "]");
-        }));
+        mDrawerFolderList.addOnItemTouchListener(new RecyclerItemTouchListener(this,
+                mDrawerFolderList,
+                (view, position) -> {
+
+                        ItemCoord relativePosition = listAdapter.getRelativePosition(position);
+                        boolean header = listAdapter.isHeader(position);
+                        boolean footer = listAdapter.isFooter(position);
+                        if (header) {
+                            boolean sectionExpanded = listAdapter.isSectionExpanded(relativePosition.section());
+                            if (sectionExpanded) {
+                                listAdapter.collapseSection(relativePosition.section());
+                            } else {
+                                listAdapter.expandSection(relativePosition.section());
+                            }
+                        } else if (footer) {
+                            Log.d(TAG, "onItemClick: footer clicked");
+                        } else {
+                            SectionedFolderListAdapter.Item item = listAdapter.getItem(relativePosition);
+                            Log.d(TAG, "onItemClick: 显示 " + item.getFile());
+                            mDrawerLayout.closeDrawers();
+                            showDirectoryImageList(item.getFile());
+                        }
+                        Log.d(TAG, "onItemClick() called with: view = [" + view + "], position = [" + position + "]");
+                    }, (view, position) -> {
+
+                    }
+        ));
 
         // show firstOf folder's images in activity content field.
 //        SectionedFolderListAdapter.Section sectionItem = ListUtils.firstOf(sections);
@@ -431,8 +436,14 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         });
         mDrawerFolderList.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         mDrawerFolderList.setAdapter(listAdapter);
-        mDrawerFolderList.addOnItemTouchListener(new RecyclerItemClickListener(this,
-                (view, position) -> Log.d(TAG, "onItemClick() called with: view = [" + view + "], position = [" + position + "]")));
+        mDrawerFolderList.addOnItemTouchListener(
+                new RecyclerItemTouchListener(
+                        this,
+                        mDrawerFolderList,
+                        (view, position) -> Log.d(TAG, "onItemClick() called with: view = [" + view + "], position = [" + position + "]"),
+                        null
+                )
+        );
 
         SectionFolderListAdapter.SectionItem sectionItem = ListUtils.firstOf(sectionItems);
         if (sectionItem != null) {
@@ -754,15 +765,20 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
             Log.d(TAG, "swapAdapter() called with: listAdapter = [" + listAdapter + "]");
             mImageList.swapAdapter(listAdapter, false);
         }
-        mImageList.addOnItemTouchListener(new RecyclerItemClickListener(this, (view, position) -> {
-            if (listAdapter.isHeader(position) || listAdapter.isFooter(position)) {
-                return;
-            } else {
-                ItemCoord relativePosition = listAdapter.getRelativePosition(position);
-                listAdapter.onClickItem(relativePosition);
-            }
-
-        }));
+        mImageList.addOnItemTouchListener(
+                new RecyclerItemTouchListener(
+                        this,
+                        mImageList,
+                        (view, position) -> {
+                            if (listAdapter.isHeader(position) || listAdapter.isFooter(position)) {
+                                return;
+                            } else {
+                                ItemCoord relativePosition = listAdapter.getRelativePosition(position);
+                                listAdapter.onClickItem(relativePosition);
+                            }
+                        },
+                        null
+                ));
     }
 
     private void showImageList(File directory) {
@@ -798,7 +814,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
     private ImageListAdapter itemsToAdapter(File directory, List<ImageListAdapter.Item> items) {
         ImageListAdapter adapter = createImageListAdapter(items);
-        adapter.setDirecotry(directory);
+        adapter.setDirectory(directory);
         return adapter;
     }
 
@@ -851,18 +867,27 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
             mSpanCount = 3; // columns
 
             // Item Click event
-            mImageList.addOnItemTouchListener(new RecyclerItemClickListener(this, (view, position) -> {
-                if (mCurrentImageListAdapter != null) {
-                    try {
-                        ImageListAdapter.Item item = mCurrentImageListAdapter.getItem(position);
+            mImageList.addOnItemTouchListener(new RecyclerItemTouchListener(this,
+                    mImageList,
+                    (view, position) -> {
 
-                        Log.d(TAG, "showImageListAdapter: clicked item at position " + position + " " + item.getFile() + " " + item.getTransitionName());
-                        startImageViewerActivity(item, mCurrentImageListAdapter.getDirectory(), view, position);
-                    } catch (Exception e) {
-                        Log.e(TAG, "image list item click exception : " + e.getMessage());
-                    }
-                }
-            }));
+                        if (mCurrentImageListAdapter != null) {
+                            try {
+                                ImageListAdapter.Item item = mCurrentImageListAdapter.getItem(position);
+
+                                Log.d(TAG, "Clicked item at position " + position + " " + item.getFile() + " " + item.getTransitionName());
+                                startImageViewerActivity(item, mCurrentImageListAdapter.getDirectory(), view, position);
+                            } catch (Exception e) {
+                                Log.e(TAG, "image list item click exception : " + e.getMessage());
+                            }
+                        }
+                    },
+                    ((view, position) -> {
+                        if (mCurrentImageListAdapter != null) {
+                            mCurrentImageListAdapter.handleItemLongClickEvent(view, position);
+                        }
+                    })
+            ));
 
             // Item spacing
             LayoutMarginDecoration marginDecoration =

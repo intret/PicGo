@@ -4,7 +4,6 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.support.annotation.Nullable;
-import android.support.v7.widget.AppCompatCheckBox;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -14,12 +13,9 @@ import android.widget.ImageView;
 
 import com.annimon.stream.Stream;
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.resource.bitmap.BitmapTransitionOptions;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
-import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.request.target.ViewTarget;
 import com.bumptech.glide.request.transition.Transition;
-import com.github.siyamed.shapeimageview.RoundedImageView;
 
 import org.apache.commons.io.FilenameUtils;
 
@@ -38,35 +34,35 @@ import static com.bumptech.glide.load.resource.drawable.DrawableTransitionOption
  */
 public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.ViewHolder> implements View.OnLongClickListener, View.OnClickListener {
 
-    private File mDirecotry;
+    private File mDirectory;
 
-    public void setDirecotry(File direcotry) {
-        mDirecotry = direcotry;
+    public void setDirectory(File direcotry) {
+        mDirectory = direcotry;
     }
 
     public File getDirectory() {
-        return mDirecotry;
+        return mDirectory;
     }
 
     public interface OnItemInteractionListener {
 
         void onItemLongClick(Item item);
-        void onItemCheckedChanged(Item item);
 
+        void onItemCheckedChanged(Item item);
         void onItemClicked(Item item, View view);
 
         void onSelectionModeChange(boolean isSelectionMode);
+
         void onDragStared();
-
     }
-    public static final String TAG = "WaterfallListAdapter";
 
+    public static final String TAG = "WaterfallListAdapter";
     private Context mContext;
+
     private RecyclerView mRecyclerView;
     private int mSpanCount = 2;
     private int mGutterWidth = 6; // in dps
     boolean mIsSelectionMode = false;
-
     OnItemInteractionListener mOnItemInteractionListener;
 
     public ImageListAdapter setOnItemInteractionListener(OnItemInteractionListener onItemInteractionListener) {
@@ -101,6 +97,18 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
             return handleItemSelectAction(v, item, true);
         }
         return true;
+    }
+
+    public void handleItemLongClickEvent(View view, int position) {
+        ImageListAdapter.Item item = getItem(position);
+    }
+
+    private void onItemClick(int position) {
+
+    }
+
+    private void onItemLongClick(int position) {
+
     }
 
     /**
@@ -475,6 +483,15 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
             super(itemView);
 
             ButterKnife.bind(this, itemView);
+            itemView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    if (mOnItemInteractionListener != null) {
+
+                    }
+                    return true;
+                }
+            });
         }
 
         public void setChecked(boolean selected) {
