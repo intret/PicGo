@@ -10,82 +10,104 @@
     tools:showIn="@layout/activity_main">
 
     <!--内容-->
-    <android.support.constraint.ConstraintLayout
-        android:id="@+id/content"
+    <android.support.design.widget.CoordinatorLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/coordinatorLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
-        tools:visibility="visible"
         >
-
-        <!--视图模式-->
-        <RadioGroup
-            android:id="@+id/view_mode"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:checkedButton="@+id/btn_default"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingBottom="8dp"
-            android:paddingLeft="16dp"
-            android:paddingRight="16dp"
-            android:paddingTop="8dp"
-            android:visibility="gone"
-            app:layout_constraintBottom_toTopOf="parent"
-            app:layout_constraintLeft_toLeftOf="@+id/img_list"
-            app:layout_constraintRight_toLeftOf="@+id/img_list"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:layout_constraintBottom_creator="1"
-            tools:layout_constraintLeft_creator="1"
-            tools:layout_constraintRight_creator="1"
-            tools:layout_constraintTop_creator="1">
-
-            <RadioButton
-                android:id="@+id/btn_default"
-                style="@style/btn_view_mode"
-                android:checked="true"
-                android:drawableLeft="@drawable/selector_view_mode_default"
-                android:text="@string/mode_default"
-                />
-
-            <RadioButton
-                android:id="@+id/btn_week"
-                style="@style/btn_view_mode"
-                android:drawableLeft="@drawable/selector_view_mode_week"
-                android:text="@string/view_mode_week"
-                />
-
-            <RadioButton
-                android:id="@+id/btn_month"
-                style="@style/btn_view_mode"
-                android:drawableLeft="@drawable/selector_view_mode_month"
-                android:text="@string/view_mode_month"
-                />
-
-        </RadioGroup>
-
-        <!--图片列表-->
-        <android.support.v7.widget.RecyclerView
-            android:id="@+id/img_list"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:clipToPadding="false"
-            android:padding="4dp"
-            android:scrollbarStyle="outsideOverlay"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:layout_constraintBottom_creator="1"
-            tools:layout_constraintLeft_creator="1"
-            tools:layout_constraintRight_creator="1"
-            tools:layout_constraintTop_creator="1"
-            tools:listitem="@layout/image_list_item"
+        <android.support.constraint.ConstraintLayout
+            android:id="@+id/content"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            tools:visibility="visible"
             >
 
-        </android.support.v7.widget.RecyclerView>
+            <!--视图模式-->
+            <RadioGroup
+                android:id="@+id/view_mode"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:checkedButton="@+id/btn_default"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingBottom="8dp"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp"
+                android:paddingTop="8dp"
+                android:visibility="gone"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:layout_constraintBottom_creator="1"
+                tools:layout_constraintLeft_creator="1"
+                tools:layout_constraintRight_creator="1"
+                tools:layout_constraintTop_creator="1">
 
-    </android.support.constraint.ConstraintLayout>
+                <RadioButton
+                    android:id="@+id/btn_default"
+                    style="@style/btn_view_mode"
+                    android:checked="true"
+                    android:drawableLeft="@drawable/selector_view_mode_default"
+                    android:text="@string/mode_default"
+                    />
+
+                <RadioButton
+                    android:id="@+id/btn_week"
+                    style="@style/btn_view_mode"
+                    android:drawableLeft="@drawable/selector_view_mode_week"
+                    android:text="@string/view_mode_week"
+                    />
+
+                <RadioButton
+                    android:id="@+id/btn_month"
+                    style="@style/btn_view_mode"
+                    android:drawableLeft="@drawable/selector_view_mode_month"
+                    android:text="@string/view_mode_month"
+                    />
+
+            </RadioGroup>
+
+            <!--图片列表-->
+
+            <android.support.v7.widget.RecyclerView
+                android:id="@+id/img_list"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:clipToPadding="false"
+                android:padding="4dp"
+                android:scrollbarStyle="outsideOverlay"
+                app:layout_constraintBottom_toTopOf="@+id/floatingToolbar"
+                app:layout_constraintHorizontal_bias="0.0"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/view_mode"
+                tools:layout_constraintBottom_creator="1"
+                tools:layout_constraintLeft_creator="1"
+                tools:layout_constraintRight_creator="1"
+                tools:layout_constraintTop_creator="1"
+                tools:listitem="@layout/image_list_item">
+
+            </android.support.v7.widget.RecyclerView>
+
+
+            <android.support.v7.widget.Toolbar
+                android:id="@+id/floatingToolbar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:background="@color/white"
+                android:visibility="gone"
+                app:floatingMenu="@menu/selected_images_action"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintLeft_toLeftOf="parent"
+                />
+        </android.support.constraint.ConstraintLayout>
+
+    </android.support.design.widget.CoordinatorLayout>
 
     <!--抽屉菜单-->
     <android.support.constraint.ConstraintLayout
@@ -103,8 +125,8 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_margin="0dp"
-            app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             tools:layout_constraintBottom_creator="1"

@@ -18,7 +18,9 @@ import android.util.Log;
 import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.annimon.stream.Stream;
@@ -26,9 +28,12 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.BitmapTransitionOptions;
 import com.bumptech.glide.request.RequestOptions;
 import com.github.chrisbanes.photoview.PhotoView;
+import com.jaeger.library.StatusBarUtil;
 
 import org.apache.commons.io.FilenameUtils;
 import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,11 +45,14 @@ import java.util.Map;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
+import cn.intret.app.picgo.model.RemoveFileMessage;
 import cn.intret.app.picgo.model.SystemImageService;
 import cn.intret.app.picgo.ui.adapter.ImageListAdapter;
 import cn.intret.app.picgo.ui.adapter.ImageTransitionNameGenerator;
 import cn.intret.app.picgo.ui.event.CurrentImageChangeMessage;
 import cn.intret.app.picgo.utils.ListUtils;
+import cn.intret.app.picgo.utils.SystemUtils;
+import cn.intret.app.picgo.utils.ToastUtils;
 import io.reactivex.Observable;
 import pl.droidsonroids.gif.GifDrawable;
 
@@ -84,8 +92,8 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
         supportPostponeEnterTransition();
 
-
         setContentView(R.layout.activity_image_viewer);
+        initStatusBar();
 
         ButterKnife.bind(this);
 
@@ -94,6 +102,12 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
         showImageFile();
 
         initImageTransition();
+    }
+
+    private void initStatusBar() {
+        StatusBarUtil.setTranslucent(this, 255);
+
+//        StatusBarUtil.setColor(this, getResources().getColor(R.color.black));
     }
 
     private void initImageTransition() {
@@ -158,14 +172,14 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
         super.onStart();
 
 //        showRandomImage();
-        //EventBus.getDefault().register(this);
+        EventBus.getDefault().register(this);
     }
 
     @Override
     protected void onStop() {
         Log.d(TAG, "onStop: ");
         //
-        // EventBus.getDefault().unregister(this);
+        EventBus.getDefault().unregister(this);
 
         super.onStop();
     }
@@ -195,6 +209,26 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
         return intent;
     }
 
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onEvent(RemoveFileMessage message) {
+
+        mPagerAdapter.removeFile(message.getFile());
+//        int currentItem = mViewPager.getCurrentItem();
+//        if (SystemUtils.isSameFile(message.getFile(), mPagerAdapter.getImage(currentItem).getFile())) {
+//            try {
+//
+//                mPagerAdapter.removeItem(currentItem);
+//                mPagerAdapter.notifyDataSetChanged();
+//
+//                ToastUtils.toastLong(this, getString(R.string.already_removed_d_files, 1));
+//
+//            } catch (Throwable throwable) {
+//
+//                ToastUtils.toastLong(this, getString(R.string.remove_file_failed));
+//            }
+//
+//        }
+    }
 
     private void showImageFile() {
 
@@ -598,6 +632,17 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
         List<Image> mImages = new LinkedList<>();
 
+        boolean removeItem(int position) {
+            if (!(position >= 0 && position < mImages.size())) {
+                throw new IllegalArgumentException("Invalid position " + position);
+            }
+
+            mImages.remove(position);
+            notifyDataSetChanged();
+
+            return true;
+        }
+
         Image getImage(int position) {
             if (position < 0 || position >= mImages.size()) {
                 throw new IndexOutOfBoundsException(String.format("Position %d out of bounds(0,%d)", position, mImages.size() - 1));
@@ -629,6 +674,15 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
         }
 
         @Override
+        public int getItemPosition(Object object) {
+            Fragment fragment = (Fragment) object;
+            if (fragment instanceof ImageFragment) {
+                return POSITION_NONE;
+            }
+            return super.getItemPosition(object);
+        }
+
+        @Override
         public Fragment getItem(int position) {
             Image image = mImages.get(position);
 
@@ -657,6 +711,14 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
         @Override
         public int getCount() {
             return mImages.size();
+        }
+
+        public void removeFile(File file) {
+            int i = org.apache.commons.collections4.ListUtils.indexOf(mImages, image -> SystemUtils.isSameFile(image.getFile(), file));
+            if (i != -1) {
+                mImages.remove(i);
+                notifyDataSetChanged();
+            }
         }
     }
 }

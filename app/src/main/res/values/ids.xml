@@ -3,4 +3,5 @@
     <item name="position" type="id"/>
     <item name="item" type="id"/>
     <item name="today" type="id">今天</item>
+    <item name="file_path" type="id"/>
 </resources>

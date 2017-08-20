@@ -1,8 +1,7 @@
 package cn.intret.app.picgo.ui.adapter;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.drawable.Drawable;
+import android.os.Bundle;
 import android.support.annotation.MainThread;
 import android.support.annotation.Nullable;
 import android.support.v7.util.DiffUtil;
@@ -14,12 +13,8 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import com.annimon.stream.Stream;
-import com.annimon.stream.function.IndexedPredicate;
-import com.annimon.stream.function.Predicate;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
-import com.bumptech.glide.request.target.ViewTarget;
-import com.bumptech.glide.request.transition.Transition;
 
 import org.apache.commons.io.FilenameUtils;
 
@@ -30,8 +25,7 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
-
-import static com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions.withCrossFade;
+import cn.intret.app.picgo.utils.SystemUtils;
 
 /**
  * Waterfall Image List Adapter class for {@link RecyclerView}
@@ -85,7 +79,8 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
             public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
                 Item oldItem = mItems.get(oldItemPosition);
                 Item newItem = items.get(newItemPosition);
-                return oldItem.isSelected() == newItem.isSelected();
+                boolean isSameFile = SystemUtils.isSameFile(oldItem.getFile(), newItem.getFile());
+                return (oldItem.isSelected() == newItem.isSelected()) && isSameFile;
             }
 
             @Nullable
@@ -94,13 +89,19 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
                 Item oldItem = mItems.get(oldItemPosition);
                 Item newItem = items.get(newItemPosition);
                 newItem.setSelected(oldItem.isSelected());
-
-                return oldItem.isSelected();
+                Bundle diffBundle = new Bundle();
+                diffBundle.putBoolean("selected", oldItem.isSelected());
+                return diffBundle;
             }
-        }, false);
+        }, true);
 
         mItems = items;
         diffResult.dispatchUpdatesTo(this);
+
+        if (getSelectedCount() == 0 && mIsSelectionMode && mOnItemInteractionListener != null) {
+            mIsSelectionMode = false;
+            mOnItemInteractionListener.onSelectionModeChange(mIsSelectionMode);
+        }
     }
 
     public List<Item> getSelectedItemUntil(final int count) {
@@ -111,16 +112,25 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
                 ;
     }
 
+    public void removeFile(File file) {
+        int i = org.apache.commons.collections4.ListUtils.indexOf(mItems, item -> SystemUtils.isSameFile(item.getFile(), file));
+        if (i != -1) {
+            mItems.remove(i);
+            notifyItemRemoved(i);
+        }
+    }
+
     public interface OnItemInteractionListener {
 
         void onItemLongClick(Item item);
 
         void onItemCheckedChanged(Item item);
+
         void onItemClicked(Item item, View view, int position);
 
         void onSelectionModeChange(boolean isSelectionMode);
 
-        void onDragStared();
+        void onDragBegin(View view, int position, Item item);
     }
 
     public static final String TAG = ImageListAdapter.class.getSimpleName();
@@ -150,7 +160,6 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         }
 
         Item item = (Item) tag;
-        handleItemSelectAction(v, item, false);
     }
 
     @Override
@@ -159,7 +168,6 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         Object tag = v.getTag(R.id.item);
         if (tag != null) {
             Item item = (Item) tag;
-            return handleItemSelectAction(v, item, true);
         }
         return true;
     }
@@ -171,8 +179,8 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         if (mIsSelectionMode) {
             Log.d(TAG, "handleItemLongClickEvent: ignore long click on item " + position);
 
-            if (mOnItemInteractionListener != null) {
-                mOnItemInteractionListener.onDragStared();
+            if (item.isSelected() && mOnItemInteractionListener != null) {
+                mOnItemInteractionListener.onDragBegin(view, position, item);
             }
         } else {
             Log.d(TAG, "handleItemLongClickEvent: entered selection mode from item (" + position + ") click");
@@ -237,79 +245,6 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
 
     private void onItemLongClick(int position) {
 
-    }
-
-    /**
-     * A click or long click perform on an item
-     *
-     *
-     * @param view
-     * @param item
-     * @param isLongClick
-     * @return true, if action has been handled.
-     */
-    private boolean handleItemSelectAction(View view, Item item, boolean isLongClick) {
-        int selectedCount = getSelectedCount();
-
-        // Update item selected status
-        if (mIsSelectionMode) {
-
-            if (isLongClick) {
-                // Entering drap-and-drop mode
-                Log.d(TAG, "handleItemSelectAction: Drag started");
-                if (mOnItemInteractionListener != null) {
-                    mOnItemInteractionListener.onDragStared();
-                }
-                return true;
-            } else {
-
-                if (item.isSelected() && selectedCount == 1) {
-
-                    // Notify leaving selection mode
-                    if (mOnItemInteractionListener != null) {
-                        mIsSelectionMode = false;
-                        mOnItemInteractionListener.onSelectionModeChange(false);
-                    }
-                    item.setSelected(false);
-
-                } else {
-                    item.setSelected(!item.isSelected());
-                }
-            }
-
-        } else {
-
-            if (isLongClick) {
-                mIsSelectionMode = true;
-
-                // Notify entering selection mode
-                if (mOnItemInteractionListener != null) {
-                    mOnItemInteractionListener.onSelectionModeChange(true);
-                }
-                item.setSelected(true);
-            } else {
-
-                // 单击图片
-                if (mOnItemInteractionListener != null) {
-                    ViewHolder viewHolder = item.getViewHolder();
-                    int position = viewHolder.getAdapterPosition();
-                    mOnItemInteractionListener.onItemClicked(item,view, position);
-                }
-            }
-        }
-
-
-        ViewHolder viewHolder = item.getViewHolder();
-        if (viewHolder != null) {
-            viewHolder.setChecked(item.isSelected());
-        }
-
-
-        if (mOnItemInteractionListener != null) {
-            mOnItemInteractionListener.onItemLongClick(item);
-        }
-
-        return true;
     }
 
     public static class Item {
@@ -434,11 +369,23 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         return new ViewHolder(view);
     }
 
+    @Override
+    public void onBindViewHolder(ViewHolder holder, int position, List<Object> payloads) {
+        if (payloads.isEmpty()) {
+            onBindViewHolder(holder, position);
+        } else {
+            Bundle o = ((Bundle) payloads.get(0));
+            boolean selected = o.getBoolean("selected");
+            holder.checkBox.setVisibility(selected ? View.VISIBLE : View.GONE);
+        }
+    }
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
         Item item = mItems.get(position);
         item.setViewHolder(holder);
+
+        Log.d(TAG, "onBindViewHolder: position " + position + " viewHolder " + holder + " file " + item.getFile());
 
         // Bind data to image view
         holder.image.setTag(R.id.item, item);
@@ -512,7 +459,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
 
     public class ViewHolder extends RecyclerView.ViewHolder {
 
-        @BindView(R.id.img) ImageView image;
+        @BindView(R.id.image) ImageView image;
         @BindView(R.id.file_type) ImageView fileType;
         @BindView(R.id.checkbox) ImageView checkBox;
 

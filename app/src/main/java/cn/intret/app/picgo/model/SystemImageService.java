@@ -69,7 +69,7 @@ public class SystemImageService {
 
     Context mContext;
 
-    FolderModel mFolderModel = new FolderModel();
+    FolderModel mFolderModel;
 
     public int getFolderListCount() {
         if (mFolderModel == null) {
@@ -111,8 +111,17 @@ public class SystemImageService {
         }
     }
 
-    public Observable<FolderModel> loadAvailableFolderListModel() {
+    public Observable<FolderModel> loadFolderListModel(boolean fromCacheFirst) {
         return Observable.<FolderModel>create(emitter -> {
+
+            if (fromCacheFirst) {
+                if (mFolderModel != null) {
+                    emitter.onNext(mFolderModel);
+                    emitter.onComplete();
+                    return;
+                }
+            }
+
             FolderModel folderModel = new FolderModel();
 
             // SDCard/DCIM directory images
@@ -363,7 +372,7 @@ public class SystemImageService {
                 });
     }
 
-    public int moveFilesTo(File destDir, List<File> files) {
+    private int moveFilesTo(File destDir, List<File> files) {
         if (destDir == null) {
             throw new IllegalArgumentException("Argument 'destDir' is null.");
         }
@@ -500,7 +509,7 @@ public class SystemImageService {
 
     public Observable<List<ImageFolder>> loadGalleryFolderList() {
 
-        return loadAvailableFolderListModel()
+        return loadFolderListModel(true)
                 .map(folderModel -> {
                     List<FolderModel.ParentFolderInfo> parentFolderInfos = folderModel.getParentFolderInfos();
 
@@ -520,5 +529,35 @@ public class SystemImageService {
         int sectionForPosition = getSectionForPosition(position);
         FolderModel.ParentFolderInfo parentFolderInfo = mFolderModel.getParentFolderInfos().get(sectionForPosition);
         return parentFolderInfo.getName();
+    }
+
+    public Observable<Boolean> removeFile(File file) {
+        return Observable.create(e -> {
+            if (file == null) {
+                throw new IllegalArgumentException("File should not be null");
+            }
+
+            if (!file.exists()) {
+                throw new FileNotFoundException("File not found");
+            }
+
+            if (file.delete()) {
+
+                String parent = file.getParent();
+                List<Image> images = mImageListMap.get(parent);
+                if (images != null) {
+                    int i = org.apache.commons.collections4.ListUtils.indexOf(images, image -> SystemUtils.isSameFile(image.getFile(), file));
+                    if (i != -1) {
+                        images.remove(i);
+                        Log.d(TAG, "removeFile: " + file + " at " + i);
+                    }
+                }
+
+                e.onNext(true);
+                e.onComplete();
+
+                mBus.post(new RemoveFileMessage().setFile(file));
+            }
+        });
     }
 }

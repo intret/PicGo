@@ -5,7 +5,7 @@
         <!-- Customize your theme here. -->
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@android:color/holo_blue_light</item>
+        <item name="colorAccent">@android:color/holo_blue_dark</item>
         <item name="android:windowContentTransitions">true</item>
     </style>
 
@@ -13,6 +13,11 @@
         <!-- Customize your theme here. -->
         <item name="android:windowContentTransitions">false</item>
         <item name="android:windowActivityTransitions">true</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowTranslucentStatus">true</item>
+        <item name="android:immersive">true</item>
+        <item name="android:fitsSystemWindows">false</item>
+        <item name="android:statusBarColor">@color/transparent</item>
         <item name="android:windowSharedElementEnterTransition">@transition/transition_image</item>
         <item name="android:windowSharedElementExitTransition">@transition/transition_image</item>
     </style>

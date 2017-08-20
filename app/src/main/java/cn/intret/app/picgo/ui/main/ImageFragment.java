@@ -17,6 +17,7 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 
+import com.afollestad.materialdialogs.MaterialDialog;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.request.target.SimpleTarget;
@@ -29,9 +30,12 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
+import java.io.File;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
+import cn.intret.app.picgo.model.SystemImageService;
 import cn.intret.app.picgo.ui.event.CancelExitTransitionMessage;
 import cn.intret.app.picgo.ui.event.ImageFragmentSelectionChangeMessage;
 
@@ -96,7 +100,7 @@ public class ImageFragment extends Fragment {
         ButterKnife.bind(this, view);
 
         //if (mPerformEnterTransition) {
-            tryToSetTransitionNameFromIntent();
+        tryToSetTransitionNameFromIntent();
         //}
 
         mImage.setOnClickListener(v -> {
@@ -105,6 +109,36 @@ public class ImageFragment extends Fragment {
             } else {
                 getActivity().finish();
             }
+        });
+
+        mImage.setOnLongClickListener(v -> {
+            new MaterialDialog.Builder(this.getContext())
+                    .items(R.array.image_viewer_context_menu_items)
+                    .itemsCallback(new MaterialDialog.ListCallback() {
+                        @Override
+                        public void onSelection(MaterialDialog dialog, View itemView, int position, CharSequence text) {
+                            switch (position) {
+                                case 0: // delete files
+                                    SystemImageService.getInstance()
+                                            .removeFile(new File(mFilePath))
+                                            .subscribe(aBoolean -> {
+                                                    if (aBoolean) {
+
+                                                    }
+                                                }, throwable -> {
+
+                                                }
+                                    );
+                                    break;
+                                case 1: // rename
+                                    break;
+                                case 2: // move
+                                    break;
+                            }
+                        }
+                    })
+                    .show();
+            return true;
         });
 
         SimpleTarget<Drawable> target = new SimpleTarget<Drawable>() {
@@ -204,7 +238,7 @@ public class ImageFragment extends Fragment {
      * Use this factory method to create a new instance of
      * this fragment using the provided parameters.
      *
-     * @param filePath            File path of image to present
+     * @param filePath               File path of image to present
      * @param imageTransitionName
      * @param performEnterTransition
      * @return A new instance of fragment ImageFragment.
@@ -222,17 +256,17 @@ public class ImageFragment extends Fragment {
 
     /**
      * https://github.com/codepath/android_guides/wiki/Shared-Element-Activity-Transition
-     *
+     * <p>
      * Schedules the shared element transition to be started immediately
      * after the shared element has been measured and laid out within the
      * activity's view hierarchy. Some common places where it might make
      * sense to call this method are:
-     *
+     * <p>
      * (1) Inside a Fragment's onCreateView() method (if the shared element
-     *     lives inside a Fragment hosted by the called Activity).
-     *
+     * lives inside a Fragment hosted by the called Activity).
+     * <p>
      * (2) Inside a Picasso Callback object (if you need to wait for Picasso to
-     *     asynchronously load/scale a bitmap before the transition can begin).
+     * asynchronously load/scale a bitmap before the transition can begin).
      **/
     private void scheduleStartPostponedTransition(final View sharedElement) {
 //        sharedElement.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {

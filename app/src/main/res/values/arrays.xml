@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="main_image_list_selected_images_context_menu_items">
+        <item>复制</item>
+        <item>移动</item>
+        <item>删除</item>
+        </string-array>
+    <string-array name="image_viewer_context_menu_items">
+        <item>删除文件</item>
+        <item>重命名文件</item>
+        <item>移动文件到</item>
+    </string-array>
+
+</resources>

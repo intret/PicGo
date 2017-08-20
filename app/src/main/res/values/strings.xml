@@ -22,5 +22,21 @@
     <string name="main_drawer_menu_item_move__item__to__folder">移动 %1$s 中的 %2$d 个文件到当前文件夹</string>
     <string name="unimplemented">未实现</string>
     <string name="move_files_failed">移动文件失败</string>
-    <string name="already_moved_d_files">已经移动 %1$d 个文件</string>
+    <string name="already_moved_d_files">已成功移动 %1$d 个文件</string>
+    <string name="already_removed_d_files">已经删除 %1$d 个文件</string>
+    <string name="remove_file_failed">删除文件失败</string>
+    <string name="cannot_get_image_for_position">不能获取第 %1$d 项的图片</string>
+    <string name="selected_d_files_actions">选中的 %1$d 个文件操作</string>
+    <string name="move_file">移动文件</string>
+    <string name="copy">复制</string>
+    <string name="move">移动</string>
+    <string name="delete">删除</string>
+    <string name="setting">设置</string>
+    <string name="search">搜索</string>
+    <string name="view_mode">视图模式</string>
+    <string name="move_selected_images_to_directory_s">移动选中图片至目录：%1$s</string>
+    <string name="cancel">取消</string>
+    <string name="move_files_successfully_but_">移动文件成功，部分文件移动失败</string>
+    <string name="move_file_to">移动文件至</string>
+    <string name="move_selected_files_to">移动选中图片至</string>
 </resources>

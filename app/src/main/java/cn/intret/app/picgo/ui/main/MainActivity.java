@@ -3,9 +3,9 @@ package cn.intret.app.picgo.ui.main;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Rect;
 import android.os.Bundle;
 import android.support.annotation.MainThread;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.ActivityOptionsCompat;
@@ -19,13 +19,18 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.RadioGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.afollestad.sectionedrecyclerview.ItemCoord;
+import com.afollestad.sectionedrecyclerview.SectionedRecyclerViewAdapter;
 import com.annimon.stream.Collector;
 import com.annimon.stream.Stream;
 import com.annimon.stream.function.BiConsumer;
@@ -53,13 +58,12 @@ import cn.intret.app.picgo.model.GroupMode;
 import cn.intret.app.picgo.model.Image;
 import cn.intret.app.picgo.model.ImageFolder;
 import cn.intret.app.picgo.model.ImageGroup;
+import cn.intret.app.picgo.model.RemoveFileMessage;
 import cn.intret.app.picgo.model.SystemImageService;
 import cn.intret.app.picgo.ui.adapter.FlatFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.FolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.ImageListAdapter;
 import cn.intret.app.picgo.ui.adapter.ImageTransitionNameGenerator;
-import cn.intret.app.picgo.widget.RecyclerItemTouchListener;
-import cn.intret.app.picgo.widget.SectionDecoration;
 import cn.intret.app.picgo.ui.adapter.SectionFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedImageListAdapter;
@@ -69,6 +73,8 @@ import cn.intret.app.picgo.utils.DateTimeUtils;
 import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
+import cn.intret.app.picgo.widget.RecyclerItemTouchListener;
+import cn.intret.app.picgo.widget.SectionDecoration;
 import io.reactivex.Observable;
 
 public class MainActivity extends BaseAppCompatActivity implements ImageListAdapter.OnItemInteractionListener {
@@ -80,6 +86,8 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     @BindView(R.id.drawer_folder_list) RecyclerView mDrawerFolderList;
 
     @BindView(R.id.view_mode) RadioGroup mModeRadioGroup;
+    @BindView(R.id.floatingToolbar) Toolbar mFloatingToolbar;
+//    @BindView(R.id.fab) FloatingActionButton mFab;
 
     private int mSpanCount;
 
@@ -108,6 +116,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     private File mCurrentFolder;
     private int mCurrentShownImageIndex = -1;
     private SectionedFolderListAdapter mSectionedFolderListAdapter;
+    private Toolbar mToolbar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -116,14 +125,48 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
-        initAppBar();
+        initToolBar();
         initDrawer();
         initListViewHeader();
+        initListViewFAB();
 
         initTransition();
 
         EventBus.getDefault().register(this);
-        //showFloatingWindow();X
+        //showFloatingWindow();
+    }
+
+    private void initListViewFAB() {
+//        mFloatingToolbar.setClickListener(new FloatingToolbar.ItemClickListener() {
+//            @Override
+//            public void onItemClick(MenuItem item) {
+//                Log.d(TAG, "onItemClick() called with: item = [" + item + "]");
+//            }
+//
+//            @Override
+//            public void onItemLongClick(MenuItem item) {
+//                Log.d(TAG, "onItemLongClick() called with: item = [" + item + "]");
+//            }
+//        });
+////        mFloatingToolbar.attachFab(mFab);
+////        mFloatingToolbar.handleFabClick(true);
+//        mFloatingToolbar.enableAutoHide(true);
+
+        mFloatingToolbar.inflateMenu(R.menu.selected_images_action);
+        mFloatingToolbar.setOnMenuItemClickListener(item -> {
+            switch (item.getItemId()) {
+                case R.id.action_copy: {
+                    ToastUtils.toastShort(MainActivity.this, "copy");
+                }
+                break;
+                case R.id.action_move:
+                    showMoveFileDialog();
+                    break;
+                case R.id.action_remove:
+                    break;
+            }
+            return false;
+        });
     }
 
     @Override
@@ -131,8 +174,8 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         Log.d(TAG, "onStart: ");
         super.onStart();
 
-        initFolderList();
-        initImageList();
+        loadFolderList();
+        loadImageList();
     }
 
     @Override
@@ -159,6 +202,12 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         super.onDestroy();
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main, menu);
+        return true;
+    }
+
     private void initTransition() {
 
         ActivityCompat.setEnterSharedElementCallback(this, new SharedElementCallback() {
@@ -183,6 +232,8 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                     ImageListAdapter.ViewHolder viewHolder = item.getViewHolder();
                     if (viewHolder != null) {
                         sharedElements.put(transitionName, viewHolder.getImage());
+                    } else {
+                        Log.e(TAG, "onMapSharedElements: no view holder for file at " + mCurrentShownImageIndex + " " + item.getFile());
                     }
 
                     names.clear();
@@ -204,13 +255,26 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         mImageList.scrollToPosition(mCurrentShownImageIndex);
     }
 
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onEvent(RemoveFileMessage message) {
+        File file = message.getFile();
+        if (file != null) {
+            String parent = file.getParent();
+
+            ImageListAdapter adapter = mImageListAdapters.get(parent);
+            if (adapter != null) {
+                diffUpdateImageListAdapter(adapter);
+            }
+        }
+    }
+
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void onEvent(DirectoryRescanMessage message) {
         File dir = message.getDirectory();
 
         ImageListAdapter adapter = mImageListAdapters.get(dir.getAbsolutePath());
         if (adapter != null) {
-            reshowAdapter(adapter);
+            diffUpdateImageListAdapter(adapter);
         }
         File currDir = mCurrentImageAdapter.getDirectory();
         if (SystemUtils.isSameDirectory(dir, currDir)) {
@@ -218,9 +282,9 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         }
     }
 
-    private void reshowAdapter(ImageListAdapter adapter) {
+    private void diffUpdateImageListAdapter(ImageListAdapter adapter) {
         File dir = adapter.getDirectory();
-        Log.d(TAG, "reshowAdapter() called with: adapter = [" + adapter + "]");
+        Log.d(TAG, "diffUpdateImageListAdapter() called with: adapter = [" + adapter + "]");
 
         SystemImageService.getInstance()
                 .loadImageList(dir, true)
@@ -293,20 +357,44 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         startService(mStartFloatingIntent);
     }
 
-    private void initAppBar() {
+    private void initToolBar() {
+        mToolbar = (Toolbar) findViewById(R.id.my_toolbar);
+        setSupportActionBar(mToolbar);
 
+        mToolbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
+
+        mToolbar.setOnMenuItemClickListener(item -> {
+
+            switch (item.getItemId()) {
+                case R.id.app_bar_search:
+                    ToastUtils.toastShort(MainActivity.this, "search");
+                    break;
+                case R.id.app_bar_setting:
+                    ToastUtils.toastShort(MainActivity.this, "setting");
+                    break;
+                case R.id.app_bar_view_mode:
+                    ToastUtils.toastShort(MainActivity.this, "viewmode");
+                    break;
+            }
+
+            return true;
+        });
     }
 
     private void initDrawer() {
-        Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
-        setSupportActionBar(myToolbar);
+
 
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setHomeButtonEnabled(false);
 
             mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout,
-                    myToolbar, R.string.drawer_open, R.string.drawer_close) {
+                    mToolbar, R.string.drawer_open, R.string.drawer_close) {
 
                 /** Called when a drawer has settled in a completely closed state. */
                 public void onDrawerClosed(View view) {
@@ -335,13 +423,13 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
     }
 
-    private void initFolderList() {
+    private void loadFolderList() {
         if (mIsFolderListLoaded) {
-            Log.d(TAG, "initFolderList: TODO 检查文件列表变化");
+            Log.d(TAG, "loadFolderList: TODO 检查文件列表变化");
         } else {
             // 初始化相册文件夹列表
             SystemImageService.getInstance()
-                    .loadAvailableFolderListModel()
+                    .loadFolderListModel(true)
                     .compose(workAndShow())
                     .doOnError(Throwable::printStackTrace)
                     .subscribe(this::showFolderList);
@@ -349,18 +437,54 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
     }
 
+    interface SectionedListItemDispatchListener {
+        void onHeader(SectionedRecyclerViewAdapter adapter, ItemCoord coord);
+
+        void onFooter(SectionedRecyclerViewAdapter adapter, ItemCoord coord);
+
+        void onItem(SectionedRecyclerViewAdapter adapter, ItemCoord coord);
+    }
+
+    class SectionedListItemClickDispatcher {
+        private SectionedListItemDispatchListener mListener;
+        com.afollestad.sectionedrecyclerview.SectionedRecyclerViewAdapter mAdapter;
+
+        SectionedListItemClickDispatcher(SectionedRecyclerViewAdapter adapter) {
+            mAdapter = adapter;
+
+        }
+
+        public void detect(int position, SectionedListItemDispatchListener listener) {
+            if (mAdapter == null) {
+                return;
+            }
+
+            mListener = listener;
+            ItemCoord relativePosition = mAdapter.getRelativePosition(position);
+            boolean header = mAdapter.isHeader(position);
+            boolean footer = mAdapter.isFooter(position);
+            if (mListener != null) {
+
+                if (header) {
+                    mListener.onHeader(mAdapter, relativePosition);
+                    return;
+                }
+
+                if (footer) {
+                    mListener.onFooter(mAdapter, relativePosition);
+                    return;
+                }
+
+                mListener.onItem(mAdapter, relativePosition);
+            }
+        }
+    }
+
     private void showFolderList(FolderModel model) {
 
         mIsFolderListLoaded = true;
 
-        List<SectionedFolderListAdapter.Section> sections = new LinkedList<>();
-
-        List<FolderModel.ParentFolderInfo> parentFolderInfos = model.getParentFolderInfos();
-        for (int i = 0, s = parentFolderInfos.size(); i < s; i++) {
-            sections.add(parentFolderToItem(parentFolderInfos.get(i)));
-        }
-
-        SectionedFolderListAdapter listAdapter = new SectionedFolderListAdapter(sections);
+        SectionedFolderListAdapter listAdapter = folderModelToSectionedFolderListAdapter(model);
 
         // RecyclerView layout
         mDrawerFolderList.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
@@ -370,41 +494,12 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         mSectionedFolderListAdapter = listAdapter;
 
         // List item click event
-        mDrawerFolderList.addOnItemTouchListener(new RecyclerItemTouchListener(this,
+        RecyclerItemTouchListener itemTouchListener = new RecyclerItemTouchListener(this,
                 mDrawerFolderList,
-                (view, position) -> {
-
-                    ItemCoord relativePosition = listAdapter.getRelativePosition(position);
-                    boolean header = listAdapter.isHeader(position);
-                    boolean footer = listAdapter.isFooter(position);
-                    if (header) {
-                        boolean sectionExpanded = listAdapter.isSectionExpanded(relativePosition.section());
-                        if (sectionExpanded) {
-                            listAdapter.collapseSection(relativePosition.section());
-                        } else {
-                            listAdapter.expandSection(relativePosition.section());
-                        }
-                    } else if (footer) {
-                        Log.d(TAG, "onItemClick: footer clicked");
-                    } else {
-                        SectionedFolderListAdapter.Item item = listAdapter.getItem(relativePosition);
-                        Log.d(TAG, "onItemClick: 显示 " + item.getFile());
-                        mDrawerLayout.closeDrawers();
-                        showDirectoryImageList(item.getFile());
-                    }
-                    Log.d(TAG, "onItemClick() called with: view = [" + view + "], position = [" + position + "]");
-                }, (view, position) -> {
-            if (mSectionedFolderListAdapter != null) {
-                ItemCoord coord = mSectionedFolderListAdapter.getRelativePosition(position);
-                boolean footer = mSectionedFolderListAdapter.isFooter(position);
-                boolean header = mSectionedFolderListAdapter.isHeader(position);
-                if (!header && !footer) {
-                    SectionedFolderListAdapter.Item item = mSectionedFolderListAdapter.getItem(coord);
-                    onLongClickFolderListItem(item);
-                }
-            }
-        }
-        ));
+                (view, position) -> onFolderListItemClick(position),
+                (view, position) -> onFolderListItemLongClick(position)
+        );
+        mDrawerFolderList.addOnItemTouchListener(itemTouchListener);
 
         // show firstOf folder's images in activity content field.
 //        SectionedFolderListAdapter.Section sectionItem = ListUtils.firstOf(sections);
@@ -416,7 +511,68 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 //        }
     }
 
-    private void onLongClickFolderListItem(SectionedFolderListAdapter.Item folderItem) {
+    private void onFolderListItemLongClick(int position) {
+        new SectionedListItemClickDispatcher(mSectionedFolderListAdapter)
+                .detect(position, new SectionedListItemDispatchListener() {
+                    @Override
+                    public void onHeader(SectionedRecyclerViewAdapter adapter, ItemCoord coord) {
+
+                    }
+
+                    @Override
+                    public void onFooter(SectionedRecyclerViewAdapter adapter, ItemCoord coord) {
+
+                    }
+
+                    @Override
+                    public void onItem(SectionedRecyclerViewAdapter adapter, ItemCoord coord) {
+                        SectionedFolderListAdapter.Item item = mSectionedFolderListAdapter.getItem(coord);
+                        showActionDialogForFile(item.getFile());
+                    }
+                });
+    }
+
+    private void onFolderListItemClick(int position) {
+        new SectionedListItemClickDispatcher(mSectionedFolderListAdapter)
+                .detect(position, new SectionedListItemDispatchListener() {
+                    @Override
+                    public void onHeader(SectionedRecyclerViewAdapter adapter, ItemCoord relativePosition) {
+                        boolean sectionExpanded = mSectionedFolderListAdapter.isSectionExpanded(relativePosition.section());
+                        if (sectionExpanded) {
+                            mSectionedFolderListAdapter.collapseSection(relativePosition.section());
+                        } else {
+                            mSectionedFolderListAdapter.expandSection(relativePosition.section());
+                        }
+                    }
+
+                    @Override
+                    public void onFooter(SectionedRecyclerViewAdapter adapter, ItemCoord coord) {
+                        Log.d(TAG, "onItemClick: footer clicked");
+                    }
+
+                    @Override
+                    public void onItem(SectionedRecyclerViewAdapter adapter, ItemCoord relativePosition) {
+                        SectionedFolderListAdapter.Item item = mSectionedFolderListAdapter.getItem(relativePosition);
+                        Log.d(TAG, "onItemClick: 显示 " + item.getFile());
+                        mDrawerLayout.closeDrawers();
+                        showDirectoryImageList(item.getFile());
+                    }
+                });
+    }
+
+    @NonNull
+    private SectionedFolderListAdapter folderModelToSectionedFolderListAdapter(FolderModel model) {
+        List<SectionedFolderListAdapter.Section> sections = new LinkedList<>();
+
+        List<FolderModel.ParentFolderInfo> parentFolderInfos = model.getParentFolderInfos();
+        for (int i = 0, s = parentFolderInfos.size(); i < s; i++) {
+            sections.add(parentFolderToItem(parentFolderInfos.get(i)));
+        }
+
+        return new SectionedFolderListAdapter(sections);
+    }
+
+    private void showActionDialogForFile(File file) {
 
         List<Map.Entry<String, ImageListAdapter>> selectionModeAdapters = Stream.of(mImageListAdapters)
                 .filter(value -> value.getValue().isSelectionMode())
@@ -426,9 +582,8 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
             List<String> names = Stream.of(selectionModeAdapters)
                     .map(entry -> {
                         ImageListAdapter value = entry.getValue();
-                        String itemName = MainActivity.this.getString(R.string.main_drawer_menu_item_move__item__to__folder,
+                        return this.getString(R.string.main_drawer_menu_item_move__item__to__folder,
                                 value.getDirectory().getName(), value.getSelectedCount());
-                        return itemName;
                     })
                     .toList();
 
@@ -443,23 +598,20 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 //                    .show();
 
 
-            List<FlatFolderListAdapter.Item> items = Stream.of(selectionModeAdapters).map(entry -> {
-                return new FlatFolderListAdapter.Item()
-                        .setDirectory(entry.getValue().getDirectory())
-                        .setCount(entry.getValue().getSelectedCount())
-                        .setThumbList(
-                                Stream.of(entry.getValue()
-                                        .getSelectedItemUntil(3))
-                                        .map(ImageListAdapter.Item::getFile)
-                                        .toList()
-                        )
-                        ;
-
-            }).toList();
+            List<FlatFolderListAdapter.Item> items = Stream.of(selectionModeAdapters)
+                    .map(entry -> new FlatFolderListAdapter.Item()
+                            .setDirectory(entry.getValue().getDirectory())
+                            .setCount(entry.getValue().getSelectedCount())
+                            .setThumbList(
+                                    Stream.of(entry.getValue()
+                                            .getSelectedItemUntil(3))
+                                            .map(ImageListAdapter.Item::getFile)
+                                            .toList()
+                            )).toList();
 
             FlatFolderListAdapter selectedFolderListAdapter = new FlatFolderListAdapter(items);
             new MaterialDialog.Builder(this)
-                    .title(getString(R.string.folder_s_operations, folderItem.getName()))
+                    .title(getString(R.string.folder_s_operations, file.getName()))
                     // second parameter is an optional layout manager. Must be a LinearLayoutManager or GridLayoutManager.
                     .adapter(selectedFolderListAdapter, new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false))
                     .positiveText(R.string.move_to_here)
@@ -469,9 +621,9 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                             List<FlatFolderListAdapter.Item> selectedItem = selectedFolderListAdapter.getSelectedItem();
                             Stream.of(selectedItem)
                                     .map(FlatFolderListAdapter.Item::getDirectory)
-                                    .forEach(file -> {
+                                    .forEach(f -> {
                                         // TODO show progress
-                                        moveAdapterSelectedFilesToDir(file, folderItem.getFile());
+                                        moveAdapterSelectedFilesToDir(f, file);
                                     });
                         }
                     })
@@ -921,24 +1073,6 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         return Stream.of(images).map(image -> new ImageListAdapter.Item().setFile(image.getFile())).toList();
     }
 
-    /**
-     * https://stackoverflow.com/questions/24618829/how-to-add-dividers-and-spaces-between-items-in-recyclerview
-     */
-    public class VerticalSpaceItemDecoration extends RecyclerView.ItemDecoration {
-
-        private final int verticalSpaceHeight;
-
-        public VerticalSpaceItemDecoration(int verticalSpaceHeight) {
-            this.verticalSpaceHeight = verticalSpaceHeight;
-        }
-
-        @Override
-        public void getItemOffsets(Rect outRect, View view, RecyclerView parent,
-                                   RecyclerView.State state) {
-            outRect.bottom = verticalSpaceHeight;
-        }
-    }
-
     private void showImageListAdapter(ImageListAdapter adapter) {
         adapter.setOnItemInteractionListener(this);
 
@@ -948,9 +1082,9 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         mGridLayoutManager = new GridLayoutManager(this, mSpanCount, GridLayoutManager.VERTICAL, false);
         mImageList.setLayoutManager(mGridLayoutManager);
 
+        mFloatingToolbar.setVisibility(mCurrentImageAdapter.isSelectionMode() ? View.VISIBLE : View.GONE);
 
         // Item event
-
         if (mImageList.getAdapter() == null) {
             mImageList.setAdapter(adapter);
         } else {
@@ -958,15 +1092,14 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         }
     }
 
-    private void initImageList() {
+    private void loadImageList() {
         if (mIsImageListLoaded) {
 
-            Log.d(TAG, "initImageList: TODO 检查并更新图片文件");
+            Log.d(TAG, "loadImageList: TODO 检查并更新图片文件");
         } else {
             mSpanCount = 3; // columns
 
-            // Item Click event
-            // TODO: move code to adapter
+            // Item Click event TODO: move code to adapter
             mImageList.addOnItemTouchListener(new RecyclerItemTouchListener(this,
                     mImageList,
                     (view, position) -> {
@@ -1065,6 +1198,11 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     private void startImageViewerActivity(ImageListAdapter.Item item, File directory, View view, int position) {
 
         mCurrentShownImageIndex = position;
+        View imageView = view.findViewById(R.id.image);
+        if (imageView == null || !(imageView instanceof ImageView)) {
+            ToastUtils.toastLong(this, getString(R.string.cannot_get_image_for_position, position));
+            return;
+        }
 
         // Construct an Intent as normal
         Intent intent = ImageViewerActivity.newIntentViewFileList(this, directory.getAbsolutePath(),
@@ -1081,8 +1219,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
                 // Now we provide a list of Pair items which contain the view we can transitioning
                 // from, and the name of the view it is transitioning to, in the launched activity
-                new Pair<View, String>(item.getViewHolder().getImage(),
-                        item.getTransitionName()));
+                new Pair<View, String>(imageView, item.getTransitionName()));
         // Now we can start the Activity, providing the activity options as a bundle
         ActivityCompat.startActivity(this, intent, activityOptions.toBundle());
         // END_INCLUDE(start_activity)
@@ -1111,13 +1248,141 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         Log.d(TAG, "onSelectionModeChange: isSelectionMode " + isSelectionMode);
         if (isSelectionMode) {
             changeFloatingCount(FloatWindowService.MSG_INCREASE);
+
+            mFloatingToolbar.setVisibility(View.VISIBLE);
+//            mFloatingToolbar.showContextMenu();
         } else {
             changeFloatingCount(FloatWindowService.MSG_DECREASE);
+
+            mFloatingToolbar.setVisibility(View.GONE);
+//            mFloatingToolbar.dismissPopupMenus();
         }
     }
 
     @Override
-    public void onDragStared() {
+    public void onDragBegin(View view, int position, ImageListAdapter.Item item) {
 
+        int sectionCount = mCurrentImageAdapter.getSelectedCount();
+
+
+        new MaterialDialog.Builder(this)
+                .title(getString(R.string.selected_d_files_actions, sectionCount))
+
+                .items(R.array.main_image_list_selected_images_context_menu_items)
+                .itemsCallback((dialog, itemView, pos, text) -> {
+                    switch (pos) {
+                        case 0: {
+                            // copy
+                            ToastUtils.toastShort(this, R.string.unimplemented);
+                        }
+                        break;
+                        case 1: {
+                            // move
+                            showMoveFileDialog();
+                        }
+                        break;
+                        case 2: {
+                            // remove
+                            ToastUtils.toastShort(this, R.string.unimplemented);
+                        }
+                        break;
+                    }
+                })
+                .show();
+    }
+
+    private void showMoveFileDialog() {
+        List<ImageListAdapter.Item> selectedItems = mCurrentImageAdapter.getSelectedItems();
+        List<File> selectedFiles = Stream.of(selectedItems).map(ImageListAdapter.Item::getFile).toList();
+
+        SystemImageService.getInstance()
+                .loadFolderListModel(true)
+                .compose(workAndShow())
+                .map(this::folderModelToSectionedFolderListAdapter)
+                .subscribe(adapter -> {
+                    moveFiles(selectedFiles, adapter);
+                });
+    }
+
+    private void moveFiles(List<File> selectedFiles, SectionedFolderListAdapter adapter) {
+        View contentView = createMoveFileDialogContentView(adapter);
+
+        new MaterialDialog.Builder(this)
+                .title(R.string.move_selected_files_to)
+                .customView(contentView, false)
+                .positiveText(R.string.move_file)
+                .negativeText(R.string.cancel)
+                .onPositive((dialog, which) -> {
+                    Object tag = contentView.getTag(R.id.item);
+                    if (tag != null && tag instanceof SectionedFolderListAdapter.Item) {
+
+                        File destDir = ((SectionedFolderListAdapter.Item) tag).getFile();
+                        SystemImageService.getInstance()
+                                .moveFilesToDirectory(destDir, selectedFiles)
+                                .compose(workAndShow())
+                                .subscribe(count -> {
+                                    if (count == selectedFiles.size()) {
+                                        ToastUtils.toastLong(MainActivity.this, MainActivity.this.getString(R.string.already_moved_d_files,count));
+                                    } else if (count > 0 && count < selectedFiles.size()) {
+                                        // 部分文件移动失败
+                                        ToastUtils.toastShort(MainActivity.this, R.string.move_files_successfully_but_);
+                                    } else {
+                                        ToastUtils.toastShort(MainActivity.this, R.string.move_files_failed);
+                                    }
+                                }, throwable -> {
+                                    ToastUtils.toastShort(MainActivity.this, R.string.move_files_failed);
+                                });
+                    }
+                })
+                .onNegative((dialog, which) -> {
+
+                })
+//                            .adapter(adapter, new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false))
+                .show();
+    }
+
+    private View createMoveFileDialogContentView(SectionedFolderListAdapter adapter) {
+        View root = LayoutInflater.from(this)
+                .inflate(R.layout.move_file_dialog, null, false);
+
+        RecyclerView recyclerView = (RecyclerView) root.findViewById(R.id.folder_list);
+        TextView desc = (TextView) root.findViewById(R.id.desc);
+
+        recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
+        recyclerView.setAdapter(adapter);
+
+        RecyclerItemTouchListener.OnItemClickListener clickListener = (view, position) -> {
+            new SectionedListItemClickDispatcher(adapter)
+                    .detect(position, new SectionedListItemDispatchListener() {
+                        @Override
+                        public void onHeader(SectionedRecyclerViewAdapter adapter, ItemCoord coord) {
+                            boolean sectionExpanded = adapter.isSectionExpanded(coord.section());
+                            if (sectionExpanded) {
+                                adapter.collapseSection(coord.section());
+                            } else {
+                                adapter.expandSection(coord.section());
+                            }
+                        }
+
+                        @Override
+                        public void onFooter(SectionedRecyclerViewAdapter adapter, ItemCoord coord) {
+
+                        }
+
+                        @Override
+                        public void onItem(SectionedRecyclerViewAdapter adapter, ItemCoord coord) {
+                            SectionedFolderListAdapter.Item item = mSectionedFolderListAdapter.getItem(coord);
+
+                            desc.setText(getString(R.string.move_selected_images_to_directory_s, item.getFile().getName()));
+                            root.setTag(R.id.item,item);
+                        }
+                    });
+        };
+        RecyclerItemTouchListener.OnItemLongClickListener longClickListener = (view, position) -> {
+
+        };
+        recyclerView.addOnItemTouchListener(new RecyclerItemTouchListener(this, recyclerView, clickListener, longClickListener));
+
+        return root;
     }
 }

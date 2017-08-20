@@ -3,6 +3,8 @@ package cn.intret.app.picgo.utils;
 import android.os.Environment;
 import android.util.Log;
 
+import org.apache.commons.io.FilenameUtils;
+
 import java.io.File;
 import java.io.FilenameFilter;
 
@@ -47,10 +49,18 @@ public class SystemUtils {
             return false;
         }
 
-        if (!dir1.isDirectory() || !dir2.isDirectory()) {
+//        if (!dir1.isDirectory() || !dir2.isDirectory()) {
+//            return false;
+//        }
+
+        return dir1.getAbsolutePath().equalsIgnoreCase(dir2.getAbsolutePath());
+    }
+
+    public static boolean isSameFile(File file1, File file2) {
+        if (file1 == null || file2 == null) {
             return false;
         }
 
-        return dir1.getAbsolutePath().equalsIgnoreCase(dir2.getAbsolutePath());
+        return file1.getAbsolutePath().equalsIgnoreCase(file2.getAbsolutePath());
     }
 }
