@@ -11,4 +11,9 @@
         <item>移动文件到</item>
     </string-array>
 
+    <string-array name="folder_list_item_context_menu_items">
+        <item>移动文件夹</item>
+        <item>重命名文件夹</item>
+        <item>删除文件夹</item>
+    </string-array>
 </resources>

@@ -3,6 +3,7 @@ package cn.intret.app.picgo.ui.adapter;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,6 +12,12 @@ import android.widget.TextView;
 import com.afollestad.sectionedrecyclerview.ItemCoord;
 import com.afollestad.sectionedrecyclerview.SectionedRecyclerViewAdapter;
 import com.afollestad.sectionedrecyclerview.SectionedViewHolder;
+import com.annimon.stream.Stream;
+import com.annimon.stream.function.BiFunction;
+import com.annimon.stream.function.IndexedBiFunction;
+
+import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.Predicate;
 
 import java.io.File;
 import java.util.LinkedList;
@@ -19,6 +26,7 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
+import cn.intret.app.picgo.utils.SystemUtils;
 
 /**
  * 分段文件夹列表
@@ -39,6 +47,28 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             }
         }
         return null;
+    }
+
+    public void renameDirectory(File oldDirectory, File newDirectory) {
+        if (oldDirectory == null || newDirectory == null) {
+            return;
+        }
+
+        int sectionIndex = -1;
+        int itemIndex = -1;
+        for (int sec = 0, mSectionsSize = mSections.size(); sec < mSectionsSize; sec++) {
+            Section section = mSections.get(sec);
+            int ii = ListUtils.indexOf(section.getItems(), object -> SystemUtils.isSameFile(object.getFile(), oldDirectory));
+            if (ii != -1) {
+                sectionIndex = sec;
+                itemIndex = ii;
+                break;
+            }
+        }
+        if (sectionIndex != -1) {
+            mSections.get(sectionIndex).getItems().get(itemIndex).setFile(newDirectory).setName(newDirectory.getName());
+            notifyItemChanged(getAbsolutePosition(sectionIndex, itemIndex));
+        }
     }
 
     public static class Section {

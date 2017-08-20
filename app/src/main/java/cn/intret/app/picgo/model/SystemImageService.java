@@ -11,6 +11,8 @@ import com.annimon.stream.function.Function;
 import com.annimon.stream.function.Supplier;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.input.BOMInputStream;
+import org.apache.commons.lang3.StringUtils;
 import org.greenrobot.eventbus.EventBus;
 
 import java.io.File;
@@ -529,6 +531,36 @@ public class SystemImageService {
         int sectionForPosition = getSectionForPosition(position);
         FolderModel.ParentFolderInfo parentFolderInfo = mFolderModel.getParentFolderInfos().get(sectionForPosition);
         return parentFolderInfo.getName();
+    }
+
+    public Observable<Boolean> renameDir(File srcDir, String newDirName) {
+        return Observable.create(e -> {
+            if (srcDir == null) {
+                throw new IllegalArgumentException("File should not be null");
+            }
+
+            if (!srcDir.exists()) {
+                throw new FileNotFoundException("File not found");
+            }
+
+            if (!srcDir.isDirectory()) {
+                throw new IllegalStateException("File is not a directory.");
+            }
+
+            if (StringUtils.equals(newDirName, srcDir.getName())) {
+                throw new IllegalArgumentException("The new directory name '" + newDirName + "' equals to the source directory.");
+            }
+
+            File destDir = new File(srcDir.getParentFile(), newDirName);
+            FileUtils.moveDirectory(srcDir, destDir);
+
+            mBus.post(new RenameDirectoryMessage()
+                    .setOldDirectory(srcDir)
+                    .setNewDirectory(destDir));
+
+            e.onNext(true);
+            e.onComplete();
+        });
     }
 
     public Observable<Boolean> removeFile(File file) {

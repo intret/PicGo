@@ -39,4 +39,11 @@
     <string name="move_files_successfully_but_">移动文件成功，部分文件移动失败</string>
     <string name="move_file_to">移动文件至</string>
     <string name="move_selected_files_to">移动选中图片至</string>
+    <string name="rename_folder_s">重命名 %1$s</string>
+    <string name="remove_folder_s"> 删除 %1$s</string>
+    <string name="move_folder_s"> 移动 %1$s</string>
+    <string name="input_new_directory_name">输入新文件夹名称</string>
+    <string name="already_rename_folder">已经重命名文件夹</string>
+    <string name="folder_rename">文件夹重命名</string>
+    <string name="folder_name_has_no_changes">文件夹名称没变化</string>
 </resources>

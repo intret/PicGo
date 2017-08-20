@@ -18,10 +18,13 @@ import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.text.Editable;
+import android.text.InputType;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -29,6 +32,7 @@ import android.widget.Toast;
 
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
+import com.afollestad.materialdialogs.internal.MDButton;
 import com.afollestad.sectionedrecyclerview.ItemCoord;
 import com.afollestad.sectionedrecyclerview.SectionedRecyclerViewAdapter;
 import com.annimon.stream.Collector;
@@ -38,6 +42,7 @@ import com.annimon.stream.function.Function;
 import com.annimon.stream.function.Supplier;
 import com.thekhaeng.recyclerviewmargin.LayoutMarginDecoration;
 
+import org.apache.commons.lang3.StringUtils;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
@@ -59,6 +64,7 @@ import cn.intret.app.picgo.model.Image;
 import cn.intret.app.picgo.model.ImageFolder;
 import cn.intret.app.picgo.model.ImageGroup;
 import cn.intret.app.picgo.model.RemoveFileMessage;
+import cn.intret.app.picgo.model.RenameDirectoryMessage;
 import cn.intret.app.picgo.model.SystemImageService;
 import cn.intret.app.picgo.ui.adapter.FlatFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.FolderListAdapter;
@@ -280,6 +286,11 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         if (SystemUtils.isSameDirectory(dir, currDir)) {
 
         }
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onEvent(RenameDirectoryMessage message) {
+        mSectionedFolderListAdapter.renameDirectory(message.getOldDirectory(), message.getNewDirectory());
     }
 
     private void diffUpdateImageListAdapter(ImageListAdapter adapter) {
@@ -527,9 +538,78 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                     @Override
                     public void onItem(SectionedRecyclerViewAdapter adapter, ItemCoord coord) {
                         SectionedFolderListAdapter.Item item = mSectionedFolderListAdapter.getItem(coord);
-                        showActionDialogForFile(item.getFile());
+                        showFolderItemContextMenuDialog(item);
+                        //showActionDialogForFile(item.getFile());
                     }
                 });
+    }
+
+    private void showFolderItemContextMenuDialog(SectionedFolderListAdapter.Item item) {
+        LinkedList<String> menuItems = new LinkedList<>();
+        menuItems.add(getString(R.string.rename_folder_s, item.getFile().getName()));
+        menuItems.add(getString(R.string.move_folder_s, item.getFile().getName()));
+        menuItems.add(getString(R.string.remove_folder_s, item.getFile().getName()));
+
+        new MaterialDialog.Builder(this)
+                .items(menuItems)
+                .itemsCallback((dialog, itemView, position, text) -> {
+                    switch (position) {
+                        case 0: { // rename
+                            MaterialDialog.Builder builder = new MaterialDialog.Builder(this)
+                                    .title(R.string.folder_rename)
+                                    .alwaysCallInputCallback()
+                                    .input(getString(R.string.input_new_directory_name), item.getName(),
+                                            (dlg, input) -> {
+                                                boolean isValid = !StringUtils.equals(input, item.getName());
+                                                Log.d(TAG, " name " + input + " " + item.getName() + " " + isValid);
+                                                MDButton actionButton = dlg.getActionButton(DialogAction.POSITIVE);
+                                                actionButton.setEnabled(isValid);
+                                                actionButton.setClickable(isValid);
+                                            })
+                                    .inputRange(1, 20)
+                                    .inputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI)
+                                    .onPositive((dialog1, which) -> {
+
+                                        EditText inputEditText = dialog1.getInputEditText();
+                                        if (inputEditText != null) {
+                                            Editable editableText = inputEditText.getEditableText();
+                                            if (editableText != null) {
+                                                String newDirName = editableText.toString();
+
+                                                if (StringUtils.equals(newDirName, item.getName())) {
+                                                    ToastUtils.toastLong(this, R.string.folder_name_has_no_changes);
+                                                    return;
+                                                }
+
+                                                SystemImageService.getInstance()
+                                                        .renameDir(item.getFile(), newDirName)
+                                                        .compose(workAndShow())
+                                                        .subscribe(aBoolean -> {
+                                                            if (aBoolean) {
+                                                                ToastUtils.toastLong(this, getString(R.string.already_rename_folder));
+                                                            }
+                                                        }, throwable -> {
+
+                                                        })
+                                                ;
+                                            }
+                                        }
+                                    });
+                            MaterialDialog dlg = builder.build();
+                            MDButton actionButton = dlg.getActionButton(DialogAction.POSITIVE);
+                            actionButton.setEnabled(false);
+                            actionButton.setClickable(false);
+
+                            dlg.show();
+                        }
+                        break;
+                        case 1:
+                            break;
+                        case 2:
+                            break;
+                    }
+                })
+                .show();
     }
 
     private void onFolderListItemClick(int position) {
@@ -1322,7 +1402,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                                 .compose(workAndShow())
                                 .subscribe(count -> {
                                     if (count == selectedFiles.size()) {
-                                        ToastUtils.toastLong(MainActivity.this, MainActivity.this.getString(R.string.already_moved_d_files,count));
+                                        ToastUtils.toastLong(MainActivity.this, MainActivity.this.getString(R.string.already_moved_d_files, count));
                                     } else if (count > 0 && count < selectedFiles.size()) {
                                         // 部分文件移动失败
                                         ToastUtils.toastShort(MainActivity.this, R.string.move_files_successfully_but_);
@@ -1374,7 +1454,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                             SectionedFolderListAdapter.Item item = mSectionedFolderListAdapter.getItem(coord);
 
                             desc.setText(getString(R.string.move_selected_images_to_directory_s, item.getFile().getName()));
-                            root.setTag(R.id.item,item);
+                            root.setTag(R.id.item, item);
                         }
                     });
         };
