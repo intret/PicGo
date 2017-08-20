@@ -14,7 +14,9 @@ import android.widget.ImageView;
 
 import com.annimon.stream.Stream;
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.bitmap.BitmapTransitionOptions;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
+import com.bumptech.glide.load.resource.transcode.BitmapDrawableTranscoder;
 
 import org.apache.commons.io.FilenameUtils;
 
@@ -399,9 +401,9 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
 
                 holder.image.setScaleType(ImageView.ScaleType.CENTER_CROP);
                 Glide.with(context)
-                        .asDrawable()
+                        .asBitmap() // bitmap 不会播放 GIF
                         .load(item.getFile())
-                        .transition(DrawableTransitionOptions.withCrossFade())
+                        .transition(BitmapTransitionOptions.withCrossFade())
                         .into(holder.image);
 
             } else {
