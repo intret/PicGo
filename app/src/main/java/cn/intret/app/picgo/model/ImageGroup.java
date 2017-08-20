@@ -39,4 +39,12 @@ public class ImageGroup {
         mImages = images;
         return this;
     }
+
+    @Override
+    public String toString() {
+        return "ImageGroup{" +
+                "mStartDate=" + mStartDate +
+                ", mEndDate=" + mEndDate +
+                '}';
+    }
 }

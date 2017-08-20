@@ -6,6 +6,11 @@ import java.util.List;
 
 public class ListUtils {
 
+    public static <T> boolean isEmpty(List<T> list) {
+        return list == null || list.isEmpty();
+    }
+
+
     public static <T> ArrayList<T> objectToArrayList(T object) {
         ArrayList<T> objects = new ArrayList<>();
         objects.add(object);

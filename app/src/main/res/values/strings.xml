@@ -19,4 +19,8 @@
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="main_drawer_menu_item_move__item__to__folder">移动 %1$s 中的 %2$d 个文件到当前文件夹</string>
+    <string name="unimplemented">未实现</string>
+    <string name="move_files_failed">移动文件失败</string>
+    <string name="already_moved_d_files">已经移动 %1$d 个文件</string>
 </resources>

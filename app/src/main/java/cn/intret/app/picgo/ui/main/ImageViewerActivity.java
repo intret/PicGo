@@ -201,7 +201,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
         if (mDirPath != null && mItemPosition != -1) {
 
             SystemImageService.getInstance()
-                    .loadImageList(new File(mDirPath))
+                    .loadImageList(new File(mDirPath), true)
                     .compose(workAndShow())
                     .map(this::imageListToImageListAdapter)
                     .subscribe(adapter -> {

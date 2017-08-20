@@ -3,7 +3,9 @@ package cn.intret.app.picgo.ui.adapter;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
+import android.support.annotation.MainThread;
 import android.support.annotation.Nullable;
+import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -12,6 +14,8 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import com.annimon.stream.Stream;
+import com.annimon.stream.function.IndexedPredicate;
+import com.annimon.stream.function.Predicate;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.bumptech.glide.request.target.ViewTarget;
@@ -34,14 +38,77 @@ import static com.bumptech.glide.load.resource.drawable.DrawableTransitionOption
  */
 public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.ViewHolder> implements View.OnLongClickListener, View.OnClickListener {
 
+    @Override
+    public String toString() {
+        return "ImageListAdapter{" +
+                "mDirectory=" + mDirectory +
+                ", mSpanCount=" + mSpanCount +
+                ", mIsSelectionMode=" + mIsSelectionMode +
+                '}';
+    }
+
     private File mDirectory;
 
-    public void setDirectory(File direcotry) {
-        mDirectory = direcotry;
+    public void setDirectory(File dir) {
+        mDirectory = dir;
     }
 
     public File getDirectory() {
         return mDirectory;
+    }
+
+    @MainThread
+    public void diffUpdateWithItems(List<Item> items) {
+
+        Log.d(TAG, "diffUpdateWithItems: 计算差异：old " + mItems.size() + " new " + items.size());
+
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+            @Override
+            public int getOldListSize() {
+                return mItems.size();
+            }
+
+            @Override
+            public int getNewListSize() {
+                return items.size();
+            }
+
+            @Override
+            public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+                Item oldItem = mItems.get(oldItemPosition);
+                Item newItem = items.get(newItemPosition);
+
+                return oldItem.getFile().getAbsolutePath().equalsIgnoreCase(newItem.getFile().getAbsolutePath());
+            }
+
+            @Override
+            public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+                Item oldItem = mItems.get(oldItemPosition);
+                Item newItem = items.get(newItemPosition);
+                return oldItem.isSelected() == newItem.isSelected();
+            }
+
+            @Nullable
+            @Override
+            public Object getChangePayload(int oldItemPosition, int newItemPosition) {
+                Item oldItem = mItems.get(oldItemPosition);
+                Item newItem = items.get(newItemPosition);
+                newItem.setSelected(oldItem.isSelected());
+
+                return oldItem.isSelected();
+            }
+        }, false);
+
+        mItems = items;
+        diffResult.dispatchUpdatesTo(this);
+    }
+
+    public List<Item> getSelectedItemUntil(final int count) {
+        return Stream.of(mItems)
+                .filter(Item::isSelected)
+                .limit(count)
+                .toList()
+                ;
     }
 
     public interface OnItemInteractionListener {
@@ -56,12 +123,10 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         void onDragStared();
     }
 
-    public static final String TAG = "WaterfallListAdapter";
-    private Context mContext;
+    public static final String TAG = ImageListAdapter.class.getSimpleName();
 
     private RecyclerView mRecyclerView;
     private int mSpanCount = 2;
-    private int mGutterWidth = 6; // in dps
     boolean mIsSelectionMode = false;
     OnItemInteractionListener mOnItemInteractionListener;
 
@@ -248,7 +313,14 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
     }
 
     public static class Item {
-        Drawable mDrawable;
+        @Override
+        public String toString() {
+            return "Item{" +
+                    "mFile=" + mFile +
+                    ", mSelected=" + mSelected +
+                    '}';
+        }
+
         File mFile;
         ViewHolder mViewHolder;
         boolean mSelected = false;
@@ -265,15 +337,6 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
 
         public ViewHolder getViewHolder() {
             return mViewHolder;
-        }
-
-        public Drawable getDrawable() {
-            return mDrawable;
-        }
-
-        public Item setDrawable(Drawable drawable) {
-            mDrawable = drawable;
-            return this;
         }
 
         public File getFile() {
@@ -322,25 +385,30 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         return this;
     }
 
+    public boolean isSelectionMode() {
+        return mIsSelectionMode;
+    }
 
     public int getSelectedCount() {
-        if (mItems == null) {
+        if (mItems == null || !mIsSelectionMode) {
             return 0;
         }
         return (int) Stream.of(mItems).filter(Item::isSelected).count();
     }
 
+    public List<Item> getSelectedItems() {
+        return Stream.of(mItems).filter(Item::isSelected).toList();
+    }
+
     @Override
     public void onAttachedToRecyclerView(RecyclerView recyclerView) {
         super.onAttachedToRecyclerView(recyclerView);
-        mContext = recyclerView.getContext();
         mRecyclerView = recyclerView;
     }
 
     @Override
     public void onDetachedFromRecyclerView(RecyclerView recyclerView) {
         super.onDetachedFromRecyclerView(recyclerView);
-        mContext = null;
         mRecyclerView = null;
     }
 
@@ -382,28 +450,12 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
             if (mRecyclerView != null) {
                 Context context = mRecyclerView.getContext();
 
-                float vhMargin = mContext.getResources().getDimension(R.dimen.margin_list_item_image_view);
-                int parentWidth = mRecyclerView.getWidth();
-                int width = (int) (parentWidth - (vhMargin * 2 * (mSpanCount + 1)) / mSpanCount);
-
-                // Setting image size
-//                ViewGroup.LayoutParams layoutParams = holder.image.getLayoutParams();
-//                if (layoutParams != null) {
-//                    layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT;
-//                    holder.image.setLayoutParams(layoutParams);
-//                }
-//                    if (item.getHeight() == -1) {
-//                        initialLoadImage(item, holder, width, position);
-//                    } else {
-
                 holder.image.setScaleType(ImageView.ScaleType.CENTER_CROP);
                 Glide.with(context)
                         .asDrawable()
                         .load(item.getFile())
-//                        .apply(RequestOptions.fitCenterTransform())
                         .transition(DrawableTransitionOptions.withCrossFade())
                         .into(holder.image);
-//                    }
 
             } else {
                 Log.e(TAG, "onBindViewHolder: mRecyclerView is null.");
@@ -451,81 +503,6 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
 //        holder.image.setOnLongClickListener(this);
 //        holder.image.setOnClickListener(this);
     }
-
-    private void initialLoadImage(Item item, ViewHolder holder, int imageWidth, int position) {
-        //构造方法中参数view,就是回调方法中的this.view
-        ViewTarget<View, Bitmap> target = new ViewTarget<View, Bitmap>(holder.image) {
-            @Override
-            public void onResourceReady(Bitmap resource, Transition<? super Bitmap> transition) {
-                //加载图片成功后调用
-                float scaleType = ((float) resource.getHeight()) / resource.getWidth();
-                int imageHeight = (int) (imageWidth * scaleType);
-                //获取图片高度，保存在Map中
-
-                item.setHeight(imageHeight);
-
-                //设置图片布局的长宽，Glide会根据布局的自动加载适应大小的图片
-                ViewGroup.LayoutParams lp = this.view.getLayoutParams();
-                lp.width = imageWidth;
-                lp.height = imageHeight;
-                this.view.setLayoutParams(lp);
-                //resource就是加载成功后的图片资源
-                ((ImageView) view).setImageBitmap(resource);
-            }
-
-            @Override
-            public void onLoadFailed(@Nullable Drawable errorDrawable) {
-                super.onLoadFailed(errorDrawable);
-                int imageHeight = imageWidth;
-                item.setHeight(imageHeight);
-                ViewGroup.LayoutParams lp = this.view.getLayoutParams();
-                lp.width = imageWidth;
-                lp.height = imageHeight;
-                this.view.setLayoutParams(lp);
-                ((ImageView) view).setImageResource(R.mipmap.ic_launcher);
-            }
-        };
-
-        ViewTarget<ImageView, Drawable> viewTarget = new ViewTarget<ImageView, Drawable>(holder.image) {
-            @Override
-            public void onResourceReady(Drawable resource, Transition<? super Drawable> transition) {
-                float radio = (float) resource.getIntrinsicHeight() / (float) resource.getIntrinsicWidth();
-                int imageHeight = (int) (imageWidth * radio);
-
-                item.setHeight(imageHeight);
-
-                Log.d(TAG, String.format("onResourceReady: w %d h %d %d %d",
-                        resource.getIntrinsicWidth(), resource.getIntrinsicHeight(),
-                        imageWidth, imageHeight)
-                );
-                //设置图片布局的长宽，Glide会根据布局的自动加载适应大小的图片
-                ViewGroup.LayoutParams lp = this.view.getLayoutParams();
-                lp.width = imageWidth;
-                lp.height = imageHeight;
-                this.view.setLayoutParams(lp);
-                //resource就是加载成功后的图片资源
-                view.setImageDrawable(resource);
-            }
-
-            @Override
-            public void onLoadFailed(@Nullable Drawable errorDrawable) {
-                super.onLoadFailed(errorDrawable);
-
-                int imageHeight = imageWidth;
-                item.setHeight(imageHeight);
-                ViewGroup.LayoutParams lp = this.view.getLayoutParams();
-                lp.width = imageWidth;
-                lp.height = imageHeight;
-                this.view.setLayoutParams(lp);
-                view.setBackgroundColor(mRecyclerView.getResources().getColor(R.color.colorPrimaryDark));
-            }
-        };
-
-        Glide.with(this.mContext)
-                .load(item.getFile())
-                .into(viewTarget);
-    }
-
 
     @Override
     public int getItemCount() {

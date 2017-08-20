@@ -35,4 +35,5 @@ dependencies {
     testCompile 'junit:junit:' + versions.junit
 }
 
-apply from: 'https://raw.githubusercontent.com/afollestad/aidanfollestad.com/master/android-lib-release.gradle'
+//apply from: 'https://raw.githubusercontent.com/afollestad/aidanfollestad.com/master/android-lib-release.gradle'
+apply from: './android-lib-release.gradle'

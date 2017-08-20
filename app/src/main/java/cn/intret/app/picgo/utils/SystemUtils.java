@@ -41,4 +41,16 @@ public class SystemUtils {
             return null;
         }
     }
+
+    public static boolean isSameDirectory(File dir1, File dir2) {
+        if (dir1 == null || dir2 == null) {
+            return false;
+        }
+
+        if (!dir1.isDirectory() || !dir2.isDirectory()) {
+            return false;
+        }
+
+        return dir1.getAbsolutePath().equalsIgnoreCase(dir2.getAbsolutePath());
+    }
 }
