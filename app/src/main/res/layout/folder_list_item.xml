@@ -7,6 +7,7 @@
                 android:orientation="horizontal"
                 android:paddingLeft="16dp"
                 android:paddingRight="8dp"
+                android:background="?android:attr/selectableItemBackground"
     >
 
     <TextView
