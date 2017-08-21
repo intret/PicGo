@@ -659,9 +659,9 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
     private void showFolderItemContextMenuDialog(SectionedFolderListAdapter.Item item) {
         LinkedList<String> menuItems = new LinkedList<>();
-        File dir = item.getFile();
+        File selectedDir = item.getFile();
 
-        menuItems.add(getString(R.string.rename_folder_s, dir.getName()));
+        menuItems.add(getString(R.string.rename_folder_s, selectedDir.getName()));
         menuItems.add(getString(R.string.move_folder_s, item.getFile().getName()));
         menuItems.add(getString(R.string.remove_folder_s, item.getFile().getName()));
 
@@ -679,65 +679,93 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                 .itemsCallback((dialog, itemView, position, text) -> {
                     switch (position) {
                         case 0: { // rename
-                            MaterialDialog.Builder builder = new MaterialDialog.Builder(this)
-                                    .title(R.string.folder_rename)
-                                    .alwaysCallInputCallback()
-                                    .input(getString(R.string.input_new_directory_name), item.getName(),
-                                            (dlg, input) -> {
-                                                boolean isValid = !StringUtils.equals(input, item.getName());
-                                                Log.d(TAG, " name " + input + " " + item.getName() + " " + isValid);
-                                                MDButton actionButton = dlg.getActionButton(DialogAction.POSITIVE);
-                                                actionButton.setEnabled(isValid);
-                                                actionButton.setClickable(isValid);
-                                            })
-                                    .inputRange(1, 20)
-                                    .inputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI)
-                                    .onPositive((dialog1, which) -> {
-
-                                        EditText inputEditText = dialog1.getInputEditText();
-                                        if (inputEditText != null) {
-                                            Editable editableText = inputEditText.getEditableText();
-                                            if (editableText != null) {
-                                                String newDirName = editableText.toString();
-
-                                                if (StringUtils.equals(newDirName, dir.getName())) {
-                                                    ToastUtils.toastLong(this, R.string.folder_name_has_no_changes);
-                                                    return;
-                                                }
-
-                                                SystemImageService.getInstance()
-                                                        .renameDir(dir, newDirName)
-                                                        .compose(workAndShow())
-                                                        .subscribe(aBoolean -> {
-                                                            if (aBoolean) {
-                                                                ToastUtils.toastLong(this, getString(R.string.already_rename_folder));
-                                                            }
-                                                        }, throwable -> {
-
-                                                        })
-                                                ;
-                                            }
-                                        }
-                                    });
-                            MaterialDialog dlg = builder.build();
-                            MDButton actionButton = dlg.getActionButton(DialogAction.POSITIVE);
-                            actionButton.setEnabled(false);
-                            actionButton.setClickable(false);
-
-                            dlg.show();
+                            showRenameFolderDialog(item, selectedDir);
                         }
                         break;
-                        case 1:
+                        case 1: // 移动
                             break;
-                        case 2:
+                        case 2: // 删除
+                            showDeleteFolderDialog(selectedDir);
                             break;
                         case 3: {
-                            showActionDialogForFile(dir);
+                            showActionDialogForFile(selectedDir);
                         }
-                            break;
+                        break;
                     }
                 })
                 .show();
+    }
+
+    private void showDeleteFolderDialog(File selectedDir) {
+
+        new MaterialDialog.Builder(this)
+                .title(R.string.remove_folder)
+                .content(getString(R.string.confirm_to_remove_folder_s, selectedDir.getName()))
+                .positiveText(R.string.delete)
+                .onPositive((dialog, which) -> {
+                    SystemImageService.getInstance()
+                            .removeFolder(selectedDir)
+                            .compose(workAndShow())
+                            .subscribe(aBoolean -> {
+                                if (aBoolean) {
+
+                                }
+                            }, throwable -> {
+                                ToastUtils.toastLong(this, R.string.remove_folder_failed);
+                            });
+                })
+                .negativeText(R.string.cancel)
+                .show()
+        ;
+    }
+
+    private void showRenameFolderDialog(SectionedFolderListAdapter.Item item, File dir) {
+        MaterialDialog.Builder builder = new MaterialDialog.Builder(this)
+                .title(R.string.folder_rename)
+                .alwaysCallInputCallback()
+                .input(getString(R.string.input_new_directory_name), item.getName(),
+                        (dlg, input) -> {
+                            boolean isValid = !StringUtils.equals(input, item.getName());
+                            Log.d(TAG, " name " + input + " " + item.getName() + " " + isValid);
+                            MDButton actionButton = dlg.getActionButton(DialogAction.POSITIVE);
+                            actionButton.setEnabled(isValid);
+                            actionButton.setClickable(isValid);
+                        })
+                .inputRange(1, 20)
+                .inputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI)
+                .onPositive((dialog1, which) -> {
+
+                    EditText inputEditText = dialog1.getInputEditText();
+                    if (inputEditText != null) {
+                        Editable editableText = inputEditText.getEditableText();
+                        if (editableText != null) {
+                            String newDirName = editableText.toString();
+
+                            if (StringUtils.equals(newDirName, dir.getName())) {
+                                ToastUtils.toastLong(this, R.string.folder_name_has_no_changes);
+                                return;
+                            }
+
+                            SystemImageService.getInstance()
+                                    .renameDir(dir, newDirName)
+                                    .compose(workAndShow())
+                                    .subscribe(aBoolean -> {
+                                        if (aBoolean) {
+                                            ToastUtils.toastLong(this, getString(R.string.already_rename_folder));
+                                        }
+                                    }, throwable -> {
+
+                                    })
+                            ;
+                        }
+                    }
+                }).negativeText(R.string.cancel);
+        MaterialDialog dlg = builder.build();
+        MDButton actionButton = dlg.getActionButton(DialogAction.POSITIVE);
+        actionButton.setEnabled(false);
+        actionButton.setClickable(false);
+
+        dlg.show();
     }
 
     private void onFolderListItemClick(int position) {
@@ -1545,6 +1573,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                                 ToastUtils.toastLong(this, R.string.remove_file_failed);
                             });
                 })
+                .negativeText(R.string.cancel)
                 .show();
     }
 

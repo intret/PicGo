@@ -13,6 +13,7 @@ import com.annimon.stream.function.Consumer;
 import com.annimon.stream.function.Function;
 import com.annimon.stream.function.Supplier;
 
+import org.apache.commons.collections4.Predicate;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.greenrobot.eventbus.EventBus;
@@ -697,6 +698,43 @@ public class SystemImageService {
 
             e.onNext(true);
             e.onComplete();
+        });
+    }
+
+    public Observable<Boolean> removeFolder(File dir) {
+        return Observable.create(e -> {
+            if (dir == null) {
+                throw new IllegalArgumentException("dir must not be null");
+            }
+            File[] files = dir.listFiles();
+            if (files != null && files.length > 0) {
+                Log.d(TAG, "removeFolder: 有文件不能移除");
+            }
+
+            FileUtils.deleteDirectory(dir);
+
+
+            Stream.of(mFolderModel.getParentFolderInfos())
+                    .forEach(parentFolderInfo -> {
+                        List<ImageFolder> folders = parentFolderInfo.getFolders();
+                        int i = org.apache.commons.collections4.ListUtils.indexOf(folders, new Predicate<ImageFolder>() {
+                            @Override
+                            public boolean evaluate(ImageFolder object) {
+                                return SystemUtils.isSameFile(object.getFile(), dir);
+                            }
+                        });
+
+                        if (i != -1) {
+                            Log.d(TAG, "removeFolder: remove folder at " + i);
+                            parentFolderInfo.getFolders().remove(i);
+                        }
+                    });
+
+            mBus.post(new FolderModelChangeMessage());
+
+            e.onNext(true);
+            e.onComplete();
+
         });
     }
 }

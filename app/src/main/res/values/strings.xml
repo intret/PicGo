@@ -60,4 +60,7 @@
     <string name="move_d_files_to">移动 “%1$d 项” 至</string>
     <string name="remove_d_files">删除 “%1$d 项”</string>
     <string name="move_selected_images_to_here">将选中图片移动至这里</string>
+    <string name="remove_folder">删除文件夹</string>
+    <string name="confirm_to_remove_folder_s">确认删除文件夹 “%1$s” ？</string>
+    <string name="remove_folder_failed">删除文件夹失败</string>
 </resources>
