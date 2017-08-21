@@ -1,5 +1,6 @@
 package cn.intret.app.picgo.ui.adapter;
 
+import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.RecyclerView;
@@ -18,6 +19,7 @@ import org.apache.commons.collections4.ListUtils;
 import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Stream;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -78,6 +80,51 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             mSections.get(sectionIndex).getItems().get(itemIndex).setFile(newDirectory).setName(newDirectory.getName());
             notifyItemChanged(getAbsolutePosition(sectionIndex, itemIndex));
         }
+    }
+
+    public void diffUpdateItems(SectionedFolderListAdapter adapter) {
+        List<Section> sections = adapter.getSections();
+        int oldItemCount = getItemCount();
+
+        int newItemCount = adapter.getItemCount();
+        DiffUtil.calculateDiff(new DiffUtil.Callback() {
+            @Override
+            public int getOldListSize() {
+                return oldItemCount;
+            }
+
+            @Override
+            public int getNewListSize() {
+                return newItemCount;
+            }
+
+            @Override
+            public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+                ItemCoord oldCoord = getRelativePosition(oldItemPosition);
+                boolean header = isHeader(oldItemPosition);
+                boolean footer = isFooter(oldItemPosition);
+
+                ItemCoord relativePosition = adapter.getRelativePosition(newItemPosition);
+
+                boolean newHeader = adapter.isHeader(newItemPosition);
+                boolean newFooter = adapter.isFooter(newItemPosition);
+
+
+                if (header == newHeader) {
+
+                    return true;
+                }
+                if (footer == newFooter) {
+                    return true;
+                }
+                return header == newHeader;
+            }
+
+            @Override
+            public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+                return false;
+            }
+        });
     }
 
     /*
@@ -188,6 +235,10 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
      /*
      * Getter and setter
      */
+
+    public List<Section> getSections() {
+        return mSections;
+    }
 
     public boolean isShowHeaderOptionButton() {
         return mShowHeaderOptionButton;

@@ -63,6 +63,7 @@ import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.model.DirectoryRescanMessage;
 import cn.intret.app.picgo.model.FolderModel;
+import cn.intret.app.picgo.model.FolderModelChangeMessage;
 import cn.intret.app.picgo.model.GroupMode;
 import cn.intret.app.picgo.model.Image;
 import cn.intret.app.picgo.model.ImageFolder;
@@ -297,6 +298,24 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(RenameDirectoryMessage message) {
         mSectionedFolderListAdapter.renameDirectory(message.getOldDirectory(), message.getNewDirectory());
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onEvent(FolderModelChangeMessage message) {
+        mIsFolderListLoaded = false;
+        loadFolderList();
+    }
+
+    private void diffUpdateFolderListAdapter(SectionedFolderListAdapter adapter) {
+
+        Log.d(TAG, "diffUpdateImageListAdapter() called with: adapter = [" + adapter + "]");
+
+        SystemImageService.getInstance()
+                .loadFolderListModel(true)
+                .map(this::folderModelToSectionedFolderListAdapter)
+                .compose(workAndShow())
+                .subscribe(adapter::diffUpdateItems,
+                        Throwable::printStackTrace);
     }
 
     private void diffUpdateImageListAdapter(ImageListAdapter adapter) {

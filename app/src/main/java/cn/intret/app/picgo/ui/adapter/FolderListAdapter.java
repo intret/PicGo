@@ -1,5 +1,6 @@
 package cn.intret.app.picgo.ui.adapter;
 
+import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.RecyclerView;
 import android.util.SparseArray;
 import android.view.LayoutInflater;
@@ -15,6 +16,7 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
+import cn.intret.app.picgo.model.FolderModel;
 
 /**
  * 抽屉菜单列表
@@ -25,6 +27,34 @@ public class FolderListAdapter extends RecyclerView.Adapter<FolderListAdapter.Vi
 
     public List<Item> getItems() {
         return mItems;
+    }
+
+
+    public void diffUpdateItems(SectionedFolderListAdapter adapter) {
+        List<SectionedFolderListAdapter.Section> sections = adapter.getSections();
+
+        DiffUtil.calculateDiff(new DiffUtil.Callback() {
+            @Override
+            public int getOldListSize() {
+                return mItems.size();
+            }
+
+            @Override
+            public int getNewListSize() {
+                return sections.size();
+            }
+
+            @Override
+            public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+                Item item = mItems.get(oldItemPosition);
+                return false;
+            }
+
+            @Override
+            public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+                return false;
+            }
+        });
     }
 
     public interface OnItemEventListener {

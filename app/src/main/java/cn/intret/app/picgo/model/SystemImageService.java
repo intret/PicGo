@@ -38,6 +38,7 @@ import cn.intret.app.picgo.utils.DateTimeUtils;
 import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
 import io.reactivex.Observable;
+import io.reactivex.schedulers.Schedulers;
 
 public class SystemImageService {
 
@@ -205,6 +206,7 @@ public class SystemImageService {
         subFolders.add(imageFolderOfDir(dir));
 
 
+        parentFolderInfo.setFile(dir);
         parentFolderInfo.setName(dir.getName());
         parentFolderInfo.setFolders(subFolders);
 
@@ -671,6 +673,27 @@ public class SystemImageService {
             }
 
             FileUtils.forceMkdir(dir);
+
+            List<FolderModel.ParentFolderInfo> parentFolderInfos = Stream.of(mFolderModel.getParentFolderInfos())
+                    .filter(value -> SystemUtils.isSameFile(value.getFile(), dir.getParentFile()))
+                    .limit(1)
+                    .toList();
+
+            if (!parentFolderInfos.isEmpty()) {
+                FolderModel.ParentFolderInfo parentFolderInfo = parentFolderInfos.get(0);
+                parentFolderInfo.getFolders().add(0, imageFolderOfDir(dir));
+
+                mBus.post(new FolderModelChangeMessage());
+            }
+
+//            loadFolderListModel(false)
+//                    .subscribeOn(Schedulers.io())
+//                    .observeOn(Schedulers.io())
+//                    .subscribe(model -> {
+//                        mFolderModel = model;
+//                    }, throwable -> {
+//                        Log.d(TAG, "createFolder: reload folder model failed.");
+//                    });
 
             e.onNext(true);
             e.onComplete();
