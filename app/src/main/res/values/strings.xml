@@ -19,14 +19,14 @@
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
-    <string name="main_drawer_menu_item_move__item__to__folder">移动 %1$s 中的 %2$d 个文件到当前文件夹</string>
+    <string name="main_drawer_menu_item_move__item__to__folder">移动“%1$s”中的 %2$d 个文件到当前文件夹</string>
     <string name="unimplemented">未实现</string>
     <string name="move_files_failed">移动文件失败</string>
     <string name="already_moved_d_files">已成功移动 %1$d 个文件</string>
     <string name="already_removed_d_files">已经删除 %1$d 个文件</string>
     <string name="remove_file_failed">删除文件失败</string>
     <string name="cannot_get_image_for_position">不能获取第 %1$d 项的图片</string>
-    <string name="selected_d_files_actions">选中的 %1$d 个文件操作</string>
+    <string name="selected_files_operation">选中文件操作</string>
     <string name="move_file">移动文件</string>
     <string name="copy">复制</string>
     <string name="move">移动</string>
@@ -39,15 +39,25 @@
     <string name="move_files_successfully_but_">移动文件成功，部分文件移动失败</string>
     <string name="move_file_to">移动文件至</string>
     <string name="move_selected_files_to">移动选中图片至</string>
-    <string name="rename_folder_s">重命名 %1$s</string>
-    <string name="remove_folder_s"> 删除 %1$s</string>
-    <string name="move_folder_s"> 移动 %1$s</string>
+    <string name="rename_folder_s">重命名“%1$s”为</string>
+    <string name="remove_folder_s"> 删除“%1$s”</string>
+    <string name="move_folder_s"> 移动“%1$s”至</string>
     <string name="input_new_directory_name">输入新文件夹名称</string>
     <string name="already_rename_folder">已经重命名文件夹</string>
     <string name="folder_rename">文件夹重命名</string>
     <string name="folder_name_has_no_changes">文件夹名称没变化</string>
     <string name="remove_files">移除文件</string>
-    <string name="confirm_to_remove_files_in_folder_s">确认删除目录 %1$s 中选中的 %2$d 个文件吗？</string>
+    <string name="confirm_to_remove_files_in_folder_s">确认删除目录“%1$s”中选中的 %2$d 个文件吗？</string>
     <string name="confirm">确认</string>
     <string name="remove_d_files_success_with_d_files_failed_with_d_files">请求移除 %1$d 个文件，成功 %2$d 个，失败 %3$d 个。</string>
+    <string name="create_folder">新建文件夹</string>
+    <string name="folder_detail">文件夹详细信息</string>
+    <string name="input_new_folder_name">输入新建文件夹名称</string>
+    <string name="new_folder_prefill">新建文件夹</string>
+    <string name="create_folder_failed">新建文件夹失败</string>
+    <string name="created_folder_s">新建文件夹 “%1$s” 成功</string>
+    <string name="copy_d_files_to">复制 “%1$d 项” 至</string>
+    <string name="move_d_files_to">移动 “%1$d 项” 至</string>
+    <string name="remove_d_files">删除 “%1$d 项”</string>
+    <string name="move_selected_images_to_here">将选中图片移动至这里</string>
 </resources>

@@ -2,6 +2,7 @@ package cn.intret.app.picgo.model;
 
 
 import android.content.Context;
+import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
 
@@ -659,6 +660,20 @@ public class SystemImageService {
 
                 mBus.post(new RemoveFileMessage().setFile(file));
             }
+        });
+    }
+
+    public Observable<Boolean> createFolder(File dir) {
+
+        return Observable.create(e -> {
+            if (dir == null) {
+                throw new IllegalArgumentException("dir must not be null.");
+            }
+
+            FileUtils.forceMkdir(dir);
+
+            e.onNext(true);
+            e.onComplete();
         });
     }
 }

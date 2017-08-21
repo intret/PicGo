@@ -7,6 +7,9 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 
+import java.util.LinkedList;
+import java.util.List;
+
 public class RecyclerItemTouchListener implements RecyclerView.OnItemTouchListener {
     private final OnItemLongClickListener mLongClickListener;
     private OnItemClickListener mClickListener;
@@ -19,15 +22,18 @@ public class RecyclerItemTouchListener implements RecyclerView.OnItemTouchListen
         void onItemLongClick(View view, int position);
     }
 
-    GestureDetector mGestureDetector;
+    private GestureDetector mGestureDetector;
+    private List<Integer> mIds = new LinkedList<>();
 
     public RecyclerItemTouchListener(Context context, final RecyclerView recyclerView,
-                                     OnItemClickListener clickListener, OnItemLongClickListener longClickListener) {
+                                     OnItemClickListener clickListener,
+                                     OnItemLongClickListener longClickListener) {
         mClickListener = clickListener;
         mLongClickListener = longClickListener;
+        this.mIds = null;
         mGestureDetector = new GestureDetector(context, new GestureDetector.SimpleOnGestureListener() {
 
-            public static final String TAG = "SimpleOnGestureListener";
+            static final String TAG = "SimpleOnGestureListener";
 
             @Override
             public boolean onSingleTapUp(MotionEvent e) {
@@ -51,7 +57,7 @@ public class RecyclerItemTouchListener implements RecyclerView.OnItemTouchListen
         View childView = view.findChildViewUnder(e.getX(), e.getY());
         if (childView != null && mClickListener != null && mGestureDetector.onTouchEvent(e)) {
             mClickListener.onItemClick(childView, view.getChildAdapterPosition(childView));
-            return true;
+            return false;
         }
         return false;
     }

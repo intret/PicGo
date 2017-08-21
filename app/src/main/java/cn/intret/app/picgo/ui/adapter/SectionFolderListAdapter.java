@@ -2,6 +2,7 @@ package cn.intret.app.picgo.ui.adapter;
 
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.util.SparseArray;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -30,6 +31,19 @@ public class SectionFolderListAdapter
         SectionFolderListAdapter.ViewHolder,
         SectionFolderListAdapter.FolderFooterViewHolder
         > {
+
+    private static final String TAG = SectionFolderListAdapter.class.getSimpleName();
+    boolean mShowHeaderOptionButton;
+
+    public boolean isShowHeaderOptionButton() {
+        return mShowHeaderOptionButton;
+    }
+
+    public SectionFolderListAdapter setShowHeaderOptionButton(boolean showHeaderOptionButton) {
+        mShowHeaderOptionButton = showHeaderOptionButton;
+        return this;
+    }
+
 
     List<SectionItem> mSectionItems = new ArrayList<>();
 
@@ -178,6 +192,7 @@ public class SectionFolderListAdapter
         SectionItem sectionItem = mSectionItems.get(section);
 
         holder.name.setText(sectionItem.getName());
+
     }
 
     @Override
@@ -245,8 +260,8 @@ public class SectionFolderListAdapter
 
     class FolderHeaderViewHolder extends RecyclerView.ViewHolder {
 
-        @BindView(R.id.name)
-        TextView name;
+        @BindView(R.id.name) TextView name;
+        @BindView(R.id.option) TextView option;
 
         FolderHeaderViewHolder(View itemView) {
             super(itemView);

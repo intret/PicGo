@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.support.annotation.MainThread;
 import android.support.annotation.Nullable;
 import android.support.v7.util.DiffUtil;
-import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -16,8 +15,6 @@ import android.widget.ImageView;
 import com.annimon.stream.Stream;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.BitmapTransitionOptions;
-import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
-import com.bumptech.glide.load.resource.transcode.BitmapDrawableTranscoder;
 
 import org.apache.commons.io.FilenameUtils;
 
@@ -384,7 +381,6 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position, List<Object> payloads) {
-        Log.d(TAG, "onBindViewHolder() called with: holder = [" + holder + "], position = [" + position + "], payloads = [" + payloads + "]");
 
         if (payloads.isEmpty()) {
             onBindViewHolder(holder, position);
@@ -399,9 +395,6 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
     public void onBindViewHolder(ViewHolder holder, int position) {
         Item item = mItems.get(position);
         item.setViewHolder(holder);
-
-        Log.d(TAG, String.format("onBindViewHolder: position %d, item %s, viewHolder %s file %s",
-                position, item, holder, item.getFile()));
 
         // Bind data to image view
         holder.image.setTag(R.id.item, item);

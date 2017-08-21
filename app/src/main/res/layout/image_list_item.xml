@@ -28,6 +28,8 @@
         app:siBorderWidth="0dp"
         app:siRadius="0dp"
         app:siSquare="true"
+        android:contentDescription="Image"
+        android:background="?android:attr/selectableItemBackground"
         tools:layout_conversion_absoluteHeight="380dp"
         tools:layout_conversion_absoluteWidth="380dp"
         tools:layout_conversion_absoluteX="2dp"

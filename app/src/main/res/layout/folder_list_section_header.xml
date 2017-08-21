@@ -18,4 +18,19 @@
         android:textSize="@dimen/folder_list_section_header_text_size"
         tools:text="Pictures"
         />
+
+    <TextView
+        android:id="@+id/option"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:minWidth="50dp"
+        android:text="选项"
+        android:paddingRight="16dp"
+        android:paddingLeft="16dp"
+        android:gravity="center_vertical"
+        android:textAlignment="textEnd"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        tools:ignore="RtlCompat"/>
+
 </RelativeLayout>

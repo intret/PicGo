@@ -2,7 +2,7 @@
 <resources>
     <string name="load_pictures_failed">加载图片失败</string>
     <string name="folder_operations">文件夹操作</string>
-    <string name="folder_s_operations">文件夹 %1$s 操作</string>
+    <string name="folder_s_operations">文件夹“%1$s“操作</string>
     <string name="move_to_here">移动到这</string>
     <string name="copy_to_here">复制到这</string>
 </resources>

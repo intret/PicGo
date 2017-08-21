@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+      xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/create_folder"
+        android:title="@string/create_folder"
+        />
+    <item
+        android:id="@+id/folder_detail"
+        android:title="@string/folder_detail"/>
+</menu>

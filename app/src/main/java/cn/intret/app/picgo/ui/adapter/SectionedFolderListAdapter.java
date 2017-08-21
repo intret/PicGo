@@ -1,9 +1,9 @@
 package cn.intret.app.picgo.ui.adapter;
 
 import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,12 +12,8 @@ import android.widget.TextView;
 import com.afollestad.sectionedrecyclerview.ItemCoord;
 import com.afollestad.sectionedrecyclerview.SectionedRecyclerViewAdapter;
 import com.afollestad.sectionedrecyclerview.SectionedViewHolder;
-import com.annimon.stream.Stream;
-import com.annimon.stream.function.BiFunction;
-import com.annimon.stream.function.IndexedBiFunction;
 
 import org.apache.commons.collections4.ListUtils;
-import org.apache.commons.collections4.Predicate;
 
 import java.io.File;
 import java.util.LinkedList;
@@ -33,6 +29,19 @@ import cn.intret.app.picgo.utils.SystemUtils;
  */
 public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<SectionedViewHolder> {
 
+    private static final String TAG = SectionedFolderListAdapter.class.getSimpleName();
+    private boolean mEnableItemClick = true;
+    /*
+     * UI options
+     */
+    boolean mShowHeaderOptionButton = false;
+    boolean mIsSelectable = false;
+    boolean mIsCollapsable = true;
+    boolean mIsMultiSelect = false;
+
+    /*
+     * Data
+     */
     List<Section> mSections = new LinkedList<>();
 
     public Item getItem(ItemCoord relativePosition) {
@@ -71,6 +80,9 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         }
     }
 
+    /*
+     * Interfaces and Classes
+     */
     public static class Section {
         String name;
         File mFile;
@@ -103,7 +115,6 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             return this;
         }
     }
-
 
     public static class Item {
         String mName;
@@ -159,11 +170,73 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         }
     }
 
-    interface OnItemClickListener {
+    public interface OnItemClickListener {
+        void onSectionHeaderClick(Section section, int sectionIndex, int adapterPosition);
+
+        void onSectionHeaderOptionButtonClick(View v, Section section, int sectionIndex);
+
         void onItemClick(Section sectionItem, int section, Item item, int relativePos);
+
+        void onItemLongClick(Section sectionItem, int section, Item item, int relativePos);
     }
 
+    /*
+     * Event handler
+     */
     OnItemClickListener mOnItemClickListener;
+
+     /*
+     * Getter and setter
+     */
+
+    public boolean isShowHeaderOptionButton() {
+        return mShowHeaderOptionButton;
+    }
+
+    public SectionedFolderListAdapter setShowHeaderOptionButton(boolean showHeaderOptionButton) {
+        mShowHeaderOptionButton = showHeaderOptionButton;
+        return this;
+    }
+
+    public boolean isSelectable() {
+        return mIsSelectable;
+    }
+
+    public SectionedFolderListAdapter setSelectable(boolean selectable) {
+        mIsSelectable = selectable;
+        return this;
+    }
+
+    public boolean isCollapsable() {
+        return mIsCollapsable;
+    }
+
+    public SectionedFolderListAdapter setCollapsable(boolean collapsable) {
+        mIsCollapsable = collapsable;
+        return this;
+    }
+
+    public boolean isMultiSelect() {
+        return mIsMultiSelect;
+    }
+
+    public SectionedFolderListAdapter setMultiSelect(boolean multiSelect) {
+        mIsMultiSelect = multiSelect;
+        return this;
+    }
+
+    public OnItemClickListener getOnItemClickListener() {
+        return mOnItemClickListener;
+    }
+
+    public SectionedFolderListAdapter setOnItemClickListener(OnItemClickListener onItemClickListener) {
+        mOnItemClickListener = onItemClickListener;
+        return this;
+    }
+
+    /*
+     * Ctor an Dtor
+     */
 
     SectionedFolderListAdapter() {
 
@@ -183,6 +256,10 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         return this;
     }
 
+    /*
+     * RecyclerView
+     */
+
     @Override
     public int getSectionCount() {
         return mSections.size();
@@ -199,7 +276,61 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         HeaderViewHolder vh = (HeaderViewHolder) holder;
         Section sectionItem = mSections.get(section);
 
+        View.OnClickListener clickListener = v -> {
+            Object tag = v.getTag(R.id.item);
+            if (tag != null && tag instanceof Section) {
+
+                int adapterPosition = vh.getAdapterPosition();
+                if (adapterPosition != RecyclerView.NO_POSITION) {
+                    ItemCoord coord = getRelativePosition(adapterPosition);
+                    Section section1 = mSections.get(coord.section());
+
+                    clickSectionHeader(section1, coord.section(), adapterPosition);
+                }
+            }
+        };
+        vh.itemView.setTag(R.id.item, sectionItem);
+        vh.itemView.setOnClickListener(clickListener);
+
+
         vh.name.setText(sectionItem.getName());
+        vh.name.setTag(R.id.item, sectionItem);
+        vh.name.setClickable(false);
+
+
+        if (mShowHeaderOptionButton) {
+            if (mEnableItemClick) {
+
+                // 选项文字按钮
+                vh.option.setTag(R.id.item, sectionItem);
+                vh.option.setOnClickListener(v -> {
+                    int adapterPosition = holder.getAdapterPosition();
+                    if (adapterPosition != RecyclerView.NO_POSITION) {
+                        ItemCoord coord = getRelativePosition(adapterPosition);
+                        Section sec = mSections.get(coord.section());
+                        if (mOnItemClickListener != null) {
+                            mOnItemClickListener.onSectionHeaderOptionButtonClick(v, sec, coord.section());
+                        }
+                    }
+                });
+            }
+        } else {
+            vh.option.setVisibility(View.GONE);
+        }
+    }
+
+    private void clickSectionHeader(Section section, int sectionIndex, int adapterPosition) {
+        if (mOnItemClickListener != null) {
+            mOnItemClickListener.onSectionHeaderClick(section, sectionIndex, adapterPosition);
+        }
+    }
+
+    public <R> R extractTagValue(View view, int id) {
+        Object tag = view.getTag(id);
+        if (tag != null) {
+            return ((R) tag);
+        }
+        return null;
     }
 
     @Override
@@ -212,6 +343,49 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         ItemViewHolder vh = (ItemViewHolder) holder;
         Section sectionItem = mSections.get(section);
         Item item = sectionItem.getItems().get(relativePosition);
+
+        /*
+         * Item click
+         */
+        if (mEnableItemClick) {
+
+            // Save data to view tag
+            vh.itemView.setTag(R.id.section, sectionItem);
+            vh.itemView.setTag(R.id.item, item);
+
+            // Click
+            vh.itemView.setOnClickListener(v -> {
+                int adapterPosition = holder.getAdapterPosition();
+                ItemCoord coor = getRelativePosition(adapterPosition);
+
+                if (mOnItemClickListener != null) {
+                    Section sectionItem1 = mSections.get(coor.section());
+                    mOnItemClickListener.onItemClick(
+                            sectionItem1, coor.section(),
+                            sectionItem1.getItems().get(coor.relativePos()),
+                            coor.relativePos());
+                }
+            });
+
+            // Long click
+            vh.itemView.setOnLongClickListener(v -> {
+                int adapterPosition = holder.getAdapterPosition();
+                ItemCoord coor = getRelativePosition(adapterPosition);
+
+                if (mOnItemClickListener != null) {
+                    Section sectionItem1 = mSections.get(coor.section());
+                    mOnItemClickListener.onItemLongClick(
+                            sectionItem1, coor.section(),
+                            sectionItem1.getItems().get(coor.relativePos()),
+                            coor.relativePos());
+                    return true;
+                } else {
+                    return false;
+                }
+            });
+
+            vh.thumbList.setClickable(false);
+        }
 
         vh.name.setText(item.getName());
         vh.count.setText(String.valueOf(item.getCount()));
@@ -260,8 +434,8 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
     class HeaderViewHolder extends SectionedViewHolder implements View.OnClickListener {
 
-        @BindView(R.id.name)
-        TextView name;
+        @BindView(R.id.name) TextView name;
+        @BindView(R.id.option) TextView option;
 
         HeaderViewHolder(View itemView) {
             super(itemView);
