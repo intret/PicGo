@@ -294,7 +294,7 @@ public class SectionedImageListAdapter extends SectionedRecyclerViewAdapter<Sect
 
     class SectionItemViewHolder extends SectionedViewHolder {
 
-        @BindView(R.id.img) RoundedImageView image;
+        @BindView(R.id.image) RoundedImageView image;
         @BindView(R.id.checkbox) ImageView checkbox;
         @BindView(R.id.file_type) ImageView fileType;
 

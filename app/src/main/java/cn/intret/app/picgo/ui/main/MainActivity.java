@@ -134,7 +134,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         initToolBar();
         initDrawer();
         initListViewHeader();
-        initListViewFAB();
+        initListViewToolbar();
 
         initTransition();
 
@@ -142,7 +142,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         //showFloatingWindow();
     }
 
-    private void initListViewFAB() {
+    private void initListViewToolbar() {
 //        mFloatingToolbar.setClickListener(new FloatingToolbar.ItemClickListener() {
 //            @Override
 //            public void onItemClick(MenuItem item) {
@@ -169,6 +169,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                     showMoveFileDialog();
                     break;
                 case R.id.action_remove:
+                    showRemoveFileDialog();
                     break;
             }
             return false;
@@ -235,11 +236,12 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                     String transitionName = ImageTransitionNameGenerator.generateTransitionName(item.getFile().getAbsolutePath());
 
                     sharedElements.clear();
-                    ImageListAdapter.ViewHolder viewHolder = item.getViewHolder();
-                    if (viewHolder != null) {
+
+                    RecyclerView.ViewHolder vh = mImageList.findViewHolderForAdapterPosition(mCurrentShownImageIndex);
+                    if (vh instanceof ImageListAdapter.ViewHolder) {
+                        ImageListAdapter.ViewHolder viewHolder = ((ImageListAdapter.ViewHolder) vh);
+
                         sharedElements.put(transitionName, viewHolder.getImage());
-                    } else {
-                        Log.e(TAG, "onMapSharedElements: no view holder for file at " + mCurrentShownImageIndex + " " + item.getFile());
                     }
 
                     names.clear();
@@ -1370,6 +1372,42 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                 })
                 .show();
     }
+
+    private void showRemoveFileDialog() {
+        int sectionCount = mCurrentImageAdapter.getSelectedCount();
+        new MaterialDialog.Builder(this)
+                .title(R.string.remove_files)
+                .content(getString(R.string.confirm_to_remove_files_in_folder_s,
+                        mCurrentImageAdapter.getDirectory().getName(), sectionCount))
+                .positiveText(R.string.confirm)
+                .onPositive((dialog, which) -> {
+
+                    List<ImageListAdapter.Item> selectedItems = mCurrentImageAdapter.getSelectedItems();
+                    List<File> files = Stream.of(selectedItems)
+                            .map(ImageListAdapter.Item::getFile)
+                            .toList();
+
+                    SystemImageService.getInstance()
+                            .removeFiles(files)
+                            .compose(workAndShow())
+                            .subscribe(integerListPair -> {
+                                Integer total = integerListPair.first;
+                                List<File> failedFiles = integerListPair.second;
+                                if (!failedFiles.isEmpty()) {
+                                    ToastUtils.toastLong(this,
+                                            getString(R.string.remove_d_files_success_with_d_files_failed_with_d_files,
+                                                    total, total - failedFiles.size(), failedFiles.size()));
+                                } else {
+                                    ToastUtils.toastLong(this, getString(R.string.already_removed_d_files, total));
+                                }
+                            }, throwable -> {
+                                throwable.printStackTrace();
+                                ToastUtils.toastLong(this, R.string.remove_file_failed);
+                            });
+                })
+                .show();
+    }
+
 
     private void showMoveFileDialog() {
         List<ImageListAdapter.Item> selectedItems = mCurrentImageAdapter.getSelectedItems();

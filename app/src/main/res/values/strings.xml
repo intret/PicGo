@@ -46,4 +46,8 @@
     <string name="already_rename_folder">已经重命名文件夹</string>
     <string name="folder_rename">文件夹重命名</string>
     <string name="folder_name_has_no_changes">文件夹名称没变化</string>
+    <string name="remove_files">移除文件</string>
+    <string name="confirm_to_remove_files_in_folder_s">确认删除目录 %1$s 中选中的 %2$d 个文件吗？</string>
+    <string name="confirm">确认</string>
+    <string name="remove_d_files_success_with_d_files_failed_with_d_files">请求移除 %1$d 个文件，成功 %2$d 个，失败 %3$d 个。</string>
 </resources>

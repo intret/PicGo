@@ -3,15 +3,16 @@ package cn.intret.app.picgo.model;
 
 import android.content.Context;
 import android.util.Log;
+import android.util.Pair;
 
 import com.annimon.stream.Collector;
 import com.annimon.stream.Stream;
 import com.annimon.stream.function.BiConsumer;
+import com.annimon.stream.function.Consumer;
 import com.annimon.stream.function.Function;
 import com.annimon.stream.function.Supplier;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.input.BOMInputStream;
 import org.apache.commons.lang3.StringUtils;
 import org.greenrobot.eventbus.EventBus;
 
@@ -20,6 +21,8 @@ import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.security.InvalidParameterException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -334,10 +337,10 @@ public class SystemImageService {
 
             // Rescan source dirs
             Stream.of(files).groupBy(File::getParent)
-                    .forEach(entry -> rescanDirectory(new File(entry.getKey())));
+                    .forEach(entry -> rescanDirectory(new File(entry.getKey()), false));
 
             // Rescan target dir
-            rescanDirectory(destDir);
+            rescanDirectory(destDir, false);
 
             e.onNext(i);
             e.onComplete();
@@ -345,17 +348,29 @@ public class SystemImageService {
     }
 
 
-    private void rescanDirectory(File destDir) {
+    private void rescanDirectory(File destDir, boolean onlyCached) {
 
-        loadImageList(destDir, false)
-                .subscribe(images -> {
-                    Log.d(TAG, "rescan directory : " + destDir);
+        boolean loadImageList = false;
+        if (onlyCached) {
+            if (mImageListMap.containsKey(destDir.getAbsolutePath())) {
+                loadImageList = true;
+            }
+        } else {
+            loadImageList = true;
+        }
 
-                    mBus.post(new DirectoryRescanMessage().setDirectory(destDir));
+        if (loadImageList) {
 
-                }, throwable -> {
-                    Log.e(TAG, "rescan directory with exception : " + throwable );
-                });
+            loadImageList(destDir, false)
+                    .subscribe(images -> {
+                        Log.d(TAG, "rescan directory : " + destDir);
+
+                        mBus.post(new DirectoryRescanMessage().setDirectory(destDir));
+
+                    }, throwable -> {
+                        Log.e(TAG, "rescan directory with exception : " + throwable );
+                    });
+        }
 
         // Todo load grouped image list
 
@@ -559,6 +574,60 @@ public class SystemImageService {
                     .setNewDirectory(destDir));
 
             e.onNext(true);
+            e.onComplete();
+        });
+    }
+
+    void removeCachedFiles(String dirPath, List<File> files) {
+        mImageListMap.containsKey(dirPath);
+        rescanDirectory(new File(dirPath), false);
+    }
+
+    /**
+     * 删除文件，并把在一个目录中的文件扫描一次目录，缓存，然后通知目录发送变化
+     * @param files
+     * @return 已经删除的文件个数，删除失败的文件列表
+     */
+    public Observable<Pair<Integer, List<File>>> removeFiles(Collection<File> files) {
+        return Observable.create(e -> {
+
+            final int[] totalRemoved = {0};
+            List<File> removeFailedFiles = new LinkedList<File>();
+            // 文件分组来删除：按照目录来分组，每个目录执行一次批量删除，并重新扫描发送目录扫描通知
+            Stream.of(files)
+                    .groupBy(File::getParent)
+                    .forEach(new Consumer<Map.Entry<String, List<File>>>() {
+                        @Override
+                        public void accept(Map.Entry<String, List<File>> stringListEntry) {
+                            String dir = stringListEntry.getKey();
+                            List<File> files = stringListEntry.getValue();
+
+                            removeFilesWithNotification(dir, files);
+                        }
+
+                        private void removeFilesWithNotification(String dir, List<File> files) {
+                            final int[] count = {0};
+                            List<File> removeSuccessFiles = new LinkedList<File>();
+                            Stream.of(files)
+                                    .filter(File::isFile)
+                                    .forEach(file -> {
+                                        if (file.delete()) {
+                                            count[0]++;
+                                            removeSuccessFiles.add(file);
+                                        } else {
+                                            removeFailedFiles.add(file);
+                                        }
+                                    });
+                            totalRemoved[0] += removeSuccessFiles.size();
+
+                            // 扫描目录
+                            rescanDirectory(new File(dir), false);
+                        }
+                    });
+
+
+            Pair<Integer, List<File>> result = new Pair<>(totalRemoved[0], removeFailedFiles);
+            e.onNext(result);
             e.onComplete();
         });
     }

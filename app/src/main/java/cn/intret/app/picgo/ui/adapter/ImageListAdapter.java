@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.support.annotation.MainThread;
 import android.support.annotation.Nullable;
 import android.support.v7.util.DiffUtil;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -82,15 +83,24 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
                 Item oldItem = mItems.get(oldItemPosition);
                 Item newItem = items.get(newItemPosition);
                 boolean isSameFile = SystemUtils.isSameFile(oldItem.getFile(), newItem.getFile());
-                return (oldItem.isSelected() == newItem.isSelected()) && isSameFile;
+                boolean b = (oldItem.isSelected() == newItem.isSelected()) && isSameFile;
+                if (!b) {
+                    Log.d(TAG, String.format("areContentsTheSame false: old item at %d : %s, new item at %d : %s",
+                            oldItemPosition, oldItem.getFile(), newItemPosition, newItem.getFile()));
+                }
+                return b;
             }
 
             @Nullable
             @Override
             public Object getChangePayload(int oldItemPosition, int newItemPosition) {
+                Log.d(TAG, "getChangePayload() called with: oldItemPosition = [" + oldItemPosition + "], newItemPosition = [" + newItemPosition + "]");
+
                 Item oldItem = mItems.get(oldItemPosition);
                 Item newItem = items.get(newItemPosition);
                 newItem.setSelected(oldItem.isSelected());
+                newItem.setViewHolder(oldItem.getViewHolder());
+
                 Bundle diffBundle = new Bundle();
                 diffBundle.putBoolean("selected", oldItem.isSelected());
                 return diffBundle;
@@ -147,6 +157,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         return this;
     }
 
+
     public Item getItem(int position) {
         if (position < 0 || position >= mItems.size()) {
             throw new IllegalArgumentException("Invalid argument 'position' value '" + position + "'.");
@@ -175,9 +186,11 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
     }
 
     public void handleItemLongClickEvent(View view, int position) {
-        Log.d(TAG, "handleItemLongClickEvent() called with: view = [" + view + "], position = [" + position + "]");
 
         ImageListAdapter.Item item = getItem(position);
+
+        Log.d(TAG, String.format("handleItemLongClickEvent() called with: view = [%s], position = [%d] item = [%s]", view, position, item));
+
         if (mIsSelectionMode) {
             Log.d(TAG, "handleItemLongClickEvent: ignore long click on item " + position);
 
@@ -187,21 +200,24 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         } else {
             Log.d(TAG, "handleItemLongClickEvent: entered selection mode from item (" + position + ") click");
 
+            // update item data
+            item.setSelected(true);
+
+            // Update item ui
+            View viewById = view.findViewById(R.id.checkbox);
+            if (viewById != null) {
+                viewById.setVisibility(item.isSelected() ? View.VISIBLE : View.GONE);
+            } else {
+                Log.e(TAG, String.format("handleItemLongClickEvent: 索引 %d 的项 %s 应该标记为选中，但是找不到 ViewHolder ",
+                        position, item ));
+            }
+
+            mIsSelectionMode = true;
+
             // Notify entering selecting mode
             if (mOnItemInteractionListener != null) {
                 mOnItemInteractionListener.onSelectionModeChange(true);
             }
-
-            // Update item ui
-            ViewHolder holder = item.getViewHolder();
-            if (holder != null) {
-                holder.setChecked(true);
-            }
-
-            // update item data
-            item.setSelected(true);
-
-            mIsSelectionMode = true;
         }
     }
 
@@ -227,9 +243,11 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
             }
 
             // update item ui
-            ViewHolder viewHolder = item.getViewHolder();
-            if (viewHolder != null) {
-                viewHolder.setChecked(item.isSelected());
+            View viewById = view.findViewById(R.id.checkbox);
+            if (viewById != null) {
+                viewById.setVisibility(item.isSelected() ? View.VISIBLE : View.GONE);
+            } else {
+                Log.d(TAG, "handleItemClickEvent: ");
             }
 
         } else {
@@ -241,19 +259,12 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         }
     }
 
-    private void onItemClick(int position) {
-
-    }
-
-    private void onItemLongClick(int position) {
-
-    }
-
     public static class Item {
         @Override
         public String toString() {
-            return "Item{" +
+            return "Item{" + this.hashCode() +
                     "mFile=" + mFile +
+                    ", mViewHolder=" + mViewHolder +
                     ", mSelected=" + mSelected +
                     '}';
         }
@@ -373,6 +384,8 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position, List<Object> payloads) {
+        Log.d(TAG, "onBindViewHolder() called with: holder = [" + holder + "], position = [" + position + "], payloads = [" + payloads + "]");
+
         if (payloads.isEmpty()) {
             onBindViewHolder(holder, position);
         } else {
@@ -387,7 +400,8 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         Item item = mItems.get(position);
         item.setViewHolder(holder);
 
-        Log.d(TAG, "onBindViewHolder: position " + position + " viewHolder " + holder + " file " + item.getFile());
+        Log.d(TAG, String.format("onBindViewHolder: position %d, item %s, viewHolder %s file %s",
+                position, item, holder, item.getFile()));
 
         // Bind data to image view
         holder.image.setTag(R.id.item, item);
