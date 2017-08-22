@@ -6,10 +6,10 @@ import java.io.File;
  * 文件夹已经被重新扫描的消息
  */
 
-public class DirectoryRescanMessage {
+public class RescanImageDirectoryMessage {
     private File mDirectory;
 
-    public DirectoryRescanMessage setDirectory(File directory) {
+    public RescanImageDirectoryMessage setDirectory(File directory) {
         mDirectory = directory;
         return this;
     }

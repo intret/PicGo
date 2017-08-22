@@ -25,6 +25,7 @@ import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
 import android.util.Log;
+import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
@@ -61,7 +62,8 @@ import java.util.Map;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
-import cn.intret.app.picgo.model.DirectoryRescanMessage;
+import cn.intret.app.picgo.model.RescanFolderListMessage;
+import cn.intret.app.picgo.model.RescanImageDirectoryMessage;
 import cn.intret.app.picgo.model.FolderModel;
 import cn.intret.app.picgo.model.FolderModelChangeMessage;
 import cn.intret.app.picgo.model.GroupMode;
@@ -260,6 +262,10 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
     }
 
+    /*
+     * 消息处理
+     */
+
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(CurrentImageChangeMessage message) {
         Log.d(TAG, "onEvent() called with: message = [" + message + "]");
@@ -282,17 +288,18 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     }
 
     @Subscribe(threadMode = ThreadMode.ASYNC)
-    public void onEvent(DirectoryRescanMessage message) {
+    public void onEvent(RescanImageDirectoryMessage message) {
         File dir = message.getDirectory();
 
         ImageListAdapter adapter = mImageListAdapters.get(dir.getAbsolutePath());
         if (adapter != null) {
             diffUpdateImageListAdapter(adapter);
         }
-        File currDir = mCurrentImageAdapter.getDirectory();
-        if (SystemUtils.isSameDirectory(dir, currDir)) {
+    }
 
-        }
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onEvent(RescanFolderListMessage message) {
+        diffUpdateFolderListAdapter(mSectionedFolderListAdapter);
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)

@@ -2,7 +2,6 @@ package cn.intret.app.picgo.model;
 
 
 import android.content.Context;
-import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
 
@@ -24,7 +23,6 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.security.InvalidParameterException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -341,18 +339,22 @@ public class SystemImageService {
 
             // Rescan source dirs
             Stream.of(files).groupBy(File::getParent)
-                    .forEach(entry -> rescanDirectory(new File(entry.getKey()), false));
+                    .forEach(entry -> rescanImageDirectory(new File(entry.getKey()), false));
 
             // Rescan target dir
-            rescanDirectory(destDir, false);
+            rescanImageDirectory(destDir, false);
 
             e.onNext(i);
             e.onComplete();
         });
     }
 
+    /*
+     * 扫描目录
+     */
 
-    private void rescanDirectory(File destDir, boolean onlyCached) {
+
+    private void rescanImageDirectory(File destDir, boolean onlyCached) {
 
         boolean loadImageList = false;
         if (onlyCached) {
@@ -369,7 +371,7 @@ public class SystemImageService {
                     .subscribe(images -> {
                         Log.d(TAG, "rescan directory : " + destDir);
 
-                        mBus.post(new DirectoryRescanMessage().setDirectory(destDir));
+                        mBus.post(new RescanImageDirectoryMessage().setDirectory(destDir));
 
                     }, throwable -> {
                         Log.e(TAG, "rescan directory with exception : " + throwable );
@@ -390,6 +392,17 @@ public class SystemImageService {
                     Log.d(TAG, "rescan month grouped directory: " + destDir);
                 }, throwable -> {
 
+                });
+    }
+
+    private void rescanFolderDirectory(File file) {
+        loadFolderListModel(false)
+                .subscribeOn(Schedulers.io())
+                .observeOn(Schedulers.io())
+                .subscribe(model -> {
+                    mBus.post(new RescanFolderListMessage());
+                }, throwable -> {
+                    Log.d(TAG, "rescanFolderDirectory: " + throwable);
                 });
     }
 
@@ -426,8 +439,11 @@ public class SystemImageService {
         return successCount;
     }
 
+    /*
+     * 加载和缓存图片
+     */
     private void cacheSectionedImageGroup(String directory, GroupMode mode, List<ImageGroup> imageGroups) {
-        Log.d(TAG, "cacheSectionedImageGroup() called with: directory = [" + directory + "], mode = [" + mode + "], imageGroups = [" + imageGroups + "]");
+        Log.d(TAG, "cacheSectionedImageGroup() called with: directory = [" + directory + "], mode = [" + mode);
 
         if (directory == null || imageGroups == null) {
             return;
@@ -584,7 +600,7 @@ public class SystemImageService {
 
     void removeCachedFiles(String dirPath, List<File> files) {
         mImageListMap.containsKey(dirPath);
-        rescanDirectory(new File(dirPath), false);
+        rescanImageDirectory(new File(dirPath), false);
     }
 
     /**
@@ -625,7 +641,9 @@ public class SystemImageService {
                             totalRemoved[0] += removeSuccessFiles.size();
 
                             // 扫描目录
-                            rescanDirectory(new File(dir), false);
+                            rescanImageDirectory(new File(dir), false);
+
+                            rescanFolderDirectory(new File(dir));
                         }
                     });
 
@@ -635,6 +653,7 @@ public class SystemImageService {
             e.onComplete();
         });
     }
+
 
     public Observable<Boolean> removeFile(File file) {
         return Observable.create(e -> {

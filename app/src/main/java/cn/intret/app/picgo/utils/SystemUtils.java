@@ -57,10 +57,7 @@ public class SystemUtils {
     }
 
     public static boolean isSameFile(File file1, File file2) {
-        if (file1 == null || file2 == null) {
-            return false;
-        }
+        return (file1 == null && file2 == null) || (file1 != null && file1.equals(file2));
 
-        return file1.getAbsolutePath().equalsIgnoreCase(file2.getAbsolutePath());
     }
 }

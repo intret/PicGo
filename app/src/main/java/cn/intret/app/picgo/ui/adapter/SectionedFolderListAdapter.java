@@ -1,5 +1,7 @@
 package cn.intret.app.picgo.ui.adapter;
 
+import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.PopupMenu;
@@ -15,6 +17,8 @@ import com.afollestad.sectionedrecyclerview.SectionedRecyclerViewAdapter;
 import com.afollestad.sectionedrecyclerview.SectionedViewHolder;
 
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.util.LinkedList;
@@ -32,6 +36,9 @@ import cn.intret.app.picgo.utils.SystemUtils;
 public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<SectionedViewHolder> {
 
     private static final String TAG = SectionedFolderListAdapter.class.getSimpleName();
+    private static final String PAYLOAD_KEY_NAME = "name";
+    private static final String PAYLOAD_KEY_FILE = "file";
+
     private boolean mEnableItemClick = true;
     /*
      * UI options
@@ -82,12 +89,32 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         }
     }
 
+    enum ItemType {
+        HEADER,
+        FOOTER,
+        ITEM
+    }
+
+    private ItemType getItemType(SectionedFolderListAdapter adapter, int position) {
+        boolean header = adapter.isHeader(position);
+        boolean footer = adapter.isFooter(position);
+        if (header) {
+            return ItemType.HEADER;
+        } else if (footer) {
+            return ItemType.FOOTER;
+        } else {
+            return ItemType.ITEM;
+        }
+    }
+
     public void diffUpdateItems(SectionedFolderListAdapter adapter) {
         List<Section> sections = adapter.getSections();
         int oldItemCount = getItemCount();
 
         int newItemCount = adapter.getItemCount();
-        DiffUtil.calculateDiff(new DiffUtil.Callback() {
+        Log.d(TAG, "diffUpdateItems: 计算差异 old " + oldItemCount + " new " + newItemCount);
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+
             @Override
             public int getOldListSize() {
                 return oldItemCount;
@@ -101,30 +128,146 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             @Override
             public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
                 ItemCoord oldCoord = getRelativePosition(oldItemPosition);
-                boolean header = isHeader(oldItemPosition);
-                boolean footer = isFooter(oldItemPosition);
+                ItemCoord newCoord = adapter.getRelativePosition(newItemPosition);
 
-                ItemCoord relativePosition = adapter.getRelativePosition(newItemPosition);
+                ItemType oldItemType = getItemType(SectionedFolderListAdapter.this, oldItemPosition);
+                ItemType newItemType = getItemType(adapter, newItemPosition);
 
-                boolean newHeader = adapter.isHeader(newItemPosition);
-                boolean newFooter = adapter.isFooter(newItemPosition);
+                if (oldItemType == newItemType) {
+                    // 类型一样 Section 索引
+                    if (oldItemType == ItemType.HEADER) {
+                        return oldCoord.section() == newCoord.section();
+                    }
 
+                    if (oldItemType == ItemType.FOOTER) {
+                        return oldCoord.section() == newCoord.section();
+                    }
 
-                if (header == newHeader) {
-
-                    return true;
+                    if (oldItemType == ItemType.ITEM) {
+                        return oldCoord.section() == newCoord.section() && oldCoord.relativePos() == newCoord.relativePos();
+                    }
                 }
-                if (footer == newFooter) {
-                    return true;
-                }
-                return header == newHeader;
+                return false;
             }
 
             @Override
             public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+                ItemCoord oldCoord = getRelativePosition(oldItemPosition);
+                ItemCoord newCoord = adapter.getRelativePosition(newItemPosition);
+
+                ItemType oldItemType = getItemType(SectionedFolderListAdapter.this, oldItemPosition);
+                ItemType newItemType = getItemType(adapter, newItemPosition);
+
+                if (oldItemType == newItemType) {
+                    // 类型一样比较值
+                    switch (oldItemType) {
+
+                        case HEADER:
+                        case FOOTER: {
+                            Section oldSec = mSections.get(oldCoord.section());
+                            Section newSec = adapter.getSections().get(newCoord.section());
+
+                            File oldFile = oldSec.getFile();
+                            File newFile = newSec.getFile();
+
+                            return SystemUtils.isSameFile(oldFile, newFile) && StringUtils.equals(oldSec.getName(), newSec.getName());
+                        }
+                        case ITEM: {
+                            Item oldItem = SectionedFolderListAdapter.this.getItem(oldCoord);
+                            Item newItem = adapter.getItem(newCoord);
+
+
+                            if (StringUtils.equals(oldItem.getName(), newItem.getName()) &&
+                                    SystemUtils.isSameFile(oldItem.getFile(), newItem.getFile())) {
+                                // 目录一样，比较缩略图列表
+                                List<File> oldThumbList = oldItem.getThumbList();
+                                List<File> newThumbList = newItem.getThumbList();
+
+                                return ListUtils.isEqualList(oldThumbList, newThumbList);
+                            } else {
+
+                                // 名称和目录有一项不一样就重新绑定 ViewHolder
+                                return false;
+                            }
+                        }
+                    }
+                }
+
                 return false;
             }
+
+            @Nullable
+            @Override
+            public Object getChangePayload(int oldItemPosition, int newItemPosition) {
+
+                Log.d(TAG, "getChangePayload() called with: oldItemPosition = [" + oldItemPosition + "], newItemPosition = [" + newItemPosition + "]");
+
+                ItemCoord oldCoord = getRelativePosition(oldItemPosition);
+                ItemCoord newCoord = adapter.getRelativePosition(newItemPosition);
+
+                ItemType oldItemType = getItemType(SectionedFolderListAdapter.this, oldItemPosition);
+
+                switch (oldItemType) {
+
+                    case FOOTER:
+                    case HEADER: {
+                        Section oldSec = mSections.get(oldCoord.section());
+                        Section newSec = adapter.getSections().get(newCoord.section());
+
+                        Bundle res = new Bundle();
+                        if (!StringUtils.equals(oldSec.getName(), newSec.getName())) {
+                            res.putString(PAYLOAD_KEY_NAME, newSec.getName());
+                        }
+
+                        // todo 处理 name 一样但是 file 不一样的情况
+
+                        return res;
+                    }
+                    case ITEM: {
+                        Item oldItem = SectionedFolderListAdapter.this.getItem(oldCoord);
+                        Item newItem = adapter.getItem(newCoord);
+
+                        // 哪一项不一样就只存哪一项
+                        Bundle res = new Bundle();
+                        boolean isSameName = StringUtils.equals(oldItem.getName(), newItem.getName());
+
+                        // File 不一样会导致缩略图不一样
+                        boolean isSameFile = SystemUtils.isSameFile(oldItem.getFile(), newItem.getFile());
+                        if (isSameName && isSameFile) {
+                            // 重新绑定 ViewHolder
+                            // TODO 更细致的局部更新，因为缩略图也是使用 RecyclerView 所以可以使用 DiffUtil
+                            return super.getChangePayload(oldItemPosition, newItemPosition);
+
+                        } else {
+                            if (!isSameFile) {
+                                res.putString(PAYLOAD_KEY_FILE, newItem.getFile().getAbsolutePath());
+                            }
+                            if (!isSameName) {
+                                res.putString(PAYLOAD_KEY_NAME, newItem.getName());
+                            }
+                        }
+                        return res;
+                    }
+                }
+                return super.getChangePayload(oldItemPosition, newItemPosition);
+            }
         });
+
+        mSections = adapter.getSections();
+        diffResult.dispatchUpdatesTo(this);
+    }
+
+    public void updateThumbList(String dir) {
+        if (dir == null) {
+            return;
+        }
+        for (Section section : mSections) {
+            List<Item> items = section.getItems();
+            for (int i = 0, itemsSize = items.size(); i < itemsSize; i++) {
+                Item item = items.get(i);
+
+            }
+        }
     }
 
     /*
@@ -452,6 +595,30 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             vh.thumbList.setClickable(false);
             vh.thumbList.setLayoutManager(vh.getLayout());
             vh.thumbList.swapAdapter(item.getAdapter(), false);
+        }
+    }
+
+    @Override
+    public void onBindViewHolder(SectionedViewHolder holder, int section, int relativePosition, int absolutePosition, List<Object> payload) {
+        if (payload.isEmpty()) {
+            super.onBindViewHolder(holder, section, relativePosition, absolutePosition, payload);
+        } else {
+            Object o = payload.get(0);
+            if (o instanceof Bundle) {
+                ItemViewHolder vh = (ItemViewHolder) holder;
+
+                Bundle bundle = (Bundle) o;
+                String name = bundle.getString(PAYLOAD_KEY_NAME);
+                if (name != null) {
+
+                    vh.name.setText(name);
+                }
+
+                String filePath = bundle.getString(PAYLOAD_KEY_FILE);
+                if (filePath != null) {
+                    Log.d(TAG, "onBindViewHolder: do nothing for partial update with file path : " + filePath);
+                }
+            }
         }
     }
 
