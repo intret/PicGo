@@ -25,7 +25,6 @@ import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
 import android.util.Log;
-import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
@@ -282,7 +281,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
             ImageListAdapter adapter = mImageListAdapters.get(parent);
             if (adapter != null) {
-                diffUpdateImageListAdapter(adapter);
+                diffUpdateImageListAdapter(adapter, true);
             }
         }
     }
@@ -293,7 +292,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
         ImageListAdapter adapter = mImageListAdapters.get(dir.getAbsolutePath());
         if (adapter != null) {
-            diffUpdateImageListAdapter(adapter);
+            diffUpdateImageListAdapter(adapter, true);
         }
     }
 
@@ -325,12 +324,12 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                         Throwable::printStackTrace);
     }
 
-    private void diffUpdateImageListAdapter(ImageListAdapter adapter) {
-        File dir = adapter.getDirectory();
-        Log.d(TAG, "diffUpdateImageListAdapter() called with: adapter = [" + adapter + "]");
+    private void diffUpdateImageListAdapter(ImageListAdapter adapter, boolean fromCacheFirst) {
+        Log.d(TAG, "diffUpdateImageListAdapter() called with: adapter = [" + adapter + "], fromCacheFirst = [" + fromCacheFirst + "]");
 
+        File dir = adapter.getDirectory();
         SystemImageService.getInstance()
-                .loadImageList(dir, true)
+                .loadImageList(dir, fromCacheFirst)
                 .map(this::imagesToListItems)
                 .compose(workAndShow())
                 .subscribe(adapter::diffUpdateWithItems,
@@ -1347,17 +1346,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
             if (mCurrentImageAdapter != null) {
                 File directory = mCurrentImageAdapter.getDirectory();
                 if (directory != null) {
-
-                    SystemImageService.getInstance()
-                            .loadImageList(directory, false)
-                            .map(this::imagesToListItems)
-                            .map(items -> itemsToAdapter(directory, items))
-                            .compose(workAndShow())
-                            .subscribe(adapter -> {
-
-                            }, throwable -> {
-
-                            });
+                    diffUpdateImageListAdapter(mCurrentImageAdapter, false);
                 }
             }
 
