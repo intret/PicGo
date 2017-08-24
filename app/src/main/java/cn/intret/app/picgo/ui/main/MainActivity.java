@@ -1343,6 +1343,24 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         if (mIsImageListLoaded) {
 
             Log.d(TAG, "loadImageList: TODO 检查并更新图片文件");
+
+            if (mCurrentImageAdapter != null) {
+                File directory = mCurrentImageAdapter.getDirectory();
+                if (directory != null) {
+
+                    SystemImageService.getInstance()
+                            .loadImageList(directory, false)
+                            .map(this::imagesToListItems)
+                            .map(items -> itemsToAdapter(directory, items))
+                            .compose(workAndShow())
+                            .subscribe(adapter -> {
+
+                            }, throwable -> {
+
+                            });
+                }
+            }
+
         } else {
             mSpanCount = 3; // columns
 

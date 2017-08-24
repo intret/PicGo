@@ -10,7 +10,7 @@
 
     <item
         android:id="@+id/action_move"
-        android:icon="@drawable/ic_forward"
+        android:icon="@drawable/ic_move_to_folder"
         android:title="@string/move"
         app:showAsAction="ifRoom" />
 
