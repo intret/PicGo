@@ -98,7 +98,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom"
-                android:background="@color/white"
+                android:background="@android:color/white"
                 android:visibility="gone"
                 app:floatingMenu="@menu/selected_images_action"
                 app:layout_constraintRight_toRightOf="parent"

@@ -17,7 +17,7 @@
         <item name="android:windowTranslucentStatus">true</item>
         <item name="android:immersive">true</item>
         <item name="android:fitsSystemWindows">false</item>
-        <item name="android:statusBarColor">@color/transparent</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowSharedElementEnterTransition">@transition/transition_image</item>
         <item name="android:windowSharedElementExitTransition">@transition/transition_image</item>
     </style>
