@@ -71,7 +71,6 @@
             </RadioGroup>
 
             <!--图片列表-->
-
             <android.support.v7.widget.RecyclerView
                 android:id="@+id/img_list"
                 android:layout_width="0dp"
@@ -95,8 +94,8 @@
             <!--选中文件操作工具栏-->
             <android.support.v7.widget.Toolbar
                 android:id="@+id/floatingToolbar"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
                 android:layout_gravity="bottom"
                 android:background="@android:color/white"
                 android:visibility="gone"

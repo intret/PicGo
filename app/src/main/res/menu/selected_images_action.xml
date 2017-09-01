@@ -4,7 +4,7 @@
 
     <item
         android:id="@+id/action_copy"
-        android:icon="@drawable/ic_content_copy"
+        android:icon="@drawable/ic_content_copy_black_24px"
         android:title="@string/copy"
         app:showAsAction="ifRoom" />
 
@@ -16,7 +16,7 @@
 
     <item
         android:id="@+id/action_remove"
-        android:icon="@drawable/ic_remove_circle"
+        android:icon="@drawable/ic_delete_forever_black_24px"
         android:title="@string/delete"
         app:showAsAction="ifRoom" />
 </menu>

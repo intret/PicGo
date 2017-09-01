@@ -47,7 +47,7 @@
     <string name="folder_rename">文件夹重命名</string>
     <string name="folder_name_has_no_changes">文件夹名称没变化</string>
     <string name="remove_files">移除文件</string>
-    <string name="confirm_to_remove_files_in_folder_s">确认删除目录“%1$s”中选中的 %2$d 个文件吗？</string>
+    <string name="confirm_to_remove_files_in_folder_s">确认删除目录“%1$s”中选中的 %2$d 张图片吗？</string>
     <string name="confirm">确认</string>
     <string name="remove_d_files_success_with_d_files_failed_with_d_files">请求移除 %1$d 个文件，成功 %2$d 个，失败 %3$d 个。</string>
     <string name="create_folder">新建文件夹</string>
@@ -56,9 +56,9 @@
     <string name="new_folder_prefill">新建文件夹</string>
     <string name="create_folder_failed">新建文件夹失败</string>
     <string name="created_folder_s">新建文件夹 “%1$s” 成功</string>
-    <string name="copy_d_files_to">复制 “%1$d 项” 至</string>
-    <string name="move_d_files_to">移动 “%1$d 项” 至</string>
-    <string name="remove_d_files">删除 “%1$d 项”</string>
+    <string name="copy_d_files_to">复制 “%1$d张图片” 至</string>
+    <string name="move_d_files_to">移动 “%1$d张图片” 至</string>
+    <string name="remove_d_files">删除 “%1$d张图片”</string>
     <string name="move_selected_images_to_here">将选中图片移动至这里</string>
     <string name="remove_folder">删除文件夹</string>
     <string name="confirm_to_remove_folder_s">确认删除文件夹 “%1$s” ？</string>
