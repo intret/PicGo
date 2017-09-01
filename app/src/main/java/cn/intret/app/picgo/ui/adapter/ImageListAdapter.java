@@ -129,6 +129,35 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         }
     }
 
+    public void leaveSelectionMode() {
+
+        // Update selected item's status to "unselected"
+        for (int i = 0, mItemsSize = mItems.size(); i < mItemsSize; i++) {
+            Item item = mItems.get(i);
+            if (item.isSelected()) {
+
+                item.setSelected(false);
+                if (mRecyclerView != null) {
+                    RecyclerView.ViewHolder viewHolder = mRecyclerView.findViewHolderForAdapterPosition(i);
+                    if (viewHolder != null) {
+                        ViewHolder vh = (ViewHolder) viewHolder;
+                        vh.setChecked(false);
+                    }
+                }
+
+                if (mOnItemInteractionListener != null) {
+                    mOnItemInteractionListener.onItemCheckedChanged(item);
+                }
+            }
+        }
+
+        // Notify leaving selection mode
+        mIsSelectionMode = false;
+        if (mOnItemInteractionListener != null) {
+            mOnItemInteractionListener.onSelectionModeChange(false);
+        }
+    }
+
     public interface OnItemInteractionListener {
 
         void onItemLongClick(Item item);
