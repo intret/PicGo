@@ -63,4 +63,6 @@
     <string name="remove_folder">删除文件夹</string>
     <string name="confirm_to_remove_folder_s">确认删除文件夹 “%1$s” ？</string>
     <string name="remove_folder_failed">删除文件夹失败</string>
+    <string name="pref_title_other">其他</string>
+    <string name="about">关于</string>
 </resources>

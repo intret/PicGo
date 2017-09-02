@@ -30,15 +30,21 @@
             android:exported="false">
         </service>
 
-        <activity android:name=".ui.main.ImageViewerActivity"
-                  android:theme="@style/AppImageViewerTheme"
-            >
+        <activity
+            android:name=".ui.main.ImageViewerActivity"
+            android:theme="@style/AppImageViewerTheme">
         </activity>
-
         <activity
             android:name=".ui.main.DragPhotoActivity"
-            android:theme="@style/translucent"
-            />
+            android:theme="@style/translucent"/>
+        <activity android:name=".ui.pref.AboutActivity">
+            <intent-filter>
+                <action android:name="picgo.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".ui.pref.SettingActivity">
+        </activity>
     </application>
 
 </manifest>

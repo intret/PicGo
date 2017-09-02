@@ -6,6 +6,12 @@ import android.content.Context;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.orhanobut.logger.AndroidLogAdapter;
+import com.orhanobut.logger.FormatStrategy;
+import com.orhanobut.logger.LogcatLogStrategy;
+import com.orhanobut.logger.Logger;
+import com.orhanobut.logger.PrettyFormatStrategy;
+
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.util.List;
@@ -128,6 +134,17 @@ public class AppComponent extends Application {
     }
 
     private void initLibraries() {
+
+        // Pretty Logger
+        FormatStrategy formatStrategy = PrettyFormatStrategy.newBuilder()
+                .showThreadInfo(false)  // (Optional) Whether to show thread info or not. Default true
+                .methodCount(0)         // (Optional) How many method line to show. Default 2
+                .methodOffset(7)        // (Optional) Hides internal method calls up to offset. Default 5
+                .logStrategy(new LogcatLogStrategy()) // (Optional) Changes the log strategy to print out. Default LogCat
+//                .tag("My custom tag")   // (Optional) Global tag for every log. Default PRETTY_LOGGER
+                .build();
+        Logger.addLogAdapter(new AndroidLogAdapter(formatStrategy));
+
         // RxJava 异常处理
         RxJavaPlugins.setErrorHandler(e -> {
             if (e != null) {

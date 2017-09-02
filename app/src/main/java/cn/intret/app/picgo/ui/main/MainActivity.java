@@ -84,6 +84,7 @@ import cn.intret.app.picgo.ui.adapter.SectionedFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedImageListAdapter;
 import cn.intret.app.picgo.ui.event.CurrentImageChangeMessage;
 import cn.intret.app.picgo.ui.floating.FloatWindowService;
+import cn.intret.app.picgo.ui.pref.SettingActivity;
 import cn.intret.app.picgo.utils.DateTimeUtils;
 import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
@@ -190,7 +191,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     @Override
     protected void onStart() {
         logger.debug("onStart: ");
-        
+
         super.onStart();
 
         loadFolderList();
@@ -418,7 +419,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                     mCurrentImageAdapter.leaveSelectionMode();
                     onSelectionModeChange(false);
                 }
-                    break;
+                break;
                 case DAY:
                     break;
                 case WEEK:
@@ -460,9 +461,11 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                 case R.id.app_bar_search:
                     ToastUtils.toastShort(MainActivity.this, "search");
                     break;
-                case R.id.app_bar_setting:
-                    ToastUtils.toastShort(MainActivity.this, "setting");
-                    break;
+                case R.id.app_bar_setting: {
+                    MainActivity.this.startActivity(new Intent(MainActivity.this, SettingActivity.class));
+//                    ToastUtils.toastShort(MainActivity.this, "setting");
+                }
+                break;
                 case R.id.app_bar_view_mode:
                     ToastUtils.toastShort(MainActivity.this, "viewmode");
                     break;
@@ -1325,12 +1328,12 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     private void showImageList(File directory) {
         ImageListAdapter listAdapter = mImageListAdapters.get(directory.getAbsolutePath());
         if (listAdapter != null) {
-            logger.debug(TAG, "showImageList 切换显示目录 " + directory);
+            com.orhanobut.logger.Logger.d("showImageList 切换显示目录 " + directory);
             showImageListAdapter(listAdapter);
 
         } else {
 
-            logger.debug(TAG, "showImageList 加载并显示目录 " + directory);
+            com.orhanobut.logger.Logger.d("showImageList 加载并显示目录 " + directory);
 
             SystemImageService.getInstance()
                     .loadImageList(directory, true)

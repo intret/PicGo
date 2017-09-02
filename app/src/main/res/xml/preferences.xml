@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:tools="http://schemas.android.com/tools"
+                  xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory
+        android:title="@string/pref_title_other">
+        <Preference
+            android:key="pref_about"
+            android:title="@string/about"
+            >
+            <intent
+                android:action="picgo.action.VIEW"
+                />
+        </Preference>
+    </PreferenceCategory>
+</PreferenceScreen>
