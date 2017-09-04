@@ -64,7 +64,6 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
     private static final String EXTRA_IMAGE_DIR_PATH = "extra:dir_path";
     private static final String EXTRA_IMAGE_ITEM_POSITION = "extra:image_item_position";
 
-    private static final String EXTRA_TRANSITION_NAME = "transition_name";
     private static final String EXTRA_PARAM_FILE_PATH = "viewer:param:filepath";
     public static final String TRANSITION_NAME_IMAGE = "viewer:image";
     public static final String TRANSITION_PREFIX_FILETYPE = "filetype";
@@ -212,22 +211,18 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
         super.onDestroy();
     }
 
-    public static Intent newIntentViewFile(Context context, File file, String transitionName) {
+    public static Intent newIntentViewFile(Context context, File file) {
         Intent intent = new Intent(context, ImageViewerActivity.class);
         intent.setAction(Intent.ACTION_VIEW);
         intent.putExtra(EXTRA_IMAGE_FILE_PATH, file.getAbsolutePath());
-        intent.putExtra(EXTRA_TRANSITION_NAME, transitionName);
         return intent;
     }
 
-    public static Intent newIntentViewFileList(Context context, String dirAbsolutePath, int itemModelPosition,
-                                               String transitionName) {
+    public static Intent newIntentViewFileList(Context context, String dirAbsolutePath, int itemModelPosition) {
         Intent intent = new Intent(context, ImageViewerActivity.class);
         intent.setAction(Intent.ACTION_VIEW);
         intent.putExtra(EXTRA_IMAGE_DIR_PATH, dirAbsolutePath);
         intent.putExtra(EXTRA_IMAGE_ITEM_POSITION, itemModelPosition);
-
-        intent.putExtra(EXTRA_TRANSITION_NAME, transitionName);
         return intent;
     }
 
@@ -440,8 +435,6 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
         mDirPath = intent.getStringExtra(EXTRA_IMAGE_DIR_PATH);
         mItemPosition = intent.getIntExtra(EXTRA_IMAGE_ITEM_POSITION, -1);
-
-        mTransitionName = intent.getStringExtra(EXTRA_TRANSITION_NAME);
     }
 
     private void showRandomImage() {

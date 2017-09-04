@@ -12,6 +12,7 @@
         android:id="@+id/file_type"
         android:layout_gravity="center"
         style="@style/imag_list_file_type_icon"
+        android:elevation="8dp"
         android:layout_width="88dp"
         android:layout_height="88dp"
         android:visibility="invisible"

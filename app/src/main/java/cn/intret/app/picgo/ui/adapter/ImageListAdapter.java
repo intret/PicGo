@@ -14,6 +14,7 @@ import android.widget.ImageView;
 
 import com.annimon.stream.Stream;
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.bumptech.glide.request.RequestOptions;
 
 import java.io.File;
@@ -440,7 +441,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
                         //.asBitmap() // bitmap 不会播放 GIF
                         .load(item.getFile())
                         .apply(RequestOptions.centerCropTransform())
-                        //.transition(BitmapTransitionOptions.withCrossFade())
+                        .transition(DrawableTransitionOptions.withCrossFade())
                         .into(holder.image);
 
             } else {
@@ -463,7 +464,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
 
         if (PathUtils.isVideoFile(item.getFile())) {
             holder.fileType.setVisibility(View.VISIBLE);
-            holder.fileType.setImageResource(R.drawable.ic_play_circle_outline_black_48px);
+            holder.fileType.setImageResource(R.drawable.ic_play_circle_filled_white_48px);
 
             holder.fileType.setTransitionName(fileTypeTransitionName);
         } else if (PathUtils.isGifFile(item.getFile())) {

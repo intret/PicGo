@@ -23,6 +23,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.RequestBuilder;
 import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.request.target.SimpleTarget;
@@ -196,6 +197,7 @@ public class ImageFragment extends Fragment {
                 .load(mFilePath)
                 .apply(RequestOptions.skipMemoryCacheOf(false))
                 .apply(RequestOptions.fitCenterTransform())
+                .transition(DrawableTransitionOptions.withCrossFade())
                 .listener(new ImageLoadingObserver(mPerformEnterTransition));
 
         request.into(mImage);
@@ -204,7 +206,7 @@ public class ImageFragment extends Fragment {
         if (PathUtils.isVideoFile(mFilePath)) {
 
             mFileType.setVisibility(View.VISIBLE);
-            mFileType.setImageResource(R.drawable.ic_play_circle_outline_black_48px);
+            mFileType.setImageResource(R.drawable.ic_play_circle_filled_white_48px);
             mFileType.setOnClickListener(v -> {
                 ToastUtils.toastShort(this.getContext(), R.string.unimplemented);
             });

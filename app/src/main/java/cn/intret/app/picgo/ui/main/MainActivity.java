@@ -18,7 +18,6 @@ import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.SimpleItemAnimator;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
 import android.text.InputType;
@@ -45,8 +44,8 @@ import com.annimon.stream.Stream;
 import com.annimon.stream.function.BiConsumer;
 import com.annimon.stream.function.Function;
 import com.annimon.stream.function.Supplier;
-import com.thekhaeng.recyclerviewmargin.LayoutMarginDecoration;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -87,6 +86,7 @@ import cn.intret.app.picgo.ui.floating.FloatWindowService;
 import cn.intret.app.picgo.ui.pref.SettingActivity;
 import cn.intret.app.picgo.utils.DateTimeUtils;
 import cn.intret.app.picgo.utils.ListUtils;
+import cn.intret.app.picgo.utils.PathUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
 import cn.intret.app.picgo.widget.RecyclerItemTouchListener;
@@ -246,9 +246,12 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                 logger.debug(TAG, "exit before onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
                 if (mCurrentShownImageIndex != -1) {
                     ImageListAdapter.Item item = mCurrentImageAdapter.getItem(mCurrentShownImageIndex);
-                    String transitionName = ImageTransitionNameGenerator.generateTransitionName(item.getFile().getAbsolutePath());
+                    String filePath = item.getFile().getAbsolutePath();
+                    String transitionName = ImageTransitionNameGenerator.generateTransitionName(filePath);
                     String fileTypeTransitionName = ImageTransitionNameGenerator.generateTransitionName(
-                            ImageViewerActivity.TRANSITION_PREFIX_FILETYPE, item.getFile().getAbsolutePath());
+                            ImageViewerActivity.TRANSITION_PREFIX_FILETYPE, filePath);
+
+                    boolean addFileTypeTransitionName = PathUtils.isVideoFile(filePath);
 
                     sharedElements.clear();
 
@@ -257,12 +260,18 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                         ImageListAdapter.ViewHolder viewHolder = ((ImageListAdapter.ViewHolder) vh);
 
                         sharedElements.put(transitionName, viewHolder.getImage());
-                        sharedElements.put(fileTypeTransitionName, viewHolder.getFileType());
+
+                        if (addFileTypeTransitionName) {
+                            sharedElements.put(fileTypeTransitionName, viewHolder.getFileType());
+                        }
                     }
 
                     names.clear();
                     names.add(transitionName);
-                    names.add(fileTypeTransitionName);
+
+                    if (addFileTypeTransitionName) {
+                        names.add(fileTypeTransitionName);
+                    }
                 }
                 logger.debug(TAG, "exit after onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
 
@@ -353,7 +362,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     private void startTestDetailActivity(Context context, File file, View view) {
 
         // Construct an Intent as normal
-        Intent intent = ImageViewerActivity.newIntentViewFile(this, file, getTransitionName(file.getName()));
+        Intent intent = ImageViewerActivity.newIntentViewFile(this, file);
 
         // BEGIN_INCLUDE(start_activity)
         ActivityOptionsCompat activityOptions = ActivityOptionsCompat.makeSceneTransitionAnimation(
@@ -1513,7 +1522,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
         // Construct an Intent as normal
         Intent intent = ImageViewerActivity.newIntentViewFileList(this, directory.getAbsolutePath(),
-                position, item.getTransitionName());
+                position);
 
         // BEGIN_INCLUDE(start_activity)
         /**
