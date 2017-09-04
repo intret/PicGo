@@ -239,6 +239,8 @@ public class ImageFragment extends Fragment {
 
         @Override
         public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+            Log.d(TAG, "onResourceReady() called with: resource = [" + resource + "], model = [" + model + "], target = [" + target + "], dataSource = [" + dataSource + "], isFirstResource = [" + isFirstResource + "]");
+
             if (mPerformEnterTransition) {
                 FragmentActivity activity = ImageFragment.this.getActivity();
                 if (activity != null) {
