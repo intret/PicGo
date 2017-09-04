@@ -3,7 +3,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
+    android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     app:cardCornerRadius="0dp"
     app:cardElevation="0dp"
@@ -11,17 +11,15 @@
 
     <!--图片-->
     <com.github.siyamed.shapeimageview.RoundedImageView
-        android:layout_margin="2dp"
         android:id="@+id/image"
+        android:layout_margin="@dimen/margin_list_item_image_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginBottom="0dp"
-        android:layout_marginLeft="0dp"
-        android:layout_marginRight="0dp"
-        android:layout_marginTop="0dp"
+        android:layout_centerInParent="true"
+        android:background="?android:attr/selectableItemBackground"
+        android:contentDescription="@string/image_item"
         android:scaleType="centerCrop"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent"
@@ -29,13 +27,12 @@
         app:siBorderWidth="0dp"
         app:siRadius="0dp"
         app:siSquare="true"
-        android:contentDescription="Image"
-        android:background="?android:attr/selectableItemBackground"
         tools:layout_conversion_absoluteHeight="380dp"
         tools:layout_conversion_absoluteWidth="380dp"
         tools:layout_conversion_absoluteX="2dp"
         tools:layout_conversion_absoluteY="2dp"
-        tools:src="@color/colorAccent"/>
+        tools:src="@android:color/black"
+        />
 
     <!--选中-->
     <ImageView
@@ -44,9 +41,8 @@
         android:layout_height="wrap_content"
         android:layout_alignParentRight="true"
         android:layout_alignParentTop="true"
-        android:layout_marginRight="8dp"
-        android:layout_marginTop="8dp"
-        android:contentDescription="CheckBox"
+        android:layout_marginRight="@dimen/margin_top_image_list_item_checkbox"
+        android:layout_marginTop="@dimen/margin_top_image_list_item_checkbox"
         android:src="@drawable/ic_checkbox"
         android:visibility="gone"
         app:layout_constraintRight_toRightOf="@+id/image"
@@ -56,31 +52,26 @@
         tools:layout_conversion_absoluteX="0dp"
         tools:layout_conversion_absoluteY="0dp"/>
 
-    <!--文件类型-->
-    <ImageView
-        android:id="@+id/file_type"
-        android:layout_width="wrap_content"
+    <FrameLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true"
-        android:layout_marginBottom="32dp"
-        android:layout_marginLeft="8dp"
-        android:alpha="0.85"
-        android:contentDescription="file type"
-        android:foregroundGravity="bottom"
-        android:scaleType="fitEnd"
-        android:textColor="#FFFFFF"
-        android:textSize="12dp"
-        android:textStyle="bold"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="@+id/image"
-        app:layout_constraintLeft_toLeftOf="@+id/image"
-        tools:ignore="SpUsage"
-        tools:layout_conversion_absoluteHeight="20dp"
-        tools:layout_conversion_absoluteWidth="26dp"
-        tools:layout_conversion_absoluteX="0dp"
-        tools:layout_conversion_absoluteY="547dp"
-        tools:layout_editor_absoluteX="0dp"
-        tools:layout_editor_absoluteY="547dp"/>
+        >
 
+        <!--文件类型图标-->
+        <ImageView
+            android:id="@+id/file_type"
+            style="@style/imag_list_file_type_icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/margin_top_image_list_item_checkbox"
+            android:scaleType="fitCenter"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="@id/image"
+            app:layout_constraintLeft_toLeftOf="@id/image"
+            tools:ignore="SpUsage"
+            tools:src="@drawable/ic_gif_black_48px"
+            tools:visibility="visible"
+            />
+    </FrameLayout>
 </RelativeLayout>
