@@ -247,6 +247,8 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                 if (mCurrentShownImageIndex != -1) {
                     ImageListAdapter.Item item = mCurrentImageAdapter.getItem(mCurrentShownImageIndex);
                     String transitionName = ImageTransitionNameGenerator.generateTransitionName(item.getFile().getAbsolutePath());
+                    String fileTypeTransitionName = ImageTransitionNameGenerator.generateTransitionName(
+                            ImageViewerActivity.TRANSITION_PREFIX_FILETYPE, item.getFile().getAbsolutePath());
 
                     sharedElements.clear();
 
@@ -255,10 +257,12 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                         ImageListAdapter.ViewHolder viewHolder = ((ImageListAdapter.ViewHolder) vh);
 
                         sharedElements.put(transitionName, viewHolder.getImage());
+                        sharedElements.put(fileTypeTransitionName, viewHolder.getFileType());
                     }
 
                     names.clear();
                     names.add(transitionName);
+                    names.add(fileTypeTransitionName);
                 }
                 logger.debug(TAG, "exit after onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
 
@@ -586,7 +590,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         listAdapter.setOnItemClickListener(new SectionedFolderListAdapter.OnItemClickListener() {
             @Override
             public void onSectionHeaderClick(SectionedFolderListAdapter.Section section, int sectionIndex, int adapterPosition) {
-                boolean sectionExpanded = mSectionedFolderListAdapter.isSectionExpanded(adapterPosition);
+                boolean sectionExpanded = mSectionedFolderListAdapter.isSectionExpanded(sectionIndex);
                 if (sectionExpanded) {
                     mSectionedFolderListAdapter.collapseSection(sectionIndex);
                 } else {
@@ -1497,6 +1501,8 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     }
 
     private void startImageViewerActivity(ImageListAdapter.Item item, File directory, View view, int position) {
+
+        com.orhanobut.logger.Logger.d("查看图片 %d：%s", position, item.getFile().getAbsoluteFile());
 
         mCurrentShownImageIndex = position;
         View imageView = view.findViewById(R.id.image);

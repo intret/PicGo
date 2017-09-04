@@ -10,6 +10,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.view.ViewCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,11 +20,17 @@ import android.widget.ImageView;
 
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.RequestBuilder;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.request.target.SimpleTarget;
+import com.bumptech.glide.request.target.Target;
 import com.bumptech.glide.request.target.ViewTarget;
 import com.bumptech.glide.request.transition.Transition;
 import com.github.chrisbanes.photoview.PhotoView;
+import com.orhanobut.logger.Logger;
 
 import org.apache.commons.lang3.StringUtils;
 import org.greenrobot.eventbus.EventBus;
@@ -38,6 +45,9 @@ import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.model.SystemImageService;
 import cn.intret.app.picgo.ui.event.CancelExitTransitionMessage;
 import cn.intret.app.picgo.ui.event.ImageFragmentSelectionChangeMessage;
+import cn.intret.app.picgo.utils.PathUtils;
+import cn.intret.app.picgo.utils.SystemUtils;
+import cn.intret.app.picgo.utils.ToastUtils;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -50,7 +60,8 @@ import cn.intret.app.picgo.ui.event.ImageFragmentSelectionChangeMessage;
 public class ImageFragment extends Fragment {
 
     public static final String ARG_FILE_PATH = "arg_file_path";
-    private static final String ARG_TRANSITION_NAME = "arg_transition_name";
+    private static final String ARG_IMAGE_TRANSITION_NAME = "arg_transition_name";
+    private static final String ARG_FILE_TYPE_TRANSITION_NAME = "arg_file_type_transition_name";
     private static final String TAG = "ImageFragment";
     private static final String ARG_PERFORM_ENTER_TRANSITION = "arg_perform_enter_transition";
 
@@ -61,12 +72,18 @@ public class ImageFragment extends Fragment {
     private boolean mIsLoaded = false;
 
     @BindView(R.id.image) PhotoView mImage;
-    private String mTransitionName;
+    @BindView(R.id.file_type) ImageView mFileType;
+
+    private String mImageTransitionName;
+    private String mFileTypeTransitionName;
     private boolean mPerformEnterTransition = false;
     private boolean mPerformExitTransition = true;
 
     public PhotoView getImage() {
         return mImage;
+    }
+    public ImageView getFileType() {
+        return mFileType;
     }
 
     @Override
@@ -86,9 +103,10 @@ public class ImageFragment extends Fragment {
         if (getArguments() != null) {
             mFilePath = getArguments().getString(ARG_FILE_PATH);
             mPerformEnterTransition = getArguments().getBoolean(ARG_PERFORM_ENTER_TRANSITION);
-            mTransitionName = getArguments().getString(ARG_TRANSITION_NAME);
+            mImageTransitionName = getArguments().getString(ARG_IMAGE_TRANSITION_NAME);
+            mFileTypeTransitionName = getArguments().getString(ARG_FILE_TYPE_TRANSITION_NAME);
 
-            Log.d(TAG, "onCreate: create fragment for file " + mFilePath + ", transition name :" + mTransitionName);
+            Log.d(TAG, "onCreate: create fragment for file " + mFilePath + ", transition name :" + mImageTransitionName);
         }
     }
 
@@ -96,8 +114,8 @@ public class ImageFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View view = inflater.inflate(R.layout.fragment_image, container, false);
-        ButterKnife.bind(this, view);
+        View rootView = inflater.inflate(R.layout.fragment_image, container, false);
+        ButterKnife.bind(this, rootView);
 
         //if (mPerformEnterTransition) {
         tryToSetTransitionNameFromIntent();
@@ -105,7 +123,10 @@ public class ImageFragment extends Fragment {
 
         mImage.setOnClickListener(v -> {
             if (mPerformExitTransition) {
-                ActivityCompat.finishAfterTransition(getActivity());
+                if (getActivity() != null) {
+                    Logger.d("退出查看图片：%s", mFilePath);
+                    ActivityCompat.finishAfterTransition(getActivity());
+                }
             } else {
                 getActivity().finish();
             }
@@ -161,19 +182,72 @@ public class ImageFragment extends Fragment {
             }
         };
 
+
+//        ActivityCompat.startPostponedEnterTransition(activity);
         if (mPerformEnterTransition) {
-            scheduleStartPostponedTransition(mImage);
+
+            //scheduleStartPostponedTransition(mImage);
         }
 
         mImage.setScaleType(ImageView.ScaleType.FIT_CENTER);
 
-        Glide.with(this)
+        RequestBuilder<Drawable> request = Glide.with(this)
                 .asDrawable()
                 .load(mFilePath)
+                .apply(RequestOptions.skipMemoryCacheOf(false))
                 .apply(RequestOptions.fitCenterTransform())
-                .into(mImage);
+                .listener(new ImageLoadingObserver(mPerformEnterTransition));
 
-        return view;
+        request.into(mImage);
+
+        // 文件类型图标
+        if (PathUtils.isVideoFile(mFilePath)) {
+
+            mFileType.setVisibility(View.VISIBLE);
+            mFileType.setImageResource(R.drawable.ic_play_circle_outline_black_48px);
+            mFileType.setOnClickListener(v -> {
+                ToastUtils.toastShort(this.getContext(), R.string.unimplemented);
+            });
+        } else if (PathUtils.isGifFile(mFilePath)) {
+
+            mFileType.setVisibility(View.VISIBLE);
+            mFileType.setImageResource(R.drawable.ic_gif_black_48px);
+            mFileType.setOnClickListener(v -> {
+                ToastUtils.toastShort(this.getContext(), R.string.unimplemented);
+            });
+        } else {
+            mFileType.setVisibility(View.GONE);
+        }
+
+        return rootView;
+    }
+
+    class ImageLoadingObserver implements RequestListener<Drawable> {
+
+        boolean mPerformEnterTransition;
+
+        public ImageLoadingObserver(boolean performEnterTransition) {
+            mPerformEnterTransition = performEnterTransition;
+        }
+
+        @Override
+        public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+            return false;
+        }
+
+        @Override
+        public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+            if (mPerformEnterTransition) {
+                FragmentActivity activity = ImageFragment.this.getActivity();
+                if (activity != null) {
+                    ActivityCompat.startPostponedEnterTransition(activity);
+                } else {
+                    Log.e(TAG, "onResourceReady: 应该启动进入动画，但是不能获取 Activity");
+                }
+//                startPostponedEnterTransition();
+            }
+            return false;
+        }
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -184,7 +258,7 @@ public class ImageFragment extends Fragment {
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(ImageFragmentSelectionChangeMessage message) {
         // Clear transition name
-        if (StringUtils.equals(message.getTransitionName(), mTransitionName)) {
+        if (StringUtils.equals(message.getTransitionName(), mImageTransitionName)) {
             Log.d(TAG, "onEvent() 设置 transition name:" + mFilePath);
             //tryToSetTransitionNameFromIntent();
         } else {
@@ -195,14 +269,14 @@ public class ImageFragment extends Fragment {
 
 
     private void tryToSetTransitionNameFromIntent() {
-        if (mTransitionName != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        if (mImageTransitionName != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             setTransitionNamesLollipop();
         }
     }
 
     @Override
     public void onStart() {
-        Log.d(TAG, "onStart() called " + mTransitionName);
+        Log.d(TAG, "onStart() called " + mImageTransitionName);
         super.onStart();
 
         EventBus.getDefault().register(this);
@@ -210,7 +284,7 @@ public class ImageFragment extends Fragment {
 
     @Override
     public void onStop() {
-        Log.d(TAG, "onStop() called " + mTransitionName);
+        Log.d(TAG, "onStop() called " + mImageTransitionName);
 
         EventBus.getDefault().unregister(this);
 
@@ -219,13 +293,13 @@ public class ImageFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
-        Log.d(TAG, "onDestroyView: " + mTransitionName);
+        Log.d(TAG, "onDestroyView: " + mImageTransitionName);
         super.onDestroyView();
     }
 
     @Override
     public void onDetach() {
-        Log.d(TAG, "onDetach: " + mTransitionName);
+        Log.d(TAG, "onDetach: " + mImageTransitionName);
         super.onDetach();
         mListener = null;
     }
@@ -240,14 +314,15 @@ public class ImageFragment extends Fragment {
      *
      * @param filePath               File path of image to present
      * @param imageTransitionName
-     * @param performEnterTransition
-     * @return A new instance of fragment ImageFragment.
+     * @param fileTypeTransitionName
+     *@param performEnterTransition  @return A new instance of fragment ImageFragment.
      */
-    public static ImageFragment newInstance(String filePath, String imageTransitionName, boolean performEnterTransition) {
+    public static ImageFragment newInstance(String filePath, String imageTransitionName, String fileTypeTransitionName, boolean performEnterTransition) {
         ImageFragment fragment = new ImageFragment();
         Bundle args = new Bundle();
         args.putString(ARG_FILE_PATH, filePath);
-        args.putString(ARG_TRANSITION_NAME, imageTransitionName);
+        args.putString(ARG_IMAGE_TRANSITION_NAME, imageTransitionName);
+        args.putString(ARG_FILE_TYPE_TRANSITION_NAME, fileTypeTransitionName);
         args.putBoolean(ARG_PERFORM_ENTER_TRANSITION, performEnterTransition);
         fragment.setArguments(args);
         return fragment;
@@ -285,7 +360,7 @@ public class ImageFragment extends Fragment {
 
                         FragmentActivity activity = ImageFragment.this.getActivity();
                         if (activity != null) {
-                            Log.d(TAG, "onPreDraw: perform enter transition for " + mTransitionName + " " + mFilePath);
+                            Log.d(TAG, "onPreDraw: perform enter transition for " + mImageTransitionName + " " + mFilePath);
                             ActivityCompat.startPostponedEnterTransition(activity);
                         } else {
                             Log.e(TAG, "Cannot perform enter transition for fragment because no attached activity.");
@@ -297,7 +372,8 @@ public class ImageFragment extends Fragment {
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private void setTransitionNamesLollipop() {
-        mImage.setTransitionName(mTransitionName);
+        mImage.setTransitionName(mImageTransitionName);
+        mFileType.setTransitionName(mFileTypeTransitionName);
     }
 
     /**

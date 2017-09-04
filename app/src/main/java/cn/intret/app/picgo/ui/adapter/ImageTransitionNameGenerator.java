@@ -6,4 +6,8 @@ public class ImageTransitionNameGenerator {
     public static String generateTransitionName(String filePath) {
         return "image:item:" + FilenameUtils.getBaseName(filePath).toLowerCase();
     }
+
+    public static String generateTransitionName(String itemName, String filePath) {
+        return "image:" + itemName + ":item:" + FilenameUtils.getBaseName(filePath).toLowerCase();
+    }
 }

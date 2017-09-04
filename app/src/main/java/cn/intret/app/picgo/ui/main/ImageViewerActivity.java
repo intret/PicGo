@@ -18,14 +18,11 @@ import android.util.Log;
 import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.annimon.stream.Stream;
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.resource.bitmap.BitmapTransitionOptions;
 import com.bumptech.glide.request.RequestOptions;
 import com.github.chrisbanes.photoview.PhotoView;
 import com.jaeger.library.StatusBarUtil;
@@ -52,7 +49,6 @@ import cn.intret.app.picgo.ui.adapter.ImageTransitionNameGenerator;
 import cn.intret.app.picgo.ui.event.CurrentImageChangeMessage;
 import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
-import cn.intret.app.picgo.utils.ToastUtils;
 import io.reactivex.Observable;
 import pl.droidsonroids.gif.GifDrawable;
 
@@ -71,6 +67,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
     private static final String EXTRA_TRANSITION_NAME = "transition_name";
     private static final String EXTRA_PARAM_FILE_PATH = "viewer:param:filepath";
     public static final String TRANSITION_NAME_IMAGE = "viewer:image";
+    public static final String TRANSITION_PREFIX_FILETYPE = "filetype";
 
     @BindView(R.id.viewpager) ViewPager mViewPager;
         @BindView(R.id.brief) TextView mBrief;
@@ -99,13 +96,15 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
         extractIntentData();
 
-        showImageFile();
+        loadImageFile();
 
         initImageTransition();
     }
 
     private void initStatusBar() {
-        StatusBarUtil.setTranslucent(this, 255);
+
+//        StatusBarUtil.setTranslucent(this);
+//        StatusBarUtil.setTranslucent(this, 125);
 
 //        StatusBarUtil.setColor(this, getResources().getColor(R.color.black));
     }
@@ -124,8 +123,11 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
                     String absolutePath = item.getFile().getAbsolutePath();
                     String transitionName = ImageTransitionNameGenerator.generateTransitionName(absolutePath);
+                    String fileTypeTransitionName = ImageTransitionNameGenerator.generateTransitionName(TRANSITION_PREFIX_FILETYPE, absolutePath);
+
                     names.clear();
                     names.add(transitionName);
+                    names.add(fileTypeTransitionName);
 
                     sharedElements.clear();
                     PhotoView image = fragment.getImage();
@@ -144,6 +146,23 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
                             Log.e(TAG, "imageView enter onMapSharedElements: cannot get PhotoView instance." );
                         }
                     }
+
+                    ImageView fileType = fragment.getFileType();
+                    if (fileType != null) {
+                        sharedElements.put(fileTypeTransitionName, fragment.getFileType());
+                    } else {
+                        View iv = null;
+                        View root = fragment.getView();
+                        if (root != null) {
+                            iv = root.findViewById(R.id.file_type);
+                        }
+
+                        if (iv != null) {
+                            sharedElements.put(fileTypeTransitionName, iv);
+                        } else {
+                            Log.e(TAG, "imageView enter onMapSharedElements: cannot get FileType ImageView instance.");
+                        }
+                    }
                 }
                 Log.d(TAG, "imageView enter after onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
                 super.onMapSharedElements(names, sharedElements);
@@ -159,7 +178,10 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
                     Image item = mPagerAdapter.getImage(currentItem);
                     sharedElements.clear();
                     String transitionName = ImageTransitionNameGenerator.generateTransitionName(item.getFile().getAbsolutePath());
+                    String fileTypeTransitionName = ImageTransitionNameGenerator.generateTransitionName(TRANSITION_PREFIX_FILETYPE, item.getFile().getAbsolutePath());
+
                     sharedElements.put(transitionName, ((ImageFragment) mPagerAdapter.getItem(currentItem)).getImage());
+                    sharedElements.put(fileTypeTransitionName, ((ImageFragment) mPagerAdapter.getItem(currentItem)).getFileType());
                 }
                 Log.d(TAG, "imageView enter after onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
                 super.onMapSharedElements(names, sharedElements);
@@ -230,7 +252,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 //        }
     }
 
-    private void showImageFile() {
+    private void loadImageFile() {
 
         if (mDirPath != null && mItemPosition != -1) {
 
@@ -562,10 +584,10 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
                 // 加载原始图片
                 Glide.with(container.getContext())
-                        .asBitmap()
+                        //.asBitmap()
                         .load(image.getFile())
                         .apply(RequestOptions.fitCenterTransform())
-                        .transition(BitmapTransitionOptions.withCrossFade())
+                        //.transition(BitmapTransitionOptions.withCrossFade())
                         .into(photoView);
 
                 view = photoView;
@@ -690,12 +712,14 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
             String absolutePath = image.getFile().getAbsolutePath();
             String transitionName = ImageTransitionNameGenerator.generateTransitionName(absolutePath);
+            String fileTypeTransitionName = ImageTransitionNameGenerator.generateTransitionName(TRANSITION_PREFIX_FILETYPE, absolutePath);
+
             boolean performEnterTransition = position == mAnimatedItemPosition;
             if (performEnterTransition) {
                 Log.d(TAG, "get fragment item : PerformEnterTransition for position " + position + " " + transitionName);
             }
 
-            ImageFragment fragment = ImageFragment.newInstance(absolutePath, transitionName, performEnterTransition);
+            ImageFragment fragment = ImageFragment.newInstance(absolutePath, transitionName, fileTypeTransitionName, performEnterTransition);
             registeredFragments.put(position, fragment);
 
             return fragment;

@@ -32,7 +32,7 @@
 
         <activity
             android:name=".ui.main.ImageViewerActivity"
-            android:theme="@style/AppImageViewerTheme">
+            android:theme="@style/AppTheme.ImageViewer">
         </activity>
         <activity
             android:name=".ui.main.DragPhotoActivity"

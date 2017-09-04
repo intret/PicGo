@@ -14,9 +14,7 @@ import android.widget.ImageView;
 
 import com.annimon.stream.Stream;
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.resource.bitmap.BitmapTransitionOptions;
-
-import org.apache.commons.io.FilenameUtils;
+import com.bumptech.glide.request.RequestOptions;
 
 import java.io.File;
 import java.util.LinkedList;
@@ -25,6 +23,7 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
+import cn.intret.app.picgo.utils.PathUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
 
 /**
@@ -235,7 +234,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
                 viewById.setVisibility(item.isSelected() ? View.VISIBLE : View.GONE);
             } else {
                 Log.e(TAG, String.format("handleItemLongClickEvent: 索引 %d 的项 %s 应该标记为选中，但是找不到 ViewHolder ",
-                        position, item ));
+                        position, item));
             }
 
             mIsSelectionMode = true;
@@ -435,11 +434,13 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
             if (mRecyclerView != null) {
                 Context context = mRecyclerView.getContext();
 
-                holder.image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+//                holder.image.setScaleType(ImageView.ScaleType.CENTER_CROP);
                 Glide.with(context)
-                        .asBitmap() // bitmap 不会播放 GIF
+                        .asDrawable()
+                        //.asBitmap() // bitmap 不会播放 GIF
                         .load(item.getFile())
-                        .transition(BitmapTransitionOptions.withCrossFade())
+                        .apply(RequestOptions.centerCropTransform())
+                        //.transition(BitmapTransitionOptions.withCrossFade())
                         .into(holder.image);
 
             } else {
@@ -458,28 +459,18 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
 
         // File type
         // Show file type
-        String extension = FilenameUtils.getExtension(item.getFile().getAbsolutePath());
-        if (extension != null) {
-            switch (extension.toLowerCase()) {
-                case "mp4":
-                case "avi":
-                case "mov":
-                case "mpg":
-                case "mpeg":
-                case "rmvb": {
-                    holder.fileType.setVisibility(View.VISIBLE);
-                    holder.fileType.setImageResource(R.drawable.ic_videocam);
-                }
-                break;
-                case "gif": {
-                    holder.fileType.setImageResource(R.drawable.ic_gif);
-                    holder.fileType.setVisibility(View.VISIBLE);
-                }
-                break;
-                default:
-                    holder.fileType.setVisibility(View.GONE);
-                    break;
-            }
+        String fileTypeTransitionName = ImageTransitionNameGenerator.generateTransitionName("filetype", item.getFile().getAbsolutePath());
+
+        if (PathUtils.isVideoFile(item.getFile())) {
+            holder.fileType.setVisibility(View.VISIBLE);
+            holder.fileType.setImageResource(R.drawable.ic_play_circle_outline_black_48px);
+
+            holder.fileType.setTransitionName(fileTypeTransitionName);
+        } else if (PathUtils.isGifFile(item.getFile())) {
+            holder.fileType.setImageResource(R.drawable.ic_gif_black_48px);
+            holder.fileType.setVisibility(View.VISIBLE);
+
+            holder.fileType.setTransitionName(fileTypeTransitionName);
         } else {
             holder.fileType.setVisibility(View.GONE);
         }
@@ -505,6 +496,9 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
             return image;
         }
 
+        public ImageView getFileType() {
+            return fileType;
+        }
 
         ViewHolder(View itemView) {
             super(itemView);

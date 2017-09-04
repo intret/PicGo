@@ -9,14 +9,13 @@
         <item name="android:windowContentTransitions">true</item>
     </style>
 
-    <style name="AppImageViewerTheme" parent="AppTheme">
+    <style name="AppTheme.ImageViewer" parent="AppTheme">
         <!-- Customize your theme here. -->
         <item name="android:windowContentTransitions">false</item>
         <item name="android:windowActivityTransitions">true</item>
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowTranslucentStatus">true</item>
         <item name="android:immersive">true</item>
-        <item name="android:fitsSystemWindows">false</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowSharedElementEnterTransition">@transition/transition_image</item>
         <item name="android:windowSharedElementExitTransition">@transition/transition_image</item>

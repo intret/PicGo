@@ -89,7 +89,7 @@ public class DragPhotoActivity extends AppCompatActivity {
             DragPhotoView photoView;
 
             photoView = (DragPhotoView) View.inflate(this, R.layout.item_viewpager, null);
-            //photoView.setImageURI(Uri.fromFile(new File(mFilePath)));
+            //photoView.setImageURI(Uri.fromFile(new File(mPerformEnterTransition)));
 
             mPhotoViews[i] = photoView;
             // TODO: 更换图片
