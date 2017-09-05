@@ -6,7 +6,10 @@ import android.util.SparseArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
+
+import org.apache.commons.collections4.ListUtils;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -82,13 +85,23 @@ public class FolderListAdapter extends RecyclerView.Adapter<FolderListAdapter.Vi
 
     public static class Item {
         String name;
-        long count;
+        long count = 0;
+        boolean isSelected = false;
 
         ViewHolder viewHolder;
         private File mDirectory;
 
         public ViewHolder getViewHolder() {
             return viewHolder;
+        }
+
+        public Item setSelected(boolean selected) {
+            isSelected = selected;
+            return this;
+        }
+
+        public boolean isSelected() {
+            return isSelected;
         }
 
         public Item setViewHolder(ViewHolder viewHolder) {
@@ -151,6 +164,18 @@ public class FolderListAdapter extends RecyclerView.Adapter<FolderListAdapter.Vi
         }
     }
 
+    public void setItemSelected(int position) {
+        if (position < 0 || position >= mItems.size()) {
+            return;
+        }
+
+        // Current selected
+        int i = ListUtils.indexOf(mItems, Item::isSelected);
+        if (i == position) {
+
+        }
+    }
+
     @Override
     public void onViewRecycled(ViewHolder holder) {
         Object tag = holder.itemView.getTag(R.id.item);
@@ -195,6 +220,7 @@ public class FolderListAdapter extends RecyclerView.Adapter<FolderListAdapter.Vi
 
     class ViewHolder extends RecyclerView.ViewHolder {
 
+        @BindView(R.id.check) ImageView check;
         @BindView(R.id.name) TextView name;
         @BindView(R.id.count) TextView count;
         @BindView(R.id.thumb_list) RecyclerView thumbList;

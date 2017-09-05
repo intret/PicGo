@@ -9,6 +9,26 @@ import java.io.File;
 
 public class PathUtils {
 
+    public static boolean isStaticImageFile(String filePath) {
+        if (StringUtils.isEmpty(filePath)) {
+            return false;
+        }
+        String extension = FilenameUtils.getExtension(filePath);
+        if (StringUtils.isEmpty(extension)) {
+            return false;
+        }
+        switch (extension.toLowerCase()) {
+            case "png":
+            case "jpeg":
+            case "jpg":
+            case "webp": {
+                return true;
+            }
+        }
+        return false;
+
+    }
+
     public static boolean isVideoFile(String filePath) {
         if (StringUtils.isEmpty(filePath)) {
             return false;

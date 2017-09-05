@@ -4,12 +4,13 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.afollestad.sectionedrecyclerview.ItemCoord;
@@ -17,13 +18,11 @@ import com.afollestad.sectionedrecyclerview.SectionedRecyclerViewAdapter;
 import com.afollestad.sectionedrecyclerview.SectionedViewHolder;
 
 import org.apache.commons.collections4.ListUtils;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Stream;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -52,6 +51,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
      * Data
      */
     List<Section> mSections = new LinkedList<>();
+    private RecyclerView mRecyclerView;
 
     public Item getItem(ItemCoord relativePosition) {
         int section = relativePosition.section();
@@ -311,6 +311,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         int mCount;
         File mFile;
         List<File> mThumbList;
+        boolean mIsSelected;
 
         public List<File> getThumbList() {
             return mThumbList;
@@ -357,6 +358,15 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         public Item setFile(File file) {
             mFile = file;
             return this;
+        }
+
+        public Item setSelected(boolean selected) {
+            mIsSelected = selected;
+            return this;
+        }
+
+        public boolean isSelected() {
+            return mIsSelected;
         }
     }
 
@@ -533,10 +543,22 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
     }
 
     @Override
-    public void onBindViewHolder(SectionedViewHolder holder, int section, int relativePosition, int absolutePosition) {
+    public void onAttachedToRecyclerView(RecyclerView recyclerView) {
+        super.onAttachedToRecyclerView(recyclerView);
+        mRecyclerView = recyclerView;
+    }
+
+    @Override
+    public void onDetachedFromRecyclerView(RecyclerView recyclerView) {
+        super.onDetachedFromRecyclerView(recyclerView);
+        mRecyclerView = null;
+    }
+
+    @Override
+    public void onBindViewHolder(SectionedViewHolder holder, int sectionIndex, int relativePosition, int absolutePosition) {
         ItemViewHolder vh = (ItemViewHolder) holder;
-        Section sectionItem = mSections.get(section);
-        Item item = sectionItem.getItems().get(relativePosition);
+        Section section = mSections.get(sectionIndex);
+        Item item = section.getItems().get(relativePosition);
 
         /*
          * Item click
@@ -544,7 +566,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         if (mEnableItemClick) {
 
             // Save data to view tag
-            vh.itemView.setTag(R.id.section, sectionItem);
+            vh.itemView.setTag(R.id.section, section);
             vh.itemView.setTag(R.id.item, item);
 
             // Click
@@ -552,11 +574,53 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                 int adapterPosition = holder.getAdapterPosition();
                 ItemCoord coor = getRelativePosition(adapterPosition);
 
+                // Mark as 'selected'
+                {
+                    if (!item.isSelected()) {
+
+                        int selectedSectionIndex = -1;
+                        int selectedItemIndex = -1;
+
+                        // Find single selected item and mark it as 'unselected'
+                        for (int si = 0, mSectionsSize = mSections.size(); si < mSectionsSize; si++) {
+
+                            Section currSec = mSections.get(si);
+                            List<Item> items = currSec.getItems();
+
+                            // find current selected item index
+                            selectedItemIndex = -1;
+                            for (int ii = 0, itemsSize = items.size(); ii < itemsSize; ii++) {
+                                Item currItem = items.get(ii);
+                                if (currItem.isSelected()) {
+                                    selectedItemIndex = ii;
+                                    // mark as 'unselected'
+                                    int absPos = getAbsolutePosition(si, ii);
+                                    currItem.setSelected(false);
+                                    updateItemViewHolderCheckStatus(absPos, currItem.isSelected());
+                                    break;
+                                }
+                            }
+
+                            if (selectedItemIndex != -1) {
+                                selectedSectionIndex = si;
+                                break;
+                            }
+                        }
+
+                        // Mark the current clicked item as 'selected'
+                        item.setSelected(true);
+                        updateItemViewHolderCheckStatus(adapterPosition, item.isSelected());
+                    } else {
+                        Log.d(TAG, "item view clicked: click a selected item at coor " + coor);
+                    }
+                }
+
+                // Notify item clicking
                 if (mOnItemClickListener != null) {
-                    Section sectionItem1 = mSections.get(coor.section());
+                    Section sect = mSections.get(coor.section());
                     mOnItemClickListener.onItemClick(
-                            sectionItem1, coor.section(),
-                            sectionItem1.getItems().get(coor.relativePos()),
+                            sect, coor.section(),
+                            sect.getItems().get(coor.relativePos()),
                             coor.relativePos());
                 }
             });
@@ -581,6 +645,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             vh.thumbList.setClickable(false);
         }
 
+        vh.check.setVisibility(item.isSelected() ? View.VISIBLE : View.GONE);
         vh.name.setText(item.getName());
         vh.count.setText(String.valueOf(item.getCount()));
         if (item.getAdapter() == null) {
@@ -595,6 +660,15 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             vh.thumbList.setClickable(false);
             vh.thumbList.setLayoutManager(vh.getLayout());
             vh.thumbList.swapAdapter(item.getAdapter(), false);
+        }
+    }
+
+    private void updateItemViewHolderCheckStatus(int absolutePosition, boolean selected) {
+        if (mRecyclerView != null) {
+            RecyclerView.ViewHolder selectedVH = mRecyclerView.findViewHolderForAdapterPosition(absolutePosition);
+            if (selectedVH != null && selectedVH instanceof ItemViewHolder) {
+                ((ItemViewHolder) selectedVH).check.setVisibility( selected ? View.VISIBLE : View.GONE);
+            }
         }
     }
 
@@ -650,6 +724,14 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         }
     }
 
+    /*
+     * Item selection status
+     */
+
+    /*
+     * Inner class
+     */
+
     class HeaderViewHolder extends SectionedViewHolder implements View.OnClickListener {
 
         @BindView(R.id.name) TextView name;
@@ -672,6 +754,8 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
         private static final String TAG = "SectionViewHolder";
 
+
+        @BindView(R.id.check) ImageView check;
         @BindView(R.id.name) TextView name;
         @BindView(R.id.count) TextView count;
         @BindView(R.id.thumb_list) RecyclerView thumbList;
@@ -700,6 +784,10 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             Section sectionItem = mSections.get(section);
             Item item = sectionItem.getItems().get(relativePos);
 
+            // Single selection status
+
+
+            // Notification
             if (mOnItemClickListener != null) {
                 mOnItemClickListener.onItemClick(sectionItem, section, item, relativePos);
             }

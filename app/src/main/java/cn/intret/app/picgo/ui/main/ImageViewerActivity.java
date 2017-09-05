@@ -1,10 +1,12 @@
 package cn.intret.app.picgo.ui.main;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
@@ -15,6 +17,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.support.v7.app.AppCompatActivity;
 import android.transition.Transition;
 import android.util.Log;
 import android.util.SparseArray;
@@ -28,6 +31,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.github.chrisbanes.photoview.PhotoView;
 import com.jaeger.library.StatusBarUtil;
+import com.orhanobut.logger.Logger;
 
 import org.apache.commons.io.FilenameUtils;
 import org.greenrobot.eventbus.EventBus;
@@ -52,8 +56,10 @@ import cn.intret.app.picgo.ui.adapter.ImageListAdapter;
 import cn.intret.app.picgo.ui.adapter.ImageTransitionNameGenerator;
 import cn.intret.app.picgo.ui.event.CurrentImageChangeMessage;
 import cn.intret.app.picgo.utils.ListUtils;
+import cn.intret.app.picgo.utils.PathUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
+import de.cketti.shareintentbuilder.ShareIntentBuilder;
 import io.reactivex.Observable;
 import pl.droidsonroids.gif.GifDrawable;
 
@@ -110,8 +116,8 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
     }
 
     private void initToolbar() {
-        DrawableCompat.setTint(mBtnDelete.getDrawable(), ContextCompat.getColor(this, R.color.white));
-        DrawableCompat.setTint(mBtnDetail.getDrawable(), ContextCompat.getColor(this, R.color.white));
+//        DrawableCompat.setTint(mBtnDelete.getDrawable(), ContextCompat.getColor(this, R.color.white));
+//        DrawableCompat.setTint(mBtnDetail.getDrawable(), ContextCompat.getColor(this, R.color.white));
     }
 
     @OnClick(R.id.btn_delete)
@@ -133,6 +139,103 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
     @OnClick(R.id.btn_detail)
     public void onBtnDetail(View view) {
         ToastUtils.toastShort(this, R.string.unimplemented);
+    }
+
+    File getCurrentFile() {
+        return mPagerAdapter.getImage(mCurrentItem).getFile();
+    }
+
+    @OnClick(R.id.btn_share)
+    public void onBtnShare(View view) {
+
+        File currentFile = getCurrentFile();
+        Logger.d("share file : " + currentFile);
+
+//        final Intent shareIntent = new Intent(Intent.ACTION_SEND);
+//        shareIntent.setType("image/jpg");
+//        final File photoFile = new File(getFilesDir(), currentFile.getAbsolutePath());
+//        shareIntent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(photoFile));
+//        startActivity(Intent.createChooser(shareIntent, "Share image using"));
+
+//        ShareIntentBuilder.from(this)
+//                .ignoreSpecification()
+//
+//                .stream(Uri.parse("content://" + currentFile), "application/octet-stream" )
+//                .share(currentFile.getName());
+        {
+            if (PathUtils.isStaticImageFile(currentFile.getAbsolutePath())) {
+
+//                ContentValues image = getImageContent(currentFile, currentFile.getName(), this);
+//                Uri result = this.getContentResolver()
+//                        .insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, image);
+
+                // open share options
+//                openShareOptions("Share title", "share message", result, this);
+            }
+        }
+//        Intent shareIntent = new Intent();
+//        shareIntent.setAction(Intent.ACTION_SEND);
+//        shareIntent.putExtra(Intent.EXTRA_STREAM, uriToImage);
+//        shareIntent.setType("image/jpeg");
+//        startActivity(Intent.createChooser(shareIntent, getResources().getText(R.string.send_to)));
+
+        ToastUtils.toastShort(this, R.string.unimplemented);
+    }
+
+    public static ContentValues getImageContent(File parent, String imageName, AppCompatActivity activity) {
+        ContentValues image = new ContentValues();
+        image.put(MediaStore.Images.Media.TITLE, activity.getString(R.string.app_name));
+        image.put(MediaStore.Images.Media.DISPLAY_NAME, imageName);
+        image.put(MediaStore.Images.Media.DESCRIPTION, imageName);
+        image.put(MediaStore.Images.Media.DATE_ADDED, System.currentTimeMillis());
+        image.put(MediaStore.Images.Media.MIME_TYPE, "image/jpg");
+        image.put(MediaStore.Images.Media.ORIENTATION, 0);
+        String filePath = parent.toString();
+        image.put(MediaStore.Images.ImageColumns.BUCKET_ID, filePath.toLowerCase().hashCode());
+        image.put(MediaStore.Images.ImageColumns.BUCKET_DISPLAY_NAME, parent.getName().toLowerCase());
+        image.put(MediaStore.Images.Media.SIZE, parent.length());
+        image.put(MediaStore.Images.Media.DATA, parent.getAbsolutePath());
+        return image;
+    }
+
+    public static void openShareOptions(String title, String description,
+                                        final Uri imageUrl, final AppCompatActivity activity) {
+
+        Intent share = new Intent(Intent.ACTION_SEND);
+        share.setType("image/jpeg");
+        share.putExtra(Intent.EXTRA_STREAM, imageUrl);
+        activity.startActivity(Intent.createChooser(share, "Choose app to share"));
+
+
+//        new BottomDialog.Builder(activity)
+//                .setTitle(title)
+//                .setContent(description)
+//                .setPositiveText("SHARE")
+//                .setPositiveBackgroundColorResource(R.color.colorPrimary)
+//                .setPositiveTextColorResource(android.R.color.white)
+//                .setNegativeText("OPEN")
+//                .setNegativeTextColorResource(R.color.colorPrimaryDark)
+//                .onPositive(new BottomDialog.ButtonCallback() {
+//                    @Override
+//                    public void onClick(BottomDialog dialog) {
+//                        // share image globally
+//                        Intent share = new Intent(Intent.ACTION_SEND);
+//                        share.setType("image/jpeg");
+//                        share.putExtra(Intent.EXTRA_STREAM, imageUrl);
+//                        activity.startActivity(Intent.createChooser(share, "Choose app to share"));
+//                        dialog.dismiss();
+//                    }
+//                }).onNegative(new BottomDialog.ButtonCallback() {
+//            @Override
+//            public void onClick(BottomDialog dialog) {
+//                // opining default gallery app
+//                Intent intent = new Intent();
+//                intent.setAction(Intent.ACTION_VIEW);
+//                intent.setDataAndType(imageUrl, "image/*");
+//                activity.startActivity(intent);
+//                dialog.dismiss();
+//            }
+//        }).show();
     }
 
     private void initStatusBar() {

@@ -63,6 +63,7 @@ import java.util.Map;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
+import cn.intret.app.picgo.model.RecentOpenFolderListChangeMessage;
 import cn.intret.app.picgo.model.RescanFolderListMessage;
 import cn.intret.app.picgo.model.RescanImageDirectoryMessage;
 import cn.intret.app.picgo.model.FolderModel;
@@ -74,6 +75,7 @@ import cn.intret.app.picgo.model.ImageGroup;
 import cn.intret.app.picgo.model.RemoveFileMessage;
 import cn.intret.app.picgo.model.RenameDirectoryMessage;
 import cn.intret.app.picgo.model.SystemImageService;
+import cn.intret.app.picgo.model.UserDataService;
 import cn.intret.app.picgo.ui.adapter.FlatFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.FolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.ImageListAdapter;
@@ -284,6 +286,12 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     /*
      * 消息处理
      */
+
+    public void onEvent(RecentOpenFolderListChangeMessage message) {
+        UserDataService.getInstance()
+                .getRecentOpenFolders()
+                .compose(workAndShow());
+    }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(CurrentImageChangeMessage message) {
@@ -594,9 +602,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
         mIsFolderListLoaded = true;
 
-        SectionedFolderListAdapter listAdapter = folderModelToSectionedFolderListAdapter(model);
-        listAdapter.setShowHeaderOptionButton(true);
-        listAdapter.setOnItemClickListener(new SectionedFolderListAdapter.OnItemClickListener() {
+        SectionedFolderListAdapter.OnItemClickListener onItemClickListener = new SectionedFolderListAdapter.OnItemClickListener() {
             @Override
             public void onSectionHeaderClick(SectionedFolderListAdapter.Section section, int sectionIndex, int adapterPosition) {
                 boolean sectionExpanded = mSectionedFolderListAdapter.isSectionExpanded(sectionIndex);
@@ -610,55 +616,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
             @Override
             public void onSectionHeaderOptionButtonClick(View v, SectionedFolderListAdapter.Section section, int sectionIndex) {
                 logger.debug(TAG, "onSectionHeaderOptionButtonClick() called with: section = [" + section + "], sectionIndex = [" + sectionIndex + "]");
-                PopupMenu popupMenu = new PopupMenu(v.getContext(), v);
-                popupMenu.inflate(R.menu.folder_header_option_menu);
-                popupMenu.setOnMenuItemClickListener(item -> {
-                    switch (item.getItemId()) {
-                        case R.id.create_folder: {
-                            new MaterialDialog.Builder(MainActivity.this)
-                                    .title(R.string.create_folder)
-                                    .input(R.string.input_new_folder_name, R.string.new_folder_prefill, false, new MaterialDialog.InputCallback() {
-                                        @Override
-                                        public void onInput(@NonNull MaterialDialog dialog, CharSequence input) {
-                                            boolean isValid = input.length() > 1 && input.length() <= 16;
-                                            MDButton actionButton = dialog.getActionButton(DialogAction.POSITIVE);
-                                            if (actionButton != null) {
-                                                actionButton.setClickable(isValid);
-                                            }
-                                        }
-                                    })
-                                    .alwaysCallInputCallback()
-                                    .inputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI)
-                                    .positiveText(R.string.create_folder)
-                                    .onPositive((dialog, which) -> {
-                                        EditText inputEditText = dialog.getInputEditText();
-                                        if (inputEditText != null) {
-                                            String folderName = inputEditText.getEditableText().toString();
-                                            File dir = new File(section.getFile(), folderName);
-                                            SystemImageService.getInstance()
-                                                    .createFolder(dir)
-                                                    .compose(workAndShow())
-                                                    .subscribe(ok -> {
-                                                        if (ok) {
-                                                            ToastUtils.toastLong(MainActivity.this, getString(R.string.created_folder_s, folderName));
-
-                                                        }
-                                                    }, throwable -> {
-                                                        logger.debug(TAG, "新建文件夹失败：" + throwable.getMessage());
-                                                        ToastUtils.toastLong(MainActivity.this, R.string.create_folder_failed);
-                                                    });
-                                        }
-                                    })
-                                    .negativeText(R.string.cancel)
-                                    .show();
-                        }
-                        break;
-                        case R.id.folder_detail:
-                            break;
-                    }
-                    return false;
-                });
-                popupMenu.show();
+                showFolderSectionHeaderOptionPopupMenu(v, section);
             }
 
             @Override
@@ -672,7 +630,12 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
             public void onItemLongClick(SectionedFolderListAdapter.Section sectionItem, int section, SectionedFolderListAdapter.Item item, int relativePos) {
                 showFolderItemContextMenuDialog(item);
             }
-        });
+        };
+
+        // Create adapter
+        SectionedFolderListAdapter listAdapter = folderModelToSectionedFolderListAdapter(model);
+        listAdapter.setShowHeaderOptionButton(true);
+        listAdapter.setOnItemClickListener(onItemClickListener);
 
         // RecyclerView layout
         mDrawerFolderList.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
@@ -699,6 +662,58 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                 showDirectoryImageList(item.getFile());
             }
         }*/
+    }
+
+    private void showFolderSectionHeaderOptionPopupMenu(View v, SectionedFolderListAdapter.Section section) {
+        PopupMenu popupMenu = new PopupMenu(v.getContext(), v);
+        popupMenu.inflate(R.menu.folder_header_option_menu);
+        popupMenu.setOnMenuItemClickListener(item -> {
+            switch (item.getItemId()) {
+                case R.id.create_folder: {
+                    new MaterialDialog.Builder(MainActivity.this)
+                            .title(R.string.create_folder)
+                            .input(R.string.input_new_folder_name, R.string.new_folder_prefill, false, new MaterialDialog.InputCallback() {
+                                @Override
+                                public void onInput(@NonNull MaterialDialog dialog, CharSequence input) {
+                                    boolean isValid = input.length() > 1 && input.length() <= 16;
+                                    MDButton actionButton = dialog.getActionButton(DialogAction.POSITIVE);
+                                    if (actionButton != null) {
+                                        actionButton.setClickable(isValid);
+                                    }
+                                }
+                            })
+                            .alwaysCallInputCallback()
+                            .inputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI)
+                            .positiveText(R.string.create_folder)
+                            .onPositive((dialog, which) -> {
+                                EditText inputEditText = dialog.getInputEditText();
+                                if (inputEditText != null) {
+                                    String folderName = inputEditText.getEditableText().toString();
+                                    File dir = new File(section.getFile(), folderName);
+                                    SystemImageService.getInstance()
+                                            .createFolder(dir)
+                                            .compose(workAndShow())
+                                            .subscribe(ok -> {
+                                                if (ok) {
+                                                    ToastUtils.toastLong(MainActivity.this, getString(R.string.created_folder_s, folderName));
+
+                                                }
+                                            }, throwable -> {
+                                                logger.debug(TAG, "新建文件夹失败：" + throwable.getMessage());
+                                                ToastUtils.toastLong(MainActivity.this, R.string.create_folder_failed);
+                                            });
+                                }
+                            })
+                            .negativeText(R.string.cancel)
+                            .show();
+                }
+                break;
+                case R.id.folder_detail:
+                    break;
+            }
+            return false;
+        });
+        popupMenu.show();
     }
 
     private void onFolderListItemLongClick(int position) {
@@ -1380,6 +1395,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     }
 
     private void showImageListAdapter(ImageListAdapter adapter) {
+
         adapter.setOnItemInteractionListener(this);
 
         mCurrentImageAdapter = adapter;
