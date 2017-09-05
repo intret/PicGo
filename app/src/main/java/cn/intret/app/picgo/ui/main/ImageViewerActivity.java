@@ -11,6 +11,8 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.app.SharedElementCallback;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.transition.Transition;
@@ -41,6 +43,8 @@ import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
+import butterknife.OnLongClick;
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.model.RemoveFileMessage;
 import cn.intret.app.picgo.model.SystemImageService;
@@ -49,6 +53,7 @@ import cn.intret.app.picgo.ui.adapter.ImageTransitionNameGenerator;
 import cn.intret.app.picgo.ui.event.CurrentImageChangeMessage;
 import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
+import cn.intret.app.picgo.utils.ToastUtils;
 import io.reactivex.Observable;
 import pl.droidsonroids.gif.GifDrawable;
 
@@ -69,12 +74,15 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
     public static final String TRANSITION_PREFIX_FILETYPE = "filetype";
 
     @BindView(R.id.viewpager) ViewPager mViewPager;
-        @BindView(R.id.brief) TextView mBrief;
-        private PagerAdapter mImageAdapter;
-        private String mImageFilePath;
-        private ImagePagerAdapter mImagePagerAdapter;
-        private LinkedList<Image> mImages;
-        private PhotoView mPhotoView;
+    @BindView(R.id.brief) TextView mBrief;
+    @BindView(R.id.btn_delete) ImageView mBtnDelete;
+    @BindView(R.id.btn_detail) ImageView mBtnDetail;
+
+    private PagerAdapter mImageAdapter;
+    private String mImageFilePath;
+    private ImagePagerAdapter mImagePagerAdapter;
+    private LinkedList<Image> mImages;
+    private PhotoView mPhotoView;
     private ImageFragmentStatePagerAdapter mPagerAdapter;
     private String mTransitionName;
     private String mDirPath;
@@ -98,6 +106,33 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
         loadImageFile();
 
         initImageTransition();
+        initToolbar();
+    }
+
+    private void initToolbar() {
+        DrawableCompat.setTint(mBtnDelete.getDrawable(), ContextCompat.getColor(this, R.color.white));
+        DrawableCompat.setTint(mBtnDetail.getDrawable(), ContextCompat.getColor(this, R.color.white));
+    }
+
+    @OnClick(R.id.btn_delete)
+    public void onBtnDelete(View view) {
+
+        SystemImageService.getInstance()
+                .removeFile(mPagerAdapter.getImage(mCurrentItem).getFile())
+                .subscribe(aBoolean -> {
+                    if (aBoolean) {
+                    } else {
+                        ToastUtils.toastShort(this, R.string.remove_file_failed);
+                    }
+                }, throwable -> {
+                    ToastUtils.toastShort(this, R.string.remove_file_failed);
+                });
+
+    }
+
+    @OnClick(R.id.btn_detail)
+    public void onBtnDetail(View view) {
+        ToastUtils.toastShort(this, R.string.unimplemented);
     }
 
     private void initStatusBar() {
@@ -142,7 +177,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
                         if (iv != null) {
                             sharedElements.put(transitionName, iv);
                         } else {
-                            Log.e(TAG, "imageView enter onMapSharedElements: cannot get PhotoView instance." );
+                            Log.e(TAG, "imageView enter onMapSharedElements: cannot get PhotoView instance.");
                         }
                     }
 
@@ -261,7 +296,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
                     });
 
-        } else if (mImageFilePath != null){
+        } else if (mImageFilePath != null) {
 
             Observable.just(mImageFilePath)
                     .map(File::new)

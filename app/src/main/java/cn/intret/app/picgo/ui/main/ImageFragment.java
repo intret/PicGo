@@ -136,27 +136,24 @@ public class ImageFragment extends Fragment {
         mImage.setOnLongClickListener(v -> {
             new MaterialDialog.Builder(this.getContext())
                     .items(R.array.image_viewer_context_menu_items)
-                    .itemsCallback(new MaterialDialog.ListCallback() {
-                        @Override
-                        public void onSelection(MaterialDialog dialog, View itemView, int position, CharSequence text) {
-                            switch (position) {
-                                case 0: // delete files
-                                    SystemImageService.getInstance()
-                                            .removeFile(new File(mFilePath))
-                                            .subscribe(aBoolean -> {
-                                                    if (aBoolean) {
-
-                                                    }
-                                                }, throwable -> {
+                    .itemsCallback((dialog, itemView, position, text) -> {
+                        switch (position) {
+                            case 0: // delete files
+                                SystemImageService.getInstance()
+                                        .removeFile(new File(mFilePath))
+                                        .subscribe(aBoolean -> {
+                                                if (aBoolean) {
 
                                                 }
-                                    );
-                                    break;
-                                case 1: // rename
-                                    break;
-                                case 2: // move
-                                    break;
-                            }
+                                            }, throwable -> {
+
+                                            }
+                                );
+                                break;
+                            case 1: // rename
+                                break;
+                            case 2: // move
+                                break;
                         }
                     })
                     .show();
