@@ -77,6 +77,10 @@ public class SystemImageService {
 
     FolderModel mFolderModel;
 
+    /*
+     * 文件夹列表
+     */
+
     public int getFolderListCount() {
         if (mFolderModel == null) {
             loadGalleryFolderList().subscribe(folderInfos -> {
@@ -539,8 +543,9 @@ public class SystemImageService {
             return new LinkedList<>();
         }
 
+        // Long.compare(file2.lastModified(), file.lastModified())
         return Stream.of(allFiles)
-                .sorted((file, file2) -> Long.compare(file2.lastModified(), file.lastModified()))
+                .sorted((file1, file2) -> StringUtils.compare(file1.getName(), file2.getName())  )
                 .toList();
     }
 
@@ -654,6 +659,9 @@ public class SystemImageService {
         });
     }
 
+    /*
+     * 目录管理
+     */
 
     public Observable<Boolean> removeFile(File file) {
         return Observable.create(e -> {
