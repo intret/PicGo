@@ -1,0 +1,72 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              xmlns:tools="http://schemas.android.com/tools"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
+
+    <!--文件夹列表-->
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/folder_list"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        tools:listitem="@layout/folder_list_item"
+        >
+
+    </android.support.v7.widget.RecyclerView>
+
+    <TextView
+        android:id="@+id/desc"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        tools:text="选中文件将被移动至：Camera"
+        />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        >
+
+        <!--冲突检查进度信息-->
+        <LinearLayout
+            android:id="@+id/detect_info_layout"
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            >
+            <ProgressBar
+                android:id="@+id/detect_progress"
+                style="?android:attr/progressBarStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                />
+            <TextView
+                android:id="@+id/detect_progress_desc"
+                android:layout_marginLeft="4dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                tools:text="正在检测文件移动操作可能的结果..."
+                />
+        </LinearLayout>
+
+        <!--冲突检测结果-->
+        <TextView
+            android:id="@+id/detect_result_info"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="visible"
+            tools:text="目标目录存在 6 个同名文件"
+            />
+    </FrameLayout>
+
+</LinearLayout>

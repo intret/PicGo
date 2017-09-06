@@ -22,9 +22,11 @@ import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.security.InvalidParameterException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -234,6 +236,7 @@ public class SystemImageService {
 
     /**
      * Load grouped image list
+     *
      * @param directory
      * @param mode
      * @param fromCacheFirst
@@ -242,7 +245,7 @@ public class SystemImageService {
     public Observable<List<ImageGroup>> loadImageGroupList(File directory, GroupMode mode, boolean fromCacheFirst) {
         return Observable.<List<ImageGroup>>create(e -> {
             String absolutePath = directory.getAbsolutePath();
-            if (fromCacheFirst){
+            if (fromCacheFirst) {
                 switch (mode) {
                     case DAY: {
                         List<ImageGroup> imageGroups = mDayImageGroupsMap.get(absolutePath);
@@ -335,28 +338,10 @@ public class SystemImageService {
         }).doOnNext(imageGroups -> cacheSectionedImageGroup(directory.getAbsolutePath(), mode, imageGroups));
     }
 
-    public Observable<Integer> moveFilesToDirectory(File destDir, List<File> files) {
-        return Observable.create(e -> {
-            int i = moveFilesTo(destDir, files);
-
-            Log.d(TAG, "moveFilesToDirectory: 移动" + files.size() + "个文件到" + destDir);
-
-            // Rescan source dirs
-            Stream.of(files).groupBy(File::getParent)
-                    .forEach(entry -> rescanImageDirectory(new File(entry.getKey()), false));
-
-            // Rescan target dir
-            rescanImageDirectory(destDir, false);
-
-            e.onNext(i);
-            e.onComplete();
-        });
-    }
 
     /*
      * 扫描目录
      */
-
 
     private void rescanImageDirectory(File destDir, boolean onlyCached) {
 
@@ -378,7 +363,7 @@ public class SystemImageService {
                         mBus.post(new RescanImageDirectoryMessage().setDirectory(destDir));
 
                     }, throwable -> {
-                        Log.e(TAG, "rescan directory with exception : " + throwable );
+                        Log.e(TAG, "rescan directory with exception : " + throwable);
                     });
         }
 
@@ -410,37 +395,20 @@ public class SystemImageService {
                 });
     }
 
-    private int moveFilesTo(File destDir, List<File> files) {
-        if (destDir == null) {
-            throw new IllegalArgumentException("Argument 'destDir' is null.");
+    public List<File> getSortedSubDirectories(File directory) throws FileNotFoundException {
+        if (directory == null) {
+            throw new FileNotFoundException("Cannot found camera directory.");
         }
 
-        if (!destDir.isDirectory()) {
-            throw new IllegalArgumentException("Argument 'destDir' is not a valid directory.");
+        File[] allFiles = directory.listFiles((file) -> file.isDirectory() && !file.getName().startsWith("."));
+        if (allFiles == null) {
+            return new LinkedList<>();
         }
 
-        if (ListUtils.isEmpty(files)) {
-            return 0;
-        }
-
-        int successCount = 0;
-        File srcFile;
-        try {
-            for (int i = 0; i < files.size(); i++) {
-                srcFile = files.get(i);
-                if (srcFile == null) {
-                    continue;
-                }
-                FileUtils.moveFileToDirectory(srcFile, destDir, true);
-                Log.d(TAG, "move file " + srcFile + " to " + destDir);
-                successCount++;
-            }
-        } catch (IOException e) {
-            Log.e(TAG, "move files to " + destDir + " failed.");
-            e.printStackTrace();
-        }
-
-        return successCount;
+        // Long.compare(file2.lastModified(), file.lastModified())
+        return Stream.of(allFiles)
+                .sorted((file1, file2) -> StringUtils.compare(file1.getName(), file2.getName()))
+                .toList();
     }
 
     /*
@@ -471,6 +439,7 @@ public class SystemImageService {
     /**
      * TODO add fromCache param
      * TODO add override method for diff-ing cached list to newly one, trigger changing action
+     *
      * @param directory
      * @param fromCacheFirst
      * @return
@@ -488,7 +457,7 @@ public class SystemImageService {
                     }
 
                     List<Image> images;
-                    if (fromCacheFirst){
+                    if (fromCacheFirst) {
                         images = mImageListMap.get(directory.getAbsolutePath());
                         if (images != null) {
                             e.onNext(images);
@@ -533,22 +502,6 @@ public class SystemImageService {
                 .toList();
     }
 
-    public List<File> getSortedSubDirectories(File directory) throws FileNotFoundException {
-        if (directory == null) {
-            throw new FileNotFoundException("Cannot found camera directory.");
-        }
-
-        File[] allFiles = directory.listFiles((file) -> file.isDirectory() && !file.getName().startsWith("."));
-        if (allFiles == null) {
-            return new LinkedList<>();
-        }
-
-        // Long.compare(file2.lastModified(), file.lastModified())
-        return Stream.of(allFiles)
-                .sorted((file1, file2) -> StringUtils.compare(file1.getName(), file2.getName())  )
-                .toList();
-    }
-
     public Observable<List<ImageFolder>> loadGalleryFolderList() {
 
         return loadFolderListModel(true)
@@ -573,36 +526,6 @@ public class SystemImageService {
         return parentFolderInfo.getName();
     }
 
-    public Observable<Boolean> renameDir(File srcDir, String newDirName) {
-        return Observable.create(e -> {
-            if (srcDir == null) {
-                throw new IllegalArgumentException("File should not be null");
-            }
-
-            if (!srcDir.exists()) {
-                throw new FileNotFoundException("File not found");
-            }
-
-            if (!srcDir.isDirectory()) {
-                throw new IllegalStateException("File is not a directory.");
-            }
-
-            if (StringUtils.equals(newDirName, srcDir.getName())) {
-                throw new IllegalArgumentException("The new directory name '" + newDirName + "' equals to the source directory.");
-            }
-
-            File destDir = new File(srcDir.getParentFile(), newDirName);
-            FileUtils.moveDirectory(srcDir, destDir);
-
-            mBus.post(new RenameDirectoryMessage()
-                    .setOldDirectory(srcDir)
-                    .setNewDirectory(destDir));
-
-            e.onNext(true);
-            e.onComplete();
-        });
-    }
-
     void removeCachedFiles(String dirPath, List<File> files) {
         mImageListMap.containsKey(dirPath);
         rescanImageDirectory(new File(dirPath), false);
@@ -610,6 +533,7 @@ public class SystemImageService {
 
     /**
      * 删除文件，并把在一个目录中的文件扫描一次目录，缓存，然后通知目录发送变化
+     *
      * @param files
      * @return 已经删除的文件个数，删除失败的文件列表
      */
@@ -662,6 +586,36 @@ public class SystemImageService {
     /*
      * 目录管理
      */
+
+    public Observable<Boolean> renameDir(File srcDir, String newDirName) {
+        return Observable.create(e -> {
+            if (srcDir == null) {
+                throw new IllegalArgumentException("File should not be null");
+            }
+
+            if (!srcDir.exists()) {
+                throw new FileNotFoundException("File not found");
+            }
+
+            if (!srcDir.isDirectory()) {
+                throw new IllegalStateException("File is not a directory.");
+            }
+
+            if (StringUtils.equals(newDirName, srcDir.getName())) {
+                throw new IllegalArgumentException("The new directory name '" + newDirName + "' equals to the source directory.");
+            }
+
+            File destDir = new File(srcDir.getParentFile(), newDirName);
+            FileUtils.moveDirectory(srcDir, destDir);
+
+            mBus.post(new RenameDirectoryMessage()
+                    .setOldDirectory(srcDir)
+                    .setNewDirectory(destDir));
+
+            e.onNext(true);
+            e.onComplete();
+        });
+    }
 
     public Observable<Boolean> removeFile(File file) {
         return Observable.create(e -> {
@@ -729,6 +683,7 @@ public class SystemImageService {
     }
 
     public Observable<Boolean> removeFolder(File dir) {
+
         return Observable.create(e -> {
             if (dir == null) {
                 throw new IllegalArgumentException("dir must not be null");
@@ -764,4 +719,197 @@ public class SystemImageService {
 
         });
     }
+
+    /*
+     * 移动目录
+     */
+
+    public Observable<Integer> moveFilesToDirectory(File destDir, List<File> files) {
+        return Observable.create(e -> {
+            MoveFileResult result = new MoveFileResult();
+            int i = moveFilesTo(destDir, files, false, result, false);
+
+            Log.d(TAG, "moveFilesToDirectory: 移动" + files.size() + "个文件到" + destDir);
+
+            // Rescan source dirs
+            Stream.of(files).groupBy(File::getParent)
+                    .forEach(entry -> rescanImageDirectory(new File(entry.getKey()), false));
+
+            // Rescan target dir
+            rescanImageDirectory(destDir, false);
+
+            e.onNext(i);
+            e.onComplete();
+        });
+    }
+
+    public Observable<MoveFileResult> moveFilesToDirectory(File destDir, List<File> sourceFiles,
+                                                           boolean detectConflict, boolean deleteIfTargetExists) {
+        return Observable.create(e -> {
+            MoveFileResult result = new MoveFileResult();
+            int i = moveFilesTo(destDir, sourceFiles, detectConflict, result, deleteIfTargetExists);
+
+            Log.d(TAG, "moveFilesToDirectory: 移动" +
+                    result.getSuccessFiles().size() +
+                    "/" + sourceFiles.size() + "个文件到" + destDir);
+
+            // Rescan source dirs
+            Stream.of(sourceFiles).groupBy(File::getParent)
+                    .forEach(entry -> rescanImageDirectory(new File(entry.getKey()), false));
+
+            // Rescan target dir
+            rescanImageDirectory(destDir, false);
+
+            e.onNext(result);
+            e.onComplete();
+        });
+    }
+
+    public Observable<MoveFileDetectResult> detectMoveFileConflict(File destDir, List<File> sourceFiles) {
+        return Observable.create(e -> {
+
+            if (sourceFiles.isEmpty()) {
+                throw new IllegalArgumentException("Source file list is empty.");
+            }
+
+            List<Pair<File, File>> canMoveFiles = new LinkedList<Pair<File, File>>();
+            List<Pair<File, File>> conflictFiles = detectMoveFileConflict(destDir, sourceFiles, canMoveFiles);
+
+            MoveFileDetectResult moveFileDetectResult = new MoveFileDetectResult()
+                    .setCanMoveFiles(canMoveFiles)
+                    .setConflictFiles(conflictFiles);
+
+            e.onNext(moveFileDetectResult);
+            e.onComplete();
+        });
+    }
+
+    /**
+     *
+     *
+     * @param destDir
+     * @param destDirFiles All the files should in the same directory
+     * @param sourceFiles The files are not always in the same directory.
+     * @return
+     */
+    private List<Pair<File, File>> intersectMoveFiles(File destDir, final List<File> destDirFiles,
+                                                      final List<File> sourceFiles, List<Pair<File, File>> outCanMoveFiles) {
+        outCanMoveFiles.clear();
+
+        if (destDirFiles.isEmpty()) {
+            // No conflict files
+            Stream.of(sourceFiles)
+                    .forEach(file -> outCanMoveFiles.add(new Pair<>(new File(destDir, file.getName()), file)));
+            return new ArrayList<>();
+        }
+
+        final List< Pair<File,File> > result = new ArrayList<>();
+
+        File dir = destDirFiles.get(0).getParentFile();
+
+        List<String> destDirFileNames = Stream.of(destDirFiles).map(File::getName).toList();
+        final HashSet<String> destDirFileNameHashSet = new HashSet<String>(destDirFileNames);
+
+        for (final File sourceFile : sourceFiles) {
+
+            String name = sourceFile.getName();
+            if (destDirFileNameHashSet.contains(name)) {
+                result.add(new Pair<File,File>(new File(dir, name), sourceFile));
+                // TODO if the source files are in the same directory, we should uncomment the code below
+                // destDirFileNameHashSet.remove(l);
+            } else {
+                outCanMoveFiles.add(new Pair<>(new File(dir, name), sourceFile));
+            }
+        }
+        return result;
+    }
+
+    private int moveFilesTo(File destDir, List<File> sourceFiles, boolean detectConflict, MoveFileResult outResult,
+                            boolean deleteIfExists) {
+        if (destDir == null) {
+            throw new IllegalArgumentException("Argument 'destDir' is null.");
+        }
+
+        if (!destDir.isDirectory()) {
+            throw new IllegalArgumentException("Argument 'destDir' is not a valid directory.");
+        }
+
+        if (ListUtils.isEmpty(sourceFiles)) {
+            return 0;
+        }
+
+        // Detect file name conflict
+        List<Pair<File, File>> canMoveFiles = new LinkedList<>();
+        List<Pair<File, File>> conflictFiles;
+        if (detectConflict) {
+            conflictFiles = detectMoveFileConflict(destDir, sourceFiles, canMoveFiles);
+            outResult.setConflictFiles(conflictFiles);
+        }
+
+        List<Pair<File, File>> successFiles = new LinkedList<>();
+        List<Pair<File, File>> failedFiles = new LinkedList<>();
+
+        if (detectConflict) {
+
+            int successCount = 0;
+            try {
+
+                for (Pair<File, File> filePair : canMoveFiles) {
+                    if (filePair.second == null) {
+                        continue;
+                    }
+                    FileUtils.moveFileToDirectory(filePair.second, destDir, true);
+                    Log.d(TAG, "move file " + filePair.second + " to " + destDir);
+
+                    successFiles.add(filePair);
+
+                    ++successCount;
+                }
+                return successCount;
+
+            } catch (Exception e) {
+                Log.e(TAG, "move files to " + destDir + " failed.");
+                e.printStackTrace();
+            }
+
+            outResult.setSuccessFiles(successFiles);
+            outResult.setFailedFiles(failedFiles);
+
+            return successCount;
+        } else {
+
+            int successCount = 0;
+            File srcFile;
+            try {
+
+                for (int i = 0; i < sourceFiles.size(); i++) {
+                    srcFile = sourceFiles.get(i);
+                    if (srcFile == null) {
+                        continue;
+                    }
+                    File destFile = new File(destDir, srcFile.getName());
+                    if (destFile.exists() && deleteIfExists) {
+                        Log.d(TAG, "moveFilesTo: delete target file first : " + destFile);
+                        destFile.delete();
+                    }
+                    FileUtils.moveFileToDirectory(srcFile, destDir, true);
+                    Log.d(TAG, "move file " + srcFile + " to " + destDir);
+                    successCount++;
+                }
+            } catch (IOException e) {
+                Log.e(TAG, "move files to " + destDir + " failed.");
+                e.printStackTrace();
+            }
+
+            return successCount;
+        }
+    }
+
+    private List<Pair<File, File>> detectMoveFileConflict(File destDir, List<File> sourceFiles,
+                                                          List<Pair<File, File>> canMoveFiles) {
+        return intersectMoveFiles(destDir, Stream.of(destDir.listFiles()).toList(),
+                sourceFiles, canMoveFiles);
+
+    }
+
 }

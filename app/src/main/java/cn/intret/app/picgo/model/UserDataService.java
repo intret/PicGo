@@ -14,6 +14,17 @@ import io.reactivex.Observable;
 public class UserDataService {
     EventBus mEventBus = EventBus.getDefault();
 
+    int mMoveFileDialogFirstVisibleItemPosition = 0;
+
+    public int getMoveFileDialogFirstVisibleItemPosition() {
+        return mMoveFileDialogFirstVisibleItemPosition;
+    }
+
+    public UserDataService setMoveFileDialogFirstVisibleItemPosition(int moveFileDialogFirstVisibleItemPosition) {
+        mMoveFileDialogFirstVisibleItemPosition = moveFileDialogFirstVisibleItemPosition;
+        return this;
+    }
+
     public static final String TAG = "UserDataService";
 
     private static final UserDataService ourInstance = new UserDataService();

@@ -368,6 +368,15 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         public boolean isSelected() {
             return mIsSelected;
         }
+
+        @Override
+        public String toString() {
+            return "Item{" +
+                    "mName='" + mName + '\'' +
+                    ", mCount=" + mCount +
+                    ", mIsSelected=" + mIsSelected +
+                    '}';
+        }
     }
 
     public interface OnItemClickListener {

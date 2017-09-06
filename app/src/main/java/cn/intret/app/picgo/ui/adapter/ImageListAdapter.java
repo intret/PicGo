@@ -32,6 +32,8 @@ import cn.intret.app.picgo.utils.SystemUtils;
  */
 public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.ViewHolder> implements View.OnLongClickListener, View.OnClickListener {
 
+    private int mFirstVisibleItem = RecyclerView.NO_POSITION;
+
     @Override
     public String toString() {
         return "ImageListAdapter{" +
@@ -156,6 +158,14 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         if (mOnItemInteractionListener != null) {
             mOnItemInteractionListener.onSelectionModeChange(false);
         }
+    }
+
+    public void saveFirstVisibleItemPosition(int i) {
+        mFirstVisibleItem = i;
+    }
+
+    public int getFirstVisibleItem() {
+        return mFirstVisibleItem;
     }
 
     public interface OnItemInteractionListener {

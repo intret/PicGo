@@ -1,0 +1,44 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:tools="http://schemas.android.com/tools"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical"
+              android:padding="16dp"
+              tools:context="cn.intret.app.picgo.model.ConflictResolverDialogFragment">
+
+    <RadioGroup
+        android:layout_weight="0"
+        android:id="@+id/radio_group"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <RadioButton
+            android:id="@+id/btn_keep_source"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/keep_all_source_files"
+            />
+
+        <RadioButton
+            android:id="@+id/btn_keep_target"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/keep_all_target_files"
+            />
+
+        <RadioButton
+            android:id="@+id/btn_keep_both"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/keep_both"
+            />
+    </RadioGroup>
+
+    <android.support.v7.widget.RecyclerView
+        android:layout_weight="1"
+        android:id="@+id/conflict_image_list"
+        android:layout_width="match_parent"
+        android:layout_height="0dp">
+    </android.support.v7.widget.RecyclerView>
+
+</LinearLayout>

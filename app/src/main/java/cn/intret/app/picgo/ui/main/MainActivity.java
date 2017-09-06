@@ -45,7 +45,6 @@ import com.annimon.stream.function.BiConsumer;
 import com.annimon.stream.function.Function;
 import com.annimon.stream.function.Supplier;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -54,6 +53,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -63,6 +63,7 @@ import java.util.Map;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
+import cn.intret.app.picgo.model.ConflictResolverDialogFragment;
 import cn.intret.app.picgo.model.RecentOpenFolderListChangeMessage;
 import cn.intret.app.picgo.model.RescanFolderListMessage;
 import cn.intret.app.picgo.model.RescanImageDirectoryMessage;
@@ -82,7 +83,10 @@ import cn.intret.app.picgo.ui.adapter.ImageListAdapter;
 import cn.intret.app.picgo.ui.adapter.ImageTransitionNameGenerator;
 import cn.intret.app.picgo.ui.adapter.SectionFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedFolderListAdapter;
+import cn.intret.app.picgo.ui.adapter.FolderListAdapterUtils;
 import cn.intret.app.picgo.ui.adapter.SectionedImageListAdapter;
+import cn.intret.app.picgo.ui.adapter.SectionedListItemClickDispatcher;
+import cn.intret.app.picgo.ui.adapter.SectionedListItemDispatchListener;
 import cn.intret.app.picgo.ui.event.CurrentImageChangeMessage;
 import cn.intret.app.picgo.ui.floating.FloatWindowService;
 import cn.intret.app.picgo.ui.pref.SettingActivity;
@@ -283,15 +287,35 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
     }
 
+    private void showConflictDialog(File destDir, List<android.util.Pair<File, File>> conflictFiles) {
+
+        if (conflictFiles.isEmpty()) {
+            Log.w(TAG, "showConflictDialog: conflict files is empty" );
+            return;
+        }
+
+        List<String> strings = Stream.of(conflictFiles).map(fileFilePair -> fileFilePair.second.getAbsolutePath()).toList();
+        ConflictResolverDialogFragment fragment = ConflictResolverDialogFragment.newInstance(destDir.getAbsolutePath(), new ArrayList<>(strings));
+        fragment.show(getSupportFragmentManager(), "Conflict Resolver Dialog");
+    }
+
     /*
      * 消息处理
      */
-
+    @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(RecentOpenFolderListChangeMessage message) {
         UserDataService.getInstance()
                 .getRecentOpenFolders()
                 .compose(workAndShow());
     }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onEvent(MoveFileResultMessage message) {
+        showConflictDialog(
+                message.getDestDir(),
+                message.getResult().getConflictFiles());
+    }
+
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(CurrentImageChangeMessage message) {
@@ -345,7 +369,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
         SystemImageService.getInstance()
                 .loadFolderListModel(true)
-                .map(this::folderModelToSectionedFolderListAdapter)
+                .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
                 .compose(workAndShow())
                 .subscribe(adapter::diffUpdateItems,
                         Throwable::printStackTrace);
@@ -548,53 +572,6 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     }
 
     /*
-     *  辅助
-     */
-
-    interface SectionedListItemDispatchListener {
-        void onHeader(SectionedRecyclerViewAdapter adapter, ItemCoord coord);
-
-        void onFooter(SectionedRecyclerViewAdapter adapter, ItemCoord coord);
-
-        void onItem(SectionedRecyclerViewAdapter adapter, ItemCoord coord);
-    }
-
-    private class SectionedListItemClickDispatcher {
-        private SectionedListItemDispatchListener mListener;
-        com.afollestad.sectionedrecyclerview.SectionedRecyclerViewAdapter mAdapter;
-
-        SectionedListItemClickDispatcher(SectionedRecyclerViewAdapter adapter) {
-            mAdapter = adapter;
-
-        }
-
-        public void dispatch(int position, SectionedListItemDispatchListener listener) {
-            if (mAdapter == null) {
-                return;
-            }
-
-            mListener = listener;
-            ItemCoord relativePosition = mAdapter.getRelativePosition(position);
-            boolean header = mAdapter.isHeader(position);
-            boolean footer = mAdapter.isFooter(position);
-            if (mListener != null) {
-
-                if (header) {
-                    mListener.onHeader(mAdapter, relativePosition);
-                    return;
-                }
-
-                if (footer) {
-                    mListener.onFooter(mAdapter, relativePosition);
-                    return;
-                }
-
-                mListener.onItem(mAdapter, relativePosition);
-            }
-        }
-    }
-
-    /*
      * 文件夹列表
      */
 
@@ -633,7 +610,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         };
 
         // Create adapter
-        SectionedFolderListAdapter listAdapter = folderModelToSectionedFolderListAdapter(model);
+        SectionedFolderListAdapter listAdapter = FolderListAdapterUtils.folderModelToSectionedFolderListAdapter(model);
         listAdapter.setShowHeaderOptionButton(true);
         listAdapter.setOnItemClickListener(onItemClickListener);
 
@@ -877,18 +854,6 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                 });
     }
 
-    @NonNull
-    private SectionedFolderListAdapter folderModelToSectionedFolderListAdapter(FolderModel model) {
-        List<SectionedFolderListAdapter.Section> sections = new LinkedList<>();
-
-        List<FolderModel.ParentFolderInfo> parentFolderInfos = model.getParentFolderInfos();
-        for (int i = 0, s = parentFolderInfos.size(); i < s; i++) {
-            sections.add(parentFolderToItem(parentFolderInfos.get(i)));
-        }
-
-        return new SectionedFolderListAdapter(sections);
-    }
-
     private void showActionDialogForFile(File dir) {
 
         List<Map.Entry<String, ImageListAdapter>> selectionModeAdapters = Stream.of(mImageListAdapters)
@@ -972,23 +937,6 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                 }, throwable -> {
                     ToastUtils.toastLong(this, R.string.move_files_failed);
                 });
-    }
-
-    private SectionedFolderListAdapter.Section parentFolderToItem(FolderModel.ParentFolderInfo parentFolderInfo) {
-        SectionedFolderListAdapter.Section section = new SectionedFolderListAdapter.Section();
-
-        return section.setName(parentFolderInfo.getName())
-                .setFile(parentFolderInfo.getFile())
-                .setItems(
-                        Stream.of(parentFolderInfo.getFolders())
-                                .map(item -> new SectionedFolderListAdapter.Item()
-                                        .setFile(item.getFile())
-                                        .setName(item.getName())
-                                        .setCount(item.getCount())
-                                        .setThumbList(item.getThumbList())
-                                )
-                                .toList()
-                );
     }
 
     private void showFolderModel(FolderModel model) {
@@ -1398,6 +1346,10 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
         adapter.setOnItemInteractionListener(this);
 
+        if (mCurrentImageAdapter != null) {
+            int i = ((GridLayoutManager) mImageList.getLayoutManager()).findFirstVisibleItemPosition();
+            mCurrentImageAdapter.saveFirstVisibleItemPosition(i);
+        }
         mCurrentImageAdapter = adapter;
 
         // RecyclerView Layout
@@ -1411,6 +1363,11 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
             mImageList.setAdapter(adapter);
         } else {
             mImageList.setAdapter(adapter);
+        }
+
+        int firstVisibleItem = adapter.getFirstVisibleItem();
+        if (firstVisibleItem != RecyclerView.NO_POSITION) {
+            mImageList.scrollToPosition(firstVisibleItem);
         }
     }
 
@@ -1677,13 +1634,20 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         SystemImageService.getInstance()
                 .loadFolderListModel(true)
                 .compose(workAndShow())
-                .map(this::folderModelToSectionedFolderListAdapter)
+                .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
                 .subscribe(adapter -> {
-                    moveFiles(selectedFiles, adapter);
+//                    showMoveFileDialog(selectedFiles, adapter);
+                    showMoveFileFragmentDialog(new ArrayList<>(
+                            Stream.of(selectedFiles).map(File::getAbsolutePath).toList()));
                 });
     }
 
-    private void moveFiles(List<File> selectedFiles, SectionedFolderListAdapter adapter) {
+    private void showMoveFileFragmentDialog(ArrayList<String> selectedFiles) {
+        MoveFileDialogFragment fragment = MoveFileDialogFragment.newInstance(selectedFiles);
+        fragment.show(getSupportFragmentManager(), "move file dialog");
+    }
+
+    private void showMoveFileDialog(List<File> selectedFiles, SectionedFolderListAdapter adapter) {
         View contentView = createMoveFileDialogContentView(adapter);
 
         new MaterialDialog.Builder(this)

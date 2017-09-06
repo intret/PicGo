@@ -5,7 +5,7 @@
         <!-- Customize your theme here. -->
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@android:color/holo_blue_dark</item>
+        <item name="colorAccent">@android:color/holo_blue_light</item>
         <item name="android:windowContentTransitions">true</item>
     </style>
 
@@ -53,6 +53,14 @@
         <item name="android:paddingLeft">16dp</item>
         <item name="android:paddingRight">16dp</item>
         <item name="android:background">?android:attr/selectableItemBackgroundBorderless</item>
+    </style>
+
+    <style name="conflict_list_item_image">
+        <item name="android:padding">4dp</item>
+        <item name="android:background">@null</item>
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">100dp</item>
+        <item name="android:scaleType">centerInside</item>
     </style>
 
 </resources>
