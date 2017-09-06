@@ -123,7 +123,7 @@ public class ConflictResolverDialogFragment extends DialogFragment {
 
     private View createContentView(ViewGroup container) {
         View contentView = LayoutInflater.from(getActivity())
-                .inflate(R.layout.fragment_conflig_resolver_dialog, container, false);
+                .inflate(R.layout.fragment_conflict_resolver_dialog, container, false);
 
         ButterKnife.bind(ConflictResolverDialogFragment.this, contentView);
 

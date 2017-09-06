@@ -74,4 +74,5 @@
     <string name="keep_all_target_files">保留所有目标文件</string>
     <string name="keep_both">全部保留</string>
     <string name="file_name_conflict_resolver">文件名冲突解决</string>
+    <string name="percent_d_d">%1$d/%2$d</string>
 </resources>

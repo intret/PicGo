@@ -26,6 +26,7 @@ import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.utils.PathUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
+import cn.intret.app.picgo.utils.ViewUtils;
 
 /**
  * Waterfall Image List Adapter class for {@link RecyclerView}
@@ -109,9 +110,9 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         mItems = items;
         diffResult.dispatchUpdatesTo(this);
 
-        if (getSelectedCount() == 0 && mIsSelectionMode && mOnItemInteractionListener != null) {
+        if (getSelectedCount() == 0 && mIsSelectionMode && mOnInteractionListener != null) {
             mIsSelectionMode = false;
-            mOnItemInteractionListener.onSelectionModeChange(mIsSelectionMode);
+            mOnInteractionListener.onSelectionModeChange(mIsSelectionMode);
         }
     }
 
@@ -147,16 +148,17 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
                     }
                 }
 
-                if (mOnItemInteractionListener != null) {
-                    mOnItemInteractionListener.onItemCheckedChanged(item);
+                if (mOnInteractionListener != null) {
+                    mOnInteractionListener.onItemCheckedChanged(item);
                 }
             }
         }
 
         // Notify leaving selection mode
         mIsSelectionMode = false;
-        if (mOnItemInteractionListener != null) {
-            mOnItemInteractionListener.onSelectionModeChange(false);
+        if (mOnInteractionListener != null) {
+            mOnInteractionListener.onSelectionModeChange(false);
+            mOnInteractionListener.onSelectedCountChange(this, 0);
         }
     }
 
@@ -168,7 +170,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         return mFirstVisibleItem;
     }
 
-    public interface OnItemInteractionListener {
+    public interface OnInteractionListener {
 
         void onItemLongClick(Item item);
 
@@ -179,6 +181,8 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         void onSelectionModeChange(boolean isSelectionMode);
 
         void onDragBegin(View view, int position, Item item);
+
+        void onSelectedCountChange(ImageListAdapter adapter, int selectedCount);
     }
 
     public static final String TAG = ImageListAdapter.class.getSimpleName();
@@ -186,10 +190,10 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
     private RecyclerView mRecyclerView;
     private int mSpanCount = 2;
     boolean mIsSelectionMode = false;
-    OnItemInteractionListener mOnItemInteractionListener;
+    OnInteractionListener mOnInteractionListener;
 
-    public ImageListAdapter setOnItemInteractionListener(OnItemInteractionListener onItemInteractionListener) {
-        mOnItemInteractionListener = onItemInteractionListener;
+    public ImageListAdapter setOnInteractionListener(OnInteractionListener onInteractionListener) {
+        mOnInteractionListener = onInteractionListener;
         return this;
     }
 
@@ -221,17 +225,17 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         return true;
     }
 
-    public void handleItemLongClickEvent(View view, int position) {
+    public void handleItemLongClickEvent(View itemView, int position) {
 
         ImageListAdapter.Item item = getItem(position);
 
-        Log.d(TAG, String.format("handleItemLongClickEvent() called with: view = [%s], position = [%d] item = [%s]", view, position, item));
+        Log.d(TAG, String.format("handleItemLongClickEvent() called with: itemView = [%s], position = [%d] item = [%s]", itemView, position, item));
 
         if (mIsSelectionMode) {
             Log.d(TAG, "handleItemLongClickEvent: ignore long click on item " + position);
 
-            if (item.isSelected() && mOnItemInteractionListener != null) {
-                mOnItemInteractionListener.onDragBegin(view, position, item);
+            if (item.isSelected() && mOnInteractionListener != null) {
+                mOnInteractionListener.onDragBegin(itemView, position, item);
             }
         } else {
             Log.d(TAG, "handleItemLongClickEvent: entered selection mode from item (" + position + ") click");
@@ -240,25 +244,20 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
             item.setSelected(true);
 
             // Update item ui
-            View viewById = view.findViewById(R.id.checkbox);
-            if (viewById != null) {
-                viewById.setVisibility(item.isSelected() ? View.VISIBLE : View.GONE);
-            } else {
-                Log.e(TAG, String.format("handleItemLongClickEvent: 索引 %d 的项 %s 应该标记为选中，但是找不到 ViewHolder ",
-                        position, item));
-            }
+            ViewUtils.setViewVisibility(itemView, R.id.checkbox, item.isSelected() ? View.VISIBLE : View.GONE);
 
             mIsSelectionMode = true;
 
             // Notify entering selecting mode
-            if (mOnItemInteractionListener != null) {
-                mOnItemInteractionListener.onSelectionModeChange(true);
+            if (mOnInteractionListener != null) {
+                mOnInteractionListener.onSelectionModeChange(true);
+                mOnInteractionListener.onSelectedCountChange(this, 1);
             }
         }
     }
 
-    public void handleItemClickEvent(View view, int position) {
-        Log.d(TAG, "handleItemClickEvent() called with: view = [" + view + "], position = [" + position + "]");
+    public void handleItemClickEvent(View itemView, int position) {
+        Log.d(TAG, "handleItemClickEvent() called with: itemView = [" + itemView + "], position = [" + position + "]");
 
         if (mIsSelectionMode) {
             int selectedCount = getSelectedCount();
@@ -268,29 +267,28 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
             if (item.isSelected() && selectedCount == 1) {
 
                 // Notify leaving selection mode
-                if (mOnItemInteractionListener != null) {
+                if (mOnInteractionListener != null) {
                     mIsSelectionMode = false;
-                    mOnItemInteractionListener.onSelectionModeChange(false);
+                    mOnInteractionListener.onSelectionModeChange(false);
+                    mOnInteractionListener.onSelectedCountChange(this, 0 );
                 }
                 item.setSelected(false);
 
             } else {
+
                 item.setSelected(!item.isSelected());
+                selectedCount += item.isSelected() ? 1 : -1;
+                mOnInteractionListener.onSelectedCountChange(this, selectedCount);
             }
 
             // update item ui
-            View viewById = view.findViewById(R.id.checkbox);
-            if (viewById != null) {
-                viewById.setVisibility(item.isSelected() ? View.VISIBLE : View.GONE);
-            } else {
-                Log.d(TAG, "handleItemClickEvent: ");
-            }
+            ViewUtils.setViewVisibility(itemView, R.id.checkbox, item.isSelected() ? View.VISIBLE : View.GONE);
 
         } else {
 
-            if (mOnItemInteractionListener != null) {
+            if (mOnInteractionListener != null) {
                 Item item = mItems.get(position);
-                mOnItemInteractionListener.onItemClicked(item, view, position);
+                mOnInteractionListener.onItemClicked(item, itemView, position);
             }
         }
     }
@@ -515,14 +513,11 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
             super(itemView);
 
             ButterKnife.bind(this, itemView);
-            itemView.setOnLongClickListener(new View.OnLongClickListener() {
-                @Override
-                public boolean onLongClick(View v) {
-                    if (mOnItemInteractionListener != null) {
+            itemView.setOnLongClickListener(v -> {
+                if (mOnInteractionListener != null) {
 
-                    }
-                    return true;
                 }
+                return true;
             });
         }
 

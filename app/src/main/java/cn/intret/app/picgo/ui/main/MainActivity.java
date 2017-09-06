@@ -99,7 +99,7 @@ import cn.intret.app.picgo.widget.RecyclerItemTouchListener;
 import cn.intret.app.picgo.widget.SectionDecoration;
 import io.reactivex.Observable;
 
-public class MainActivity extends BaseAppCompatActivity implements ImageListAdapter.OnItemInteractionListener {
+public class MainActivity extends BaseAppCompatActivity implements ImageListAdapter.OnInteractionListener {
 
     public static final Logger logger = LoggerFactory.getLogger(MainActivity.class);
 
@@ -847,8 +847,9 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                     @Override
                     public void onItem(SectionedRecyclerViewAdapter adapter, ItemCoord relativePosition) {
                         SectionedFolderListAdapter.Item item = mSectionedFolderListAdapter.getItem(relativePosition);
+
                         logger.debug(TAG, "onItemClick: 显示 " + item.getFile());
-                        mDrawerLayout.closeDrawers();
+//                        mDrawerLayout.closeDrawers();
                         showDirectoryImageList(item.getFile());
                     }
                 });
@@ -1344,7 +1345,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
     private void showImageListAdapter(ImageListAdapter adapter) {
 
-        adapter.setOnItemInteractionListener(this);
+        adapter.setOnInteractionListener(this);
 
         if (mCurrentImageAdapter != null) {
             int i = ((GridLayoutManager) mImageList.getLayoutManager()).findFirstVisibleItemPosition();
@@ -1429,7 +1430,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     private ImageListAdapter createImageListAdapter(List<ImageListAdapter.Item> items) {
         return new ImageListAdapter(items)
                 .setSpanCount(mSpanCount)
-                .setOnItemInteractionListener(this);
+                .setOnInteractionListener(this);
     }
 
 
@@ -1581,6 +1582,12 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                     }
                 })
                 .show();
+    }
+
+    @Override
+    public void onSelectedCountChange(ImageListAdapter adapter, int selectedCount) {
+        File dir = adapter.getDirectory();
+        mSectionedFolderListAdapter.updateSelectedCount(dir, selectedCount);
     }
 
     private void showRemoveFileDialog() {

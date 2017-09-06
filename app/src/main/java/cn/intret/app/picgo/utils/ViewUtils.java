@@ -8,14 +8,16 @@ import android.widget.TextView;
 public class ViewUtils {
     public static void setViewVisibility(View view, @IdRes int id, int visibility) {
         View v = view.findViewById(id);
-        if (v != null)
+        if (v != null) {
             v.setVisibility(visibility);
+        }
     }
 
     public static void setTextViewOnClick(View view, @IdRes int id, View.OnClickListener itemsOnClick) {
         TextView v = (TextView) view.findViewById(id);
-        if (v != null)
+        if (v != null) {
             v.setOnClickListener(itemsOnClick);
+        }
     }
 
     /**
@@ -26,14 +28,16 @@ public class ViewUtils {
      */
     public static void setText(View view, @IdRes int id, String value) {
         TextView v = (TextView)view.findViewById(id);
-        if (v != null)
+        if (v != null) {
             v.setText(value);
+        }
     }
 
     public static void setTextColor(View view, @IdRes int id, @ColorRes int resId) {
         TextView v = (TextView)view.findViewById(id);
         int color = view.getResources().getColor(resId);
-        if (v != null)
+        if (v != null) {
             v.setTextColor(color);
+        }
     }
 }

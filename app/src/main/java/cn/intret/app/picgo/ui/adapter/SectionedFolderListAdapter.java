@@ -270,6 +270,56 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         }
     }
 
+    public void updateSelectedCount(File dir, int selectedCount) {
+        if (dir == null || selectedCount < 0) {
+            return;
+        }
+
+        for (int si = 0, mSectionsSize = mSections.size(); si < mSectionsSize; si++) {
+            Section section = mSections.get(si);
+            List<Item> items = section.getItems();
+            for (int ii = 0, itemsSize = items.size(); ii < itemsSize; ii++) {
+                Item item = items.get(ii);
+                if (item.getFile().equals(dir)) {
+
+                    item.setSelectedCount(selectedCount);
+                    int absolutePosition = getAbsolutePosition(si, ii);
+                    if (mRecyclerView != null) {
+                        RecyclerView.ViewHolder vh = mRecyclerView.findViewHolderForAdapterPosition(absolutePosition);
+                        if (vh != null && vh instanceof ItemViewHolder) {
+                            ((ItemViewHolder) vh).setSelectedCountText(item.getSelectedCount(), item.getCount());
+                        }
+                    }
+                    return;
+                }
+            }
+        }
+    }
+
+    public void updateSelectedCount(ItemCoord relativePosition) {
+        if (mRecyclerView != null) {
+            int absolutePosition = getAbsolutePosition(relativePosition);
+            new SectionedListItemClickDispatcher(this)
+                    .dispatch(absolutePosition, new SectionedListItemDispatchListener() {
+                        @Override
+                        public void onHeader(SectionedRecyclerViewAdapter adapter, ItemCoord coord) {
+
+                        }
+
+                        @Override
+                        public void onFooter(SectionedRecyclerViewAdapter adapter, ItemCoord coord) {
+
+                        }
+
+                        @Override
+                        public void onItem(SectionedRecyclerViewAdapter adapter, ItemCoord coord) {
+                            mRecyclerView.findViewHolderForAdapterPosition(absolutePosition);
+                        }
+                    });
+
+        }
+    }
+
     /*
      * Interfaces and Classes
      */
@@ -306,12 +356,23 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         }
     }
 
+    public static final int COUNT_NONE = -1;
     public static class Item {
         String mName;
+        int mSelectedCount = COUNT_NONE;
         int mCount;
         File mFile;
         List<File> mThumbList;
         boolean mIsSelected;
+
+        public int getSelectedCount() {
+            return mSelectedCount;
+        }
+
+        public Item setSelectedCount(int selectedCount) {
+            mSelectedCount = selectedCount;
+            return this;
+        }
 
         public List<File> getThumbList() {
             return mThumbList;
@@ -656,7 +717,8 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
         vh.check.setVisibility(item.isSelected() ? View.VISIBLE : View.GONE);
         vh.name.setText(item.getName());
-        vh.count.setText(String.valueOf(item.getCount()));
+        vh.setSelectedCountText(item.getSelectedCount(), item.getCount());
+
         if (item.getAdapter() == null) {
             HorizontalImageListAdapter adapter = new HorizontalImageListAdapter(filesToItems(item.getThumbList()));
 
@@ -807,6 +869,18 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                 mLinearLayoutManager = new LinearLayoutManager(itemView.getContext(), LinearLayoutManager.HORIZONTAL, true);
             }
             return mLinearLayoutManager;
+        }
+
+        public void setSelectedCountText(int selectedCount, int count) {
+            if (selectedCount == COUNT_NONE || selectedCount == 0) {
+                this.count.setText(String.valueOf(count));
+                this.count.setTextColor(this.count.getContext().getResources().getColor(R.color.list_item_text_light));
+                this.count.setBackground(null);
+            } else {
+                this.count.setText(this.count.getContext().getResources().getString(R.string.percent_d_d, selectedCount, count));
+                this.count.setTextColor(this.count.getContext().getResources().getColor(R.color.white));
+                this.count.setBackgroundResource(R.drawable.badge);
+            }
         }
     }
 }
