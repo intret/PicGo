@@ -142,8 +142,8 @@ dependencies {
     compile 'com.android.support:mediarouter-v7:' + versions.supportLib
     compile 'com.android.support:recyclerview-v7:' + versions.supportLib
     compile 'com.android.support:support-v4:' + versions.supportLib
-
-    compile('com.github.bumptech.glide:recyclerview-integration:4.0.0-RC1') {
+    compile('com.github.bumptech.glide:recyclerview-integration:4.0.0-RC1')
+    {
         // Excludes the support library because it's already included by Glide.
         transitive = false
     }
@@ -154,10 +154,10 @@ dependencies {
         exclude group: 'com.android.support', module: 'recyclerview-v7'
     }
     compile project(':sectioned-recyclerview')
-
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
+//    compile 'com.belerweb:pinyin4j:2.5.0'
     compile 'de.cketti.share:share-intent-builder:0.0.2'
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
     compile 'com.andkulikov:transitionseverywhere:1.7.4'
@@ -185,4 +185,5 @@ dependencies {
     testCompile 'junit:junit:4.12'
     annotationProcessor 'com.jakewharton:butterknife-compiler:8.7.0'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.0.0-RC1'
+    compile project(':t9search')
 }

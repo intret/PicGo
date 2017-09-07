@@ -2,8 +2,10 @@ package cn.intret.app.picgo.ui.main;
 
 import android.app.Dialog;
 import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
@@ -11,11 +13,14 @@ import android.support.v7.app.AppCompatDialogFragment;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -41,7 +46,9 @@ import cn.intret.app.picgo.ui.adapter.SectionedListItemClickDispatcher;
 import cn.intret.app.picgo.ui.adapter.SectionedListItemDispatchListener;
 import cn.intret.app.picgo.utils.RxUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
+import cn.intret.app.picgo.utils.ViewUtil;
 import cn.intret.app.picgo.utils.ViewUtils;
+import cn.intret.app.picgo.view.T9TelephoneDialpadView;
 import cn.intret.app.picgo.widget.RecyclerItemTouchListener;
 import io.reactivex.ObservableTransformer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -56,7 +63,7 @@ import io.reactivex.schedulers.Schedulers;
  * Use the {@link MoveFileDialogFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class MoveFileDialogFragment extends AppCompatDialogFragment {
+public class MoveFileDialogFragment extends AppCompatDialogFragment implements T9TelephoneDialpadView.OnT9TelephoneDialpadView {
 
     public static final String TAG = MoveFileDialogFragment.class.getSimpleName();
 
@@ -69,9 +76,24 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment {
 
     private OnFragmentInteractionListener mListener;
 
+    View mContentView = null;
 
     @BindView(R.id.folder_list) RecyclerView mFolderList;
     @BindView(R.id.desc) TextView mDesc;
+
+    @BindView(R.id.t9_telephone_dialpad_layout) T9TelephoneDialpadView mT9TelephoneDialpadView;
+
+    @BindView(R.id.keyboard_switch_layout) View mKeyboardSwitchLayout;
+    @BindView(R.id.keyboard_switch_image_view) ImageView mKeyboardSwitchIv;
+
+    class DialogViews {
+        @BindView(R.id.folder_list) public RecyclerView mFolderList;
+        @BindView(R.id.desc) public TextView mDesc;
+
+        @BindView(R.id.t9_telephone_dialpad_layout) public T9TelephoneDialpadView mT9TelephoneDialpadView;
+    }
+
+    DialogViews mDialogViews = new DialogViews();
 
     public MoveFileDialogFragment() {
         // Required empty public constructor
@@ -105,8 +127,11 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
-        Log.d(TAG, "onCreateView: ");
+        Log.d(TAG, "onCreateView() called with: inflater = [" + inflater + "], container = [" + container + "], savedInstanceState = [" + savedInstanceState + "]");
 
+        if (mContentView != null) {
+            container.addView(mContentView);
+        }
         // Inflate the layout for this fragment
         final View[] views = {null};
         SystemImageService.getInstance()
@@ -116,7 +141,7 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment {
                     View contentView = LayoutInflater.from(getActivity()).inflate(R.layout.fragment_move_file_dialog, container, false);
 
                     ButterKnife.bind(MoveFileDialogFragment.this, contentView);
-                    initLogic(contentView, adapter);
+                    initContentView(contentView, adapter);
                     views[0] = contentView;
                 });
 
@@ -132,9 +157,14 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment {
                 .subscribe(adapter -> {
 
                     View contentView = LayoutInflater.from(getActivity()).inflate(R.layout.fragment_move_file_dialog, null, false);
-                    ButterKnife.bind(MoveFileDialogFragment.this, contentView);
+//                    ButterKnife.bind(MoveFileDialogFragment.this, contentView);
 
-                    initLogic(contentView, adapter);
+                    initContentView(contentView, adapter);
+
+                    ViewUtil.setHideIme(getActivity(), contentView);
+
+                    initListener(contentView);
+
                     views[0] = contentView;
 
 //                    showMoveFileDialog(selectedFiles, adapter);
@@ -143,14 +173,125 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment {
         return views[0];
     }
 
-    private void initLogic(View contentView, SectionedFolderListAdapter listAdapter) {
-        mFolderList.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false));
-        mFolderList.setAdapter(listAdapter);
+    private void initListener(View contentView) {
+        T9TelephoneDialpadView t9TelephoneDialpadView = ((T9TelephoneDialpadView) contentView.findViewById(R.id.t9_telephone_dialpad_layout));
+        ImageView keyboardSwitchIv = (ImageView) contentView.findViewById(R.id.keyboard_switch_image_view);
+        View keyboardSwitchLayout = contentView.findViewById(R.id.keyboard_switch_layout);
+
+        keyboardSwitchLayout.setOnClickListener(v -> switchKeyboard(t9TelephoneDialpadView, keyboardSwitchIv));
+        keyboardSwitchIv.setOnClickListener(v -> switchKeyboard(t9TelephoneDialpadView, keyboardSwitchIv));
+
+//        mContactsLv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+//
+//            @Override
+//            public void onItemClick(AdapterView<?> parent, View view,
+//                                    int position, long id) {
+//                ContactsContract.Contacts contacts = ContactsHelper.getInstance().getSearchContacts().get(position);
+//                String uri = "tel:" + contacts.getPhoneNumber();
+//                Intent intent = new Intent(Intent.ACTION_DIAL, Uri.parse(uri));
+//                // intent.setData(Uri.parse(uri));
+//                startActivity(intent);
+//
+//            }
+//        });
+    }
+
+    private void initContentView(View contentView, SectionedFolderListAdapter listAdapter) {
+        initFolderList(contentView, listAdapter);
+        initDialPad(contentView, listAdapter);
+    }
+
+    private void initDialPad(View contentView, SectionedFolderListAdapter listAdapter) {
+        T9TelephoneDialpadView t9TelephoneDialpadView = (T9TelephoneDialpadView) contentView.findViewById(R.id.t9_telephone_dialpad_layout);
+        RecyclerView folderList = (RecyclerView) contentView.findViewById(R.id.folder_list);
+
+        t9TelephoneDialpadView.setOnT9TelephoneDialpadView(new T9TelephoneDialpadView.OnT9TelephoneDialpadView() {
+            @Override
+            public void onAddDialCharacter(String addCharacter) {
+
+            }
+
+            @Override
+            public void onDeleteDialCharacter(String deleteCharacter) {
+
+            }
+
+            @Override
+            public void onDialInputTextChanged(String curCharacter) {
+
+                Log.d(TAG, "onDialInputTextChanged() called with: curCharacter = [" + curCharacter + "]");
+
+                SystemImageService.getInstance()
+                        .loadFolderListModel(true, TextUtils.isEmpty(curCharacter) ? null : curCharacter)
+                        .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
+                        .compose(RxUtils.workAndShow())
+                        .subscribe(newAdapter -> {
+
+                            if (folderList != null) {
+                                SectionedFolderListAdapter currAdapter = (SectionedFolderListAdapter) folderList.getAdapter();
+                                currAdapter.diffUpdateItems(newAdapter);
+                            }
+                        }, Throwable::printStackTrace)
+                ;
+
+            }
+
+            @Override
+            public void onHideT9TelephoneDialpadView() {
+
+            }
+        });
+
+//        mKeyboardSwitchLayout = contentView.findViewById(R.id.keyboard_switch_layout);
+//        mKeyboardSwitchIv = (ImageView) contentView.findViewById(R.id.keyboard_switch_image_view);
+//        showKeyboard();
+
+        showKeyboard(t9TelephoneDialpadView, (ImageView) contentView.findViewById(R.id.keyboard_switch_image_view));
+    }
+
+    private void switchKeyboard(T9TelephoneDialpadView t9TelephoneDialpadView, ImageView kbSwitchIv) {
+
+        if (ViewUtil.getViewVisibility(t9TelephoneDialpadView) == View.GONE) {
+            showKeyboard(t9TelephoneDialpadView, kbSwitchIv);
+        } else {
+            hideKeyboard(t9TelephoneDialpadView, kbSwitchIv);
+        }
+    }
+
+    private void hideKeyboard(T9TelephoneDialpadView t9TelephoneDialpadView, ImageView keyboardSwitchIv) {
+        ViewUtil.hideView(t9TelephoneDialpadView);
+        keyboardSwitchIv
+                .setBackgroundResource(R.drawable.keyboard_show_selector);
+    }
+
+    private void hideKeyboard() {
+        ViewUtil.hideView(mT9TelephoneDialpadView);
+        mKeyboardSwitchIv
+                .setBackgroundResource(R.drawable.keyboard_show_selector);
+    }
+
+    private void showKeyboard() {
+        ViewUtil.showView(mT9TelephoneDialpadView);
+        mKeyboardSwitchIv
+                .setBackgroundResource(R.drawable.keyboard_hide_selector);
+    }
+
+    private void showKeyboard(T9TelephoneDialpadView t9TelephoneDialpadView, ImageView keyboardSwitchIv) {
+        ViewUtil.showView(t9TelephoneDialpadView);
+        keyboardSwitchIv
+                .setBackgroundResource(R.drawable.keyboard_hide_selector);
+    }
+
+    private void initFolderList(final View contentView, SectionedFolderListAdapter listAdapter) {
+        RecyclerView folderList = (RecyclerView) contentView.findViewById(R.id.folder_list);
+
+        folderList.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false));
+        folderList.setAdapter(listAdapter);
 
         // Restore position
-        int fp = UserDataService.getInstance().getMoveFileDialogFirstVisibleItemPosition();
-        if (fp != RecyclerView.NO_POSITION) {
-            mFolderList.scrollToPosition(fp);
+        int visibleItemPosition = UserDataService.getInstance().getMoveFileDialogFirstVisibleItemPosition();
+        if (visibleItemPosition != RecyclerView.NO_POSITION) {
+            folderList.scrollToPosition(visibleItemPosition);
         }
 
         RecyclerItemTouchListener.OnItemClickListener clickListener = (view, position) -> {
@@ -183,8 +324,8 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment {
         RecyclerItemTouchListener.OnItemLongClickListener longClickListener = (view, position) -> {
 
         };
-        mFolderList.addOnItemTouchListener(new RecyclerItemTouchListener(
-                getActivity(), mFolderList, clickListener, longClickListener));
+        folderList.addOnItemTouchListener(new RecyclerItemTouchListener(
+                getActivity(), folderList, clickListener, longClickListener));
     }
 
     private void onClickFolderListItem(SectionedFolderListAdapter.Item item, View contentView) {
@@ -261,8 +402,7 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment {
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
 
-        Log.d(TAG, "onCreateDialog() called with: savedInstanceState = [" + savedInstanceState + "]");
-
+        // All later view operation should relative to this content view, butterknife will failed
         View contentView = createDialogContentView();
 
         return new AlertDialog.Builder(getActivity())
@@ -299,7 +439,7 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment {
                                             ToastUtils.toastLong(getActivity(),
                                                     getActivity().getString(R.string.already_moved_d_files, successCount));
                                         } else {
-                                            Log.w(TAG, "移动文件冲突: " + conflictFiles );
+                                            Log.w(TAG, "移动文件冲突: " + conflictFiles);
                                             if (!conflictFiles.isEmpty()) {
 
                                             } else {
@@ -428,6 +568,25 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment {
     public void onDetach() {
         super.onDetach();
         mListener = null;
+    }
+
+    @Override
+    public void onAddDialCharacter(String addCharacter) {
+
+    }
+
+    @Override
+    public void onDeleteDialCharacter(String deleteCharacter) {
+
+    }
+
+    @Override
+    public void onDialInputTextChanged(String curCharacter) {
+    }
+
+    @Override
+    public void onHideT9TelephoneDialpadView() {
+
     }
 
     /**

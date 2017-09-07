@@ -2,6 +2,7 @@ package cn.intret.app.picgo.model;
 
 
 import android.content.Context;
+import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
 
@@ -11,6 +12,8 @@ import com.annimon.stream.function.BiConsumer;
 import com.annimon.stream.function.Consumer;
 import com.annimon.stream.function.Function;
 import com.annimon.stream.function.Supplier;
+import com.t9search.model.PinyinSearchUnit;
+import com.t9search.util.T9Util;
 
 import org.apache.commons.collections4.Predicate;
 import org.apache.commons.io.FileUtils;
@@ -123,33 +126,89 @@ public class SystemImageService {
         }
     }
 
-    public Observable<FolderModel> loadFolderListModel(boolean fromCacheFirst) {
-        return Observable.<FolderModel>create(emitter -> {
+    public Observable<FolderModel> loadFolderListModel(boolean fromCacheFirst, String t9NumberInput) {
+        return loadFolderListModel(fromCacheFirst)
+                .map(model -> {
+                    if (StringUtils.isBlank(t9NumberInput)) {
+                        Log.e(TAG, "loadFolderListModel: T9 input is blank, don't filter the folder model.");
+                        return model;
+                    }
 
-            if (fromCacheFirst) {
-                if (mFolderModel != null) {
-                    emitter.onNext(mFolderModel);
-                    emitter.onComplete();
-                    return;
+                    // The variable 'model' is a copy of original model, we can modify it.
+                    FolderModel.ParentFolderInfo parentFolderInfo = model.getParentFolderInfos().get(0);
+                    FolderModel.ParentFolderInfo parentFolderInfo1 = model.getParentFolderInfos().get(1);
+
+                    filterModelByT9NumberInput(model, t9NumberInput);
+
+                    parentFolderInfo = model.getParentFolderInfos().get(0);
+                    parentFolderInfo1 = model.getParentFolderInfos().get(1);
+
+                    return model;
+                });
+    }
+
+    private void filterModelByT9NumberInput(FolderModel model, String t9Numbers) {
+        for (FolderModel.ParentFolderInfo folderInfo : model.getParentFolderInfos()) {
+
+            List<ImageFolder> folders = folderInfo.getFolders();
+            {
+                List<ImageFolder> filteredFolders = new LinkedList<>();
+                for (ImageFolder folder : folders) {
+                    PinyinSearchUnit pinyinSearchUnit = folder.getPinyinSearchUnit();
+
+                    // Pinyin match
+
+                    if (T9Util.match(pinyinSearchUnit, t9Numbers)) {
+
+                        folder.setMatchKeywords(pinyinSearchUnit.getMatchKeyword().toString());
+                        folder.setMatchStartIndex(folder.getName().indexOf(pinyinSearchUnit.getMatchKeyword().toString()));
+                        folder.setMatchLength(folder.getMatchKeywords().length());
+
+                        filteredFolders.add(folder);
+                    } else {
+//                        Log.d(TAG, "T9: folder [" + folder.getName() + "]  -------------- T9 keyboard input : " + t9Numbers);
+                    }
                 }
+
+                Log.d(TAG, "----- 最后剩下 " + filteredFolders.size() + "/" + folders.size() + " 项 -----");
+                folderInfo.setFolders(filteredFolders);
             }
+        }
+    }
 
-            FolderModel folderModel = new FolderModel();
 
-            // SDCard/DCIM directory images
-            File dcimDir = SystemUtils.getDCIMDir();
-            List<File> dcimSubFolders = getSortedSubDirectories(dcimDir);
-            addParentFolderInfo(folderModel, dcimDir, dcimSubFolders);
+    public Observable<FolderModel> loadFolderListModel(boolean fromCacheFirst) {
+        return Observable.create(
+                emitter -> {
 
-            // SDCard/Picture directory images
-            File picturesDir = SystemUtils.getPicturesDir();
-            List<File> pictureSubFolders = getSortedSubDirectories(picturesDir);
-            addParentFolderInfo(folderModel, picturesDir, pictureSubFolders);
+                    if (fromCacheFirst) {
+                        if (mFolderModel != null) {
 
-            emitter.onNext(folderModel);
-            emitter.onComplete();
-        })
-                .doOnNext(folderModel -> mFolderModel = folderModel);
+                            FolderModel clone = (FolderModel) mFolderModel.clone();
+                            Log.d(TAG, "loadFolderListModel: get clone " + clone + " of " + mFolderModel);
+                            emitter.onNext(clone);
+                            emitter.onComplete();
+                            return;
+                        }
+                    }
+
+                    FolderModel folderModel = new FolderModel();
+
+                    // SDCard/DCIM directory images
+                    File dcimDir = SystemUtils.getDCIMDir();
+                    List<File> dcimSubFolders = getSortedSubDirectories(dcimDir);
+                    addParentFolderInfo(folderModel, dcimDir, dcimSubFolders);
+
+                    // SDCard/Picture directory images
+                    File picturesDir = SystemUtils.getPicturesDir();
+                    List<File> pictureSubFolders = getSortedSubDirectories(picturesDir);
+                    addParentFolderInfo(folderModel, picturesDir, pictureSubFolders);
+
+                    mFolderModel = folderModel;
+
+                    emitter.onNext((FolderModel) mFolderModel.clone());
+                    emitter.onComplete();
+                });
     }
 
     public Observable<File> loadRandomImage() {
@@ -208,8 +267,9 @@ public class SystemImageService {
             File folder = mediaFolders.get(i);
             subFolders.add(imageFolderOfDir(folder));
         }
-        subFolders.add(imageFolderOfDir(dir));
 
+        // The last item is parent folder, because it  may contains image files.
+        subFolders.add(imageFolderOfDir(dir));
 
         parentFolderInfo.setFile(dir);
         parentFolderInfo.setName(dir.getName());
@@ -785,11 +845,9 @@ public class SystemImageService {
     }
 
     /**
-     *
-     *
      * @param destDir
      * @param destDirFiles All the files should in the same directory
-     * @param sourceFiles The files are not always in the same directory.
+     * @param sourceFiles  The files are not always in the same directory.
      * @return
      */
     private List<Pair<File, File>> intersectMoveFiles(File destDir, final List<File> destDirFiles,
@@ -803,7 +861,7 @@ public class SystemImageService {
             return new ArrayList<>();
         }
 
-        final List< Pair<File,File> > result = new ArrayList<>();
+        final List<Pair<File, File>> result = new ArrayList<>();
 
         File dir = destDirFiles.get(0).getParentFile();
 
@@ -814,7 +872,7 @@ public class SystemImageService {
 
             String name = sourceFile.getName();
             if (destDirFileNameHashSet.contains(name)) {
-                result.add(new Pair<File,File>(new File(dir, name), sourceFile));
+                result.add(new Pair<File, File>(new File(dir, name), sourceFile));
                 // TODO if the source files are in the same directory, we should uncomment the code below
                 // destDirFileNameHashSet.remove(l);
             } else {

@@ -108,12 +108,12 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         }
     }
 
-    public void diffUpdateItems(SectionedFolderListAdapter adapter) {
-        List<Section> sections = adapter.getSections();
+    public void diffUpdateItems(SectionedFolderListAdapter newAdapter) {
         int oldItemCount = getItemCount();
+        int newItemCount = newAdapter.getItemCount();
 
-        int newItemCount = adapter.getItemCount();
         Log.d(TAG, "diffUpdateItems: 计算差异 old " + oldItemCount + " new " + newItemCount);
+
         DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtil.Callback() {
 
             @Override
@@ -129,10 +129,10 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             @Override
             public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
                 ItemCoord oldCoord = getRelativePosition(oldItemPosition);
-                ItemCoord newCoord = adapter.getRelativePosition(newItemPosition);
+                ItemCoord newCoord = newAdapter.getRelativePosition(newItemPosition);
 
                 ItemType oldItemType = getItemType(SectionedFolderListAdapter.this, oldItemPosition);
-                ItemType newItemType = getItemType(adapter, newItemPosition);
+                ItemType newItemType = getItemType(newAdapter, newItemPosition);
 
                 if (oldItemType == newItemType) {
                     // 类型一样 Section 索引
@@ -154,10 +154,10 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             @Override
             public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
                 ItemCoord oldCoord = getRelativePosition(oldItemPosition);
-                ItemCoord newCoord = adapter.getRelativePosition(newItemPosition);
+                ItemCoord newCoord = newAdapter.getRelativePosition(newItemPosition);
 
                 ItemType oldItemType = getItemType(SectionedFolderListAdapter.this, oldItemPosition);
-                ItemType newItemType = getItemType(adapter, newItemPosition);
+                ItemType newItemType = getItemType(newAdapter, newItemPosition);
 
                 if (oldItemType == newItemType) {
                     // 类型一样比较值
@@ -166,7 +166,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                         case HEADER:
                         case FOOTER: {
                             Section oldSec = mSections.get(oldCoord.section());
-                            Section newSec = adapter.getSections().get(newCoord.section());
+                            Section newSec = newAdapter.getSections().get(newCoord.section());
 
                             File oldFile = oldSec.getFile();
                             File newFile = newSec.getFile();
@@ -175,7 +175,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                         }
                         case ITEM: {
                             Item oldItem = SectionedFolderListAdapter.this.getItem(oldCoord);
-                            Item newItem = adapter.getItem(newCoord);
+                            Item newItem = newAdapter.getItem(newCoord);
 
 
                             if (StringUtils.equals(oldItem.getName(), newItem.getName()) &&
@@ -201,10 +201,8 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             @Override
             public Object getChangePayload(int oldItemPosition, int newItemPosition) {
 
-                Log.d(TAG, "getChangePayload() called with: oldItemPosition = [" + oldItemPosition + "], newItemPosition = [" + newItemPosition + "]");
-
                 ItemCoord oldCoord = getRelativePosition(oldItemPosition);
-                ItemCoord newCoord = adapter.getRelativePosition(newItemPosition);
+                ItemCoord newCoord = newAdapter.getRelativePosition(newItemPosition);
 
                 ItemType oldItemType = getItemType(SectionedFolderListAdapter.this, oldItemPosition);
 
@@ -213,7 +211,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                     case FOOTER:
                     case HEADER: {
                         Section oldSec = mSections.get(oldCoord.section());
-                        Section newSec = adapter.getSections().get(newCoord.section());
+                        Section newSec = newAdapter.getSections().get(newCoord.section());
 
                         Bundle res = new Bundle();
                         if (!StringUtils.equals(oldSec.getName(), newSec.getName())) {
@@ -226,7 +224,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                     }
                     case ITEM: {
                         Item oldItem = SectionedFolderListAdapter.this.getItem(oldCoord);
-                        Item newItem = adapter.getItem(newCoord);
+                        Item newItem = newAdapter.getItem(newCoord);
 
                         // 哪一项不一样就只存哪一项
                         Bundle res = new Bundle();
@@ -254,7 +252,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             }
         });
 
-        mSections = adapter.getSections();
+        mSections = newAdapter.getSections();
         diffResult.dispatchUpdatesTo(this);
     }
 

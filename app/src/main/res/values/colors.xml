@@ -10,4 +10,9 @@
     <color name="text_selected">#4d4d4d</color>
     <color name="translucent">#00000000</color>
     <color name="white">#FFFFFF</color>
+
+    <color name="ghost_white">#FFF8F8FF</color>
+    <color name="grey">#FFBEBEBE</color>
+    <color name="transparent">#00FFFFFF</color>
+    <color name="grey21_transparent">#D0363636</color>
 </resources>

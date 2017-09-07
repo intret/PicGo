@@ -5,15 +5,52 @@
               android:layout_height="match_parent">
 
     <!--文件夹列表-->
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/folder_list"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        tools:listitem="@layout/folder_list_item"
-        >
+        android:minHeight="400dp"
+        android:layout_weight="1">
 
-    </android.support.v7.widget.RecyclerView>
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/folder_list"
+            android:layout_height="match_parent"
+            android:layout_width="match_parent"
+            tools:listitem="@layout/folder_list_item"
+            >
+
+        </android.support.v7.widget.RecyclerView>
+
+        <!--T9 键盘-->
+        <cn.intret.app.picgo.view.T9TelephoneDialpadView
+            android:id="@+id/t9_telephone_dialpad_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:clickable="true"
+            />
+
+    </FrameLayout>
+
+
+    <LinearLayout
+        android:id="@+id/keyboard_switch_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/ghost_white"
+        android:gravity="center"
+        android:minHeight="@dimen/bottom_tab_height"
+        android:orientation="vertical">
+
+        <ImageView
+            android:id="@+id/keyboard_switch_image_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_margin="@dimen/margin"
+            android:background="@drawable/keyboard_show_selector"
+            android:clickable="true"/>
+    </LinearLayout>
+
 
     <TextView
         android:id="@+id/desc"

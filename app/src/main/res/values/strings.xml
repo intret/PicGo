@@ -75,4 +75,11 @@
     <string name="keep_both">全部保留</string>
     <string name="file_name_conflict_resolver">文件名冲突解决</string>
     <string name="percent_d_d">%1$d/%2$d</string>
+
+    <string name="display_keyboard">显示键盘</string>
+    <string name="hide_keyboard">隐藏键盘</string>
+    <string name="t9_keyboard_input_prompt">输入号码或拼音</string>
+    <string name="no_match_search_result">无相关搜索结果</string>
+    <string name="loading_contacts">正在加载联系人</string>
+
 </resources>
