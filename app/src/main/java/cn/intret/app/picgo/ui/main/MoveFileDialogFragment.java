@@ -2,11 +2,9 @@ package cn.intret.app.picgo.ui.main;
 
 import android.app.Dialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatDialogFragment;
@@ -30,7 +28,6 @@ import org.greenrobot.eventbus.EventBus;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -202,24 +199,29 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment {
                 .detectMoveFileConflict(item.getFile(), Stream.of(mSelectedFiles).map(File::new).toList())
                 .compose(RxUtils.workAndShow())
                 .subscribe(moveFileDetectResult -> {
+                    int colorOk = MoveFileDialogFragment.this.getResources().getColor(android.R.color.holo_green_dark);
+                    int colorConflict = MoveFileDialogFragment.this.getResources().getColor(android.R.color.holo_red_dark);
+
                     if (moveFileDetectResult != null) {
                         List<Pair<File, File>> conflictFiles = moveFileDetectResult.getConflictFiles();
                         List<Pair<File, File>> canMoveFiles = moveFileDetectResult.getCanMoveFiles();
                         if (conflictFiles.isEmpty()) {
-                            setDetectingResultText(contentView, getString(R.string.can_move_all_files, canMoveFiles.size()));
+                            setDetectingResultText(contentView, getString(R.string.can_move_all_files, canMoveFiles.size()), colorOk);
                         } else {
                             setDetectingResultText(contentView,
                                     getString(R.string.target_directory_exists__d_files_in_the_same_name,
-                                            conflictFiles.size()));
+                                            item.getFile().getName(),
+                                            conflictFiles.size()), colorConflict);
                         }
                     }
                 }, throwable -> {
                     throwable.printStackTrace();
-                    setDetectingResultText(contentView, getString(R.string.detect_move_file_action_result_failed));
+                    setDetectingResultText(contentView, getString(R.string.detect_move_file_action_result_failed),
+                            MoveFileDialogFragment.this.getResources().getColor(android.R.color.holo_red_light));
                 });
     }
 
-    private void setDetectingResultText(View contentView, String resultText) {
+    private void setDetectingResultText(View contentView, String resultText, int textColor) {
 
         // hide detect progress
         ViewUtils.setViewVisibility(contentView, R.id.detect_info_layout, View.GONE);
@@ -227,6 +229,7 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment {
         // detect result
         TextView detectResult = (TextView) contentView.findViewById(R.id.detect_result_info);
         detectResult.setVisibility(View.VISIBLE);
+        detectResult.setTextColor(textColor);
         detectResult.setText(resultText);
     }
 
@@ -281,6 +284,15 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment {
                                         List<Pair<File, File>> conflictFiles = moveFileResult.getConflictFiles();
                                         List<Pair<File, File>> failedFiles = moveFileResult.getFailedFiles();
 
+                                        try {
+                                            EventBus.getDefault().post(
+                                                    new MoveFileResultMessage()
+                                                            .setDestDir(destDir)
+                                                            .setResult(moveFileResult));
+
+                                        } catch (Throwable e) {
+                                            e.printStackTrace();
+                                        }
 
                                         int successCount = successFiles.size();
                                         if (successCount == mSelectedFiles.size()) {
@@ -289,15 +301,7 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment {
                                         } else {
                                             Log.w(TAG, "移动文件冲突: " + conflictFiles );
                                             if (!conflictFiles.isEmpty()) {
-                                                try {
-                                                    EventBus.getDefault().post(
-                                                            new MoveFileResultMessage()
-                                                                    .setDestDir(destDir)
-                                                                    .setResult(moveFileResult));
 
-                                                } catch (Throwable e) {
-                                                    e.printStackTrace();
-                                                }
                                             } else {
                                                 ToastUtils.toastShort(getActivity(), R.string.move_files_failed);
                                             }

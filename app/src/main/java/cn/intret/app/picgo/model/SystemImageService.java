@@ -865,7 +865,6 @@ public class SystemImageService {
 
                     ++successCount;
                 }
-                return successCount;
 
             } catch (Exception e) {
                 Log.e(TAG, "move files to " + destDir + " failed.");
@@ -894,6 +893,9 @@ public class SystemImageService {
                     }
                     FileUtils.moveFileToDirectory(srcFile, destDir, true);
                     Log.d(TAG, "move file " + srcFile + " to " + destDir);
+
+                    successFiles.add(new Pair<>(destFile, srcFile));
+
                     successCount++;
                 }
             } catch (IOException e) {
@@ -901,6 +903,8 @@ public class SystemImageService {
                 e.printStackTrace();
             }
 
+            outResult.setSuccessFiles(successFiles);
+            outResult.setFailedFiles(failedFiles);
             return successCount;
         }
     }

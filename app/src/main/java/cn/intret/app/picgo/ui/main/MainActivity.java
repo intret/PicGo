@@ -311,6 +311,34 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(MoveFileResultMessage message) {
+
+        File destDir = message.getDestDir();
+        if (destDir != null) {
+            ImageListAdapter adapter = mImageListAdapters.get(destDir.getAbsolutePath());
+            if (adapter != null) {
+                int selectedCount = adapter.getSelectedCount();
+                int itemCount = adapter.getItemCount();
+                mSectionedFolderListAdapter.updateSelectedCount(message.getDestDir(), selectedCount);
+                mSectionedFolderListAdapter.updateItemCount(message.getDestDir(), itemCount);
+            }
+        }
+
+        List<android.util.Pair<File, File>> successFiles = message.getResult().getSuccessFiles();
+        if (successFiles != null) {
+            Stream.of(successFiles)
+                    .groupBy(fileFilePair -> fileFilePair.second.getParent())
+                    .forEach(objectListEntry -> {
+                        String dir = objectListEntry.getKey();
+                        ImageListAdapter adapter = mImageListAdapters.get(dir);
+                        if (adapter != null) {
+                            int selectedCount = adapter.getSelectedCount();
+                            int itemCount = adapter.getItemCount();
+                            mSectionedFolderListAdapter.updateSelectedCount(message.getDestDir(), selectedCount);
+                            mSectionedFolderListAdapter.updateItemCount(message.getDestDir(), itemCount);
+                        }
+                    });
+        }
+
         showConflictDialog(
                 message.getDestDir(),
                 message.getResult().getConflictFiles());
@@ -350,11 +378,14 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(RescanFolderListMessage message) {
+        com.orhanobut.logger.Logger.d("RescanFolderListMessage " + message);
         diffUpdateFolderListAdapter(mSectionedFolderListAdapter);
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(RenameDirectoryMessage message) {
+
+        com.orhanobut.logger.Logger.d("RenameDirectoryMessage " + message);
         mSectionedFolderListAdapter.renameDirectory(message.getOldDirectory(), message.getNewDirectory());
     }
 
@@ -932,9 +963,16 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                         )
                                 .map(ImageListAdapter.Item::getFile)
                                 .toList()
+                        ,
+                        true,
+                        false
                 ).compose(workAndShow())
-                .subscribe(integer -> {
-                    ToastUtils.toastLong(this, getString(R.string.already_moved_d_files, integer));
+                .subscribe(result -> {
+
+                    mSectionedFolderListAdapter.updateSelectedCount(mCurrentImageAdapter.getDirectory(),
+                            mCurrentImageAdapter.getSelectedCount());
+
+                    ToastUtils.toastLong(this, getString(R.string.already_moved_d_files, result.getSuccessFiles().size()));
                 }, throwable -> {
                     ToastUtils.toastLong(this, R.string.move_files_failed);
                 });

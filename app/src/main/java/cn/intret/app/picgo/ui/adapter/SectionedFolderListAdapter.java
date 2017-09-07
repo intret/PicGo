@@ -89,12 +89,13 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         }
     }
 
+
+
     enum ItemType {
         HEADER,
         FOOTER,
         ITEM
     }
-
     private ItemType getItemType(SectionedFolderListAdapter adapter, int position) {
         boolean header = adapter.isHeader(position);
         boolean footer = adapter.isFooter(position);
@@ -266,6 +267,32 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             for (int i = 0, itemsSize = items.size(); i < itemsSize; i++) {
                 Item item = items.get(i);
 
+            }
+        }
+    }
+
+    public void updateItemCount(File dir, int count) {
+        if (dir == null || count < 0) {
+            return;
+        }
+
+        for (int si = 0, mSectionsSize = mSections.size(); si < mSectionsSize; si++) {
+            Section section = mSections.get(si);
+            List<Item> items = section.getItems();
+            for (int ii = 0, itemsSize = items.size(); ii < itemsSize; ii++) {
+                Item item = items.get(ii);
+                if (item.getFile().equals(dir)) {
+
+                    item.setCount(count);
+                    int absolutePosition = getAbsolutePosition(si, ii);
+                    if (mRecyclerView != null) {
+                        RecyclerView.ViewHolder vh = mRecyclerView.findViewHolderForAdapterPosition(absolutePosition);
+                        if (vh != null && vh instanceof ItemViewHolder) {
+                            ((ItemViewHolder) vh).setSelectedCountText(item.getSelectedCount(), item.getCount());
+                        }
+                    }
+                    return;
+                }
             }
         }
     }

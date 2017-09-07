@@ -68,7 +68,7 @@
     <string name="image_item">Image Item</string>
     <string name="detecting_move_file_operationg_result">正在检测文件移动结果…</string>
     <string name="can_move_all_files">可以移动所有 %1$d 个文件</string>
-    <string name="target_directory_exists__d_files_in_the_same_name">目标目录存在 %1$d 个同名文件</string>
+    <string name="target_directory_exists__d_files_in_the_same_name">目录 %1$s 存在 %2$d 个同名文件</string>
     <string name="detect_move_file_action_result_failed">检测文件移动操作失败</string>
     <string name="keep_all_source_files">保留所有源文件</string>
     <string name="keep_all_target_files">保留所有目标文件</string>
