@@ -1,1 +1,1 @@
-include ':app', ':sectioned-recyclerview', ":t9search"
+include ':app', ':sectioned-recyclerview'

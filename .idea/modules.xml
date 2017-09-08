@@ -5,7 +5,6 @@
       <module fileurl="file://$PROJECT_DIR$/PicGo.iml" filepath="$PROJECT_DIR$/PicGo.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/sectioned-recyclerview/sectioned-recyclerview.iml" filepath="$PROJECT_DIR$/sectioned-recyclerview/sectioned-recyclerview.iml" />
-      <module fileurl="file://$PROJECT_DIR$/t9search/t9search.iml" filepath="$PROJECT_DIR$/t9search/t9search.iml" />
     </modules>
   </component>
 </project>
