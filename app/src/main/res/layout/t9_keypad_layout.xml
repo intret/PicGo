@@ -1,18 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/white"
-    android:orientation="vertical" >
+              xmlns:tools="http://schemas.android.com/tools"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:background="@color/white"
+              android:orientation="vertical">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/margin"
-        android:background="@color/grey"
+        android:background="@drawable/bg_dialpad_item_normal"
         android:gravity="center_vertical"
         android:minHeight="@dimen/dialpad_row_height"
-        android:orientation="horizontal" >
+        android:orientation="horizontal"
+        android:paddingEnd="8dp"
+        android:paddingStart="8dp">
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -21,7 +24,7 @@
             android:background="@color/white"
             android:gravity="center"
             android:orientation="vertical"
-            android:visibility="gone" >
+            android:visibility="gone">
 
             <Button
                 android:id="@+id/telephone_dial_close_btn"
@@ -29,7 +32,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:background="@drawable/telephone_dial_close_selector"
-                android:gravity="center" />
+                android:gravity="center"/>
         </LinearLayout>
 
         <LinearLayout
@@ -41,18 +44,19 @@
             android:layout_marginTop="1dp"
             android:layout_weight="1"
             android:background="@color/white"
-            android:orientation="vertical" >
+            android:orientation="vertical">
 
             <EditText
                 android:id="@+id/dial_input_edit_text"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_gravity="center"
-                android:textSize="14sp"
+                android:layout_gravity="center_horizontal"
                 android:background="@drawable/bg_empty"
+                android:gravity="center_vertical|left"
                 android:hint="@string/t9_keyboard_input_prompt"
                 android:inputType="phone"
                 android:padding="0dp"
+                android:textSize="14sp"
                 />
         </LinearLayout>
 
@@ -65,7 +69,7 @@
             android:layout_marginTop="1dp"
             android:background="@color/white"
             android:gravity="center"
-            android:orientation="vertical" >
+            android:orientation="vertical">
 
             <Button
                 android:id="@+id/dial_delete_btn"
@@ -74,14 +78,363 @@
                 android:layout_gravity="center"
                 android:layout_marginRight="@dimen/margin_right"
                 android:background="@drawable/dial_delete_selector"
-                android:visibility="gone" />
+                android:visibility="gone"
+                tools:visibility="visible"
+
+                />
         </LinearLayout>
     </LinearLayout>
+
+    <GridLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:columnCount="3"
+        android:rowCount="4"
+
+        >
+
+        <RelativeLayout
+
+            android:id="@+id/num1"
+            style="@style/dialpad_item_layout"
+            android:layout_column="0"
+            android:layout_columnWeight="1"
+            android:layout_row="0"
+            android:layout_rowWeight="1"
+            android:tag="1"
+            >
+
+            <TextView
+                android:id="@+id/number1"
+                style="@style/dialpad_number_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:text="1"
+                tools:ignore="HardcodedText"/>
+
+            <TextView
+
+                style="@style/dialpad_number_letter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/number1"
+                android:layout_centerHorizontal="true"
+                android:text=""
+                tools:ignore="HardcodedText"/>
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/num2"
+            style="@style/dialpad_item_layout"
+            android:layout_column="1"
+            android:layout_columnWeight="1"
+            android:layout_row="0"
+            android:layout_rowWeight="1"
+            android:tag="2"
+            >
+
+            <TextView
+                android:id="@+id/number2"
+                style="@style/dialpad_number_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:text="2"
+                tools:ignore="HardcodedText"/>
+
+            <TextView
+
+                style="@style/dialpad_number_letter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/number2"
+                android:layout_centerHorizontal="true"
+                android:text="ABC"
+                tools:ignore="HardcodedText"/>
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/num3"
+            style="@style/dialpad_item_layout"
+            android:layout_column="2"
+            android:layout_columnWeight="1"
+
+            android:layout_row="0"
+            android:layout_rowWeight="1"
+            android:tag="3"
+            >
+
+            <TextView
+                android:id="@+id/number3"
+                style="@style/dialpad_number_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:text="3"
+                tools:ignore="HardcodedText"/>
+
+            <TextView
+                style="@style/dialpad_number_letter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/number3"
+                android:layout_centerHorizontal="true"
+                android:text="DEF"
+                tools:ignore="HardcodedText"/>
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/num4"
+            style="@style/dialpad_item_layout"
+            android:layout_column="0"
+            android:layout_columnWeight="1"
+            android:layout_row="1"
+            android:layout_rowWeight="1"
+            android:tag="4"
+            >
+
+            <TextView
+                android:id="@+id/number4"
+                style="@style/dialpad_number_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:text="4"
+                tools:ignore="HardcodedText"/>
+
+            <TextView
+                style="@style/dialpad_number_letter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/number4"
+                android:layout_centerHorizontal="true"
+                android:text="GHI"
+                tools:ignore="HardcodedText"/>
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/num5"
+            style="@style/dialpad_item_layout"
+            android:layout_column="1"
+            android:layout_columnWeight="1"
+            android:layout_row="1"
+            android:layout_rowWeight="1"
+            android:tag="5"
+            >
+
+            <TextView
+                android:id="@+id/number5"
+                style="@style/dialpad_number_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:text="5"
+                tools:ignore="HardcodedText"/>
+
+            <TextView
+                style="@style/dialpad_number_letter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/number5"
+                android:layout_centerHorizontal="true"
+                android:text="JKL"
+                tools:ignore="HardcodedText"/>
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/num6"
+            style="@style/dialpad_item_layout"
+            android:layout_column="2"
+            android:layout_columnWeight="1"
+            android:layout_row="1"
+            android:layout_rowWeight="1"
+            android:tag="6"
+            >
+
+            <TextView
+                android:id="@+id/number6"
+                style="@style/dialpad_number_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:text="6"
+                tools:ignore="HardcodedText"/>
+
+            <TextView
+                style="@style/dialpad_number_letter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/number6"
+                android:layout_centerHorizontal="true"
+                android:text="MNO"
+                tools:ignore="HardcodedText"/>
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/num7"
+            style="@style/dialpad_item_layout"
+            android:layout_column="0"
+            android:layout_columnWeight="1"
+            android:layout_row="2"
+            android:layout_rowWeight="1"
+            android:tag="7"
+            >
+
+            <TextView
+                android:id="@+id/number7"
+                style="@style/dialpad_number_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:text="7"
+                tools:ignore="HardcodedText"/>
+
+            <TextView
+                style="@style/dialpad_number_letter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/number7"
+                android:layout_centerHorizontal="true"
+                android:text="PQRS"
+                tools:ignore="HardcodedText"/>
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/num8"
+            style="@style/dialpad_item_layout"
+            android:layout_column="1"
+            android:layout_columnWeight="1"
+            android:layout_row="2"
+            android:layout_rowWeight="1"
+            android:tag="8"
+            >
+
+            <TextView
+                android:id="@+id/number8"
+                style="@style/dialpad_number_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:text="8"
+                tools:ignore="HardcodedText"/>
+
+            <TextView
+                style="@style/dialpad_number_letter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/number8"
+                android:layout_centerHorizontal="true"
+                android:text="TUV"
+                tools:ignore="HardcodedText"/>
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/num9"
+            style="@style/dialpad_item_layout"
+            android:layout_column="2"
+            android:layout_columnWeight="1"
+            android:layout_row="2"
+            android:layout_rowWeight="1"
+            android:tag="9"
+            >
+
+            <TextView
+                android:id="@+id/number9"
+                style="@style/dialpad_number_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:text="9"
+                tools:ignore="HardcodedText"/>
+
+            <TextView
+                style="@style/dialpad_number_letter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/number9"
+                android:layout_centerHorizontal="true"
+                android:text="WXYZ"
+                tools:ignore="HardcodedText"/>
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/nums"
+            style="@style/dialpad_item_layout"
+            android:layout_column="0"
+            android:layout_columnWeight="1"
+            android:layout_row="3"
+            android:layout_rowWeight="1"
+            android:tag="*"
+            >
+
+            <TextView
+                android:id="@+id/star"
+                style="@style/dialpad_number_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:text="*"
+                tools:ignore="HardcodedText"/>
+
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/num0"
+            style="@style/dialpad_item_layout"
+            android:layout_column="1"
+            android:layout_columnWeight="1"
+            android:layout_row="3"
+            android:layout_rowWeight="1"
+            android:tag="0"
+            >
+
+            <TextView
+                android:id="@+id/number0"
+                style="@style/dialpad_number_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:text="0"
+                tools:ignore="HardcodedText"/>
+
+            <TextView
+
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/number0"
+                android:layout_centerHorizontal="true"
+                android:text=""
+                tools:ignore="HardcodedText"/>
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/del"
+            style="@style/dialpad_item_layout"
+            android:layout_column="2"
+            android:layout_columnWeight="1"
+            android:layout_row="3"
+            android:layout_rowWeight="1"
+            android:tag="#"
+            >
+
+            <TextView
+                android:id="@+id/arrow"
+                style="@style/dialpad_number_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:text="←"
+                tools:ignore="HardcodedText"/>
+
+        </RelativeLayout>
+    </GridLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal" >
+        android:orientation="horizontal"
+        android:visibility="gone">
 
         <Button
             android:id="@+id/dialNum1"
@@ -89,7 +442,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:background="@drawable/num1_ic_selector"
-            android:tag="1" />
+            android:tag="1"/>
 
         <Button
             android:id="@+id/dialNum2"
@@ -97,7 +450,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:background="@drawable/num2_ic_selector"
-            android:tag="2" />
+            android:tag="2"/>
 
         <Button
             android:id="@+id/dialNum3"
@@ -105,13 +458,14 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:background="@drawable/num3_ic_selector"
-            android:tag="3" />
+            android:tag="3"/>
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal" >
+        android:orientation="horizontal"
+        android:visibility="gone">
 
         <Button
             android:id="@+id/dialNum4"
@@ -119,7 +473,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:background="@drawable/num4_ic_selector"
-            android:tag="4" />
+            android:tag="4"/>
 
         <Button
             android:id="@+id/dialNum5"
@@ -127,7 +481,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:background="@drawable/num5_ic_selector"
-            android:tag="5" />
+            android:tag="5"/>
 
         <Button
             android:id="@+id/dialNum6"
@@ -135,13 +489,14 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:background="@drawable/num6_ic_selector"
-            android:tag="6" />
+            android:tag="6"/>
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal" >
+        android:orientation="horizontal"
+        android:visibility="gone">
 
         <Button
             android:id="@+id/dialNum7"
@@ -149,7 +504,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:background="@drawable/num7_ic_selector"
-            android:tag="7" />
+            android:tag="7"/>
 
         <Button
             android:id="@+id/dialNum8"
@@ -157,7 +512,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:background="@drawable/num8_ic_selector"
-            android:tag="8" />
+            android:tag="8"/>
 
         <Button
             android:id="@+id/dialNum9"
@@ -165,13 +520,14 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:background="@drawable/num9_ic_selector"
-            android:tag="9" />
+            android:tag="9"/>
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal" >
+        android:orientation="horizontal"
+        android:visibility="gone">
 
         <Button
             android:id="@+id/dialx"
@@ -179,7 +535,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:background="@drawable/dialx_ic_selector"
-            android:tag="*" />
+            android:tag="*"/>
 
         <Button
             android:id="@+id/dialNum0"
@@ -187,7 +543,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:background="@drawable/num0_ic_selector"
-            android:tag="0" />
+            android:tag="0"/>
 
         <Button
             android:id="@+id/dialj"
@@ -195,7 +551,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:background="@drawable/dialj_ic_selector"
-            android:tag="#" />
+            android:tag="#"/>
     </LinearLayout>
 
 </LinearLayout>

@@ -14,8 +14,8 @@
 
 
     <dimen name="dialpad_row_height">32dp</dimen>
-    <dimen name="dialpad_icon_height">32dp</dimen>
-    <dimen name="dialpad_icon_width">32dp</dimen>
+    <dimen name="dialpad_icon_height">24dp</dimen>
+    <dimen name="dialpad_icon_width">24dp</dimen>
     <dimen name="dialpad_margin_right">12dp</dimen>
     <dimen name="dialpad_margin_left">12dp</dimen>
     <dimen name="bottom_tab_height">54dp</dimen>

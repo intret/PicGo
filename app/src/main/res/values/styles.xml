@@ -62,4 +62,26 @@
         <item name="android:scaleType">centerInside</item>
     </style>
 
+    <style name="dialpad_number_text">
+        <item name="android:textSize">22dp</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:textColor">@color/colorPrimaryDark</item>
+
+        <item name="android:textAlignment">center</item>
+        <item name="android:gravity">center</item>
+        <item name="android:minWidth">40dp</item>
+    </style>
+    <style name="dialpad_number_letter" parent="Base.TextAppearance.AppCompat.Small">
+        <item name="android:textSize">10dp</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <style name="dialpad_item_layout">
+        <item name="android:backgroundTint">@drawable/bg_dialpad_item_selector</item>
+        <item name="android:paddingTop">4dp</item>
+        <item name="android:paddingBottom">4dp</item>
+        <item name="android:minWidth">60dp</item>
+        <item name="android:clickable">true</item>
+    </style>
+
 </resources>
