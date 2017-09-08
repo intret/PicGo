@@ -1,4 +1,4 @@
-package cn.intret.app.picgo.model;
+package cn.intret.app.picgo.model.event;
 
 public class RescanFolderListMessage {
 }

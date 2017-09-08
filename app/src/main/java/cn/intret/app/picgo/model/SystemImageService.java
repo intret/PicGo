@@ -15,7 +15,6 @@ import com.annimon.stream.function.Supplier;
 import com.t9search.model.PinyinSearchUnit;
 import com.t9search.util.T9Util;
 
-import org.apache.commons.collections4.Predicate;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.greenrobot.eventbus.EventBus;
@@ -27,7 +26,6 @@ import java.io.IOException;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,6 +39,12 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import cn.intret.app.picgo.app.CoreModule;
+import cn.intret.app.picgo.model.event.FolderModelChangeMessage;
+import cn.intret.app.picgo.model.event.RemoveFileMessage;
+import cn.intret.app.picgo.model.event.RenameDirectoryMessage;
+import cn.intret.app.picgo.model.event.RescanFolderListMessage;
+import cn.intret.app.picgo.model.event.RescanFolderThumbnailListMessage;
+import cn.intret.app.picgo.model.event.RescanImageDirectoryMessage;
 import cn.intret.app.picgo.utils.DateTimeUtils;
 import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.utils.SystemUtils;

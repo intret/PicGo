@@ -1,4 +1,4 @@
-package cn.intret.app.picgo.model;
+package cn.intret.app.picgo.model.event;
 
 import java.io.File;
 import java.util.List;

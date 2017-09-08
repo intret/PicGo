@@ -2,13 +2,13 @@ package cn.intret.app.picgo.model;
 
 import android.util.Log;
 
-import org.apache.commons.io.input.BOMInputStream;
 import org.greenrobot.eventbus.EventBus;
 
 import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
 
+import cn.intret.app.picgo.model.event.RecentOpenFolderListChangeMessage;
 import io.reactivex.Observable;
 
 public class UserDataService {
