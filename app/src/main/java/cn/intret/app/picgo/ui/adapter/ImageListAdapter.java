@@ -112,7 +112,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
 
         if (getSelectedCount() == 0 && mIsSelectionMode && mOnInteractionListener != null) {
             mIsSelectionMode = false;
-            mOnInteractionListener.onSelectionModeChange(mIsSelectionMode);
+            mOnInteractionListener.onSelectionModeChange(this, mIsSelectionMode);
         }
     }
 
@@ -157,7 +157,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         // Notify leaving selection mode
         mIsSelectionMode = false;
         if (mOnInteractionListener != null) {
-            mOnInteractionListener.onSelectionModeChange(false);
+            mOnInteractionListener.onSelectionModeChange(this, false);
             mOnInteractionListener.onSelectedCountChange(this, 0);
         }
     }
@@ -178,7 +178,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
 
         void onItemClicked(Item item, View view, int position);
 
-        void onSelectionModeChange(boolean isSelectionMode);
+        void onSelectionModeChange(ImageListAdapter adapter, boolean isSelectionMode);
 
         void onDragBegin(View view, int position, Item item);
 
@@ -250,7 +250,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
 
             // Notify entering selecting mode
             if (mOnInteractionListener != null) {
-                mOnInteractionListener.onSelectionModeChange(true);
+                mOnInteractionListener.onSelectionModeChange(this, true);
                 mOnInteractionListener.onSelectedCountChange(this, 1);
             }
         }
@@ -269,7 +269,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
                 // Notify leaving selection mode
                 if (mOnInteractionListener != null) {
                     mIsSelectionMode = false;
-                    mOnInteractionListener.onSelectionModeChange(false);
+                    mOnInteractionListener.onSelectionModeChange(this, false);
                     mOnInteractionListener.onSelectedCountChange(this, 0 );
                 }
                 item.setSelected(false);

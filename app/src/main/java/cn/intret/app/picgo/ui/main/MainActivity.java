@@ -518,7 +518,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
                 case DEFAULT: {
                     mCurrentImageAdapter.leaveSelectionMode();
-                    onSelectionModeChange(false);
+                    onSelectionModeChange(mCurrentImageAdapter, false);
                 }
                 break;
                 case DAY:
@@ -1447,6 +1447,8 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
         adapter.setOnInteractionListener(this);
 
+        updateActionBarTitleCount(adapter, adapter.getSelectedCount());
+
         if (mCurrentImageAdapter != null) {
             int i = ((GridLayoutManager) mImageList.getLayoutManager()).findFirstVisibleItemPosition();
             mCurrentImageAdapter.saveFirstVisibleItemPosition(i);
@@ -1634,10 +1636,12 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     }
 
     @Override
-    public void onSelectionModeChange(boolean isSelectionMode) {
+    public void onSelectionModeChange(ImageListAdapter adapter, boolean isSelectionMode) {
         Log.d(TAG,"onSelectionModeChange: isSelectionMode " + isSelectionMode);
         if (isSelectionMode) {
+
             changeFloatingCount(FloatWindowService.MSG_INCREASE);
+
 
             mFloatingToolbar.setVisibility(View.VISIBLE);
 //            mFloatingToolbar.showContextMenu();
@@ -1647,6 +1651,48 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
             mFloatingToolbar.setVisibility(View.GONE);
 //            mFloatingToolbar.dismissPopupMenus();
         }
+
+        updateActionBarTitleCount(adapter, isSelectionMode ? adapter.getSelectedCount() : 0);
+    }
+
+    @Override
+    public void onSelectedCountChange(ImageListAdapter adapter, int selectedCount) {
+        File dir = adapter.getDirectory();
+
+        updateActionBarTitleCount(adapter, selectedCount);
+    }
+
+    private void updateActionBarTitleCount(ImageListAdapter adapter, int selectedCount) {
+        updateToolbarSubTitleCount(adapter, selectedCount);
+//        File dir = adapter.getDirectory();
+//        if (mFolderAdapter != null) {
+//            mFolderAdapter.updateSelectedCount(dir, selectedCount);
+//        }
+//
+//        // Update title
+//        String title;
+//        if (selectedCount <= 0) {
+//            title = dir.getName();
+//        } else {
+//            title = getResources().getString(R.string.fmt_main_image_selected_title, dir.getName(), selectedCount, adapter.getItemCount());
+//        }
+//        mToolbar.setTitle(title);
+    }
+
+    private void updateToolbarSubTitleCount(ImageListAdapter adapter, int selectedCount) {
+        File dir = adapter.getDirectory();
+        if (mFolderAdapter != null) {
+            mFolderAdapter.updateSelectedCount(dir, selectedCount);
+        }
+
+        // Update title
+        String title;
+        if (selectedCount <= 0) {
+            title = "";
+        } else {
+            title = getResources().getString(R.string.percent_d_d, selectedCount, adapter.getItemCount());
+        }
+        mToolbar.setSubtitle(title);
     }
 
     @Override
@@ -1682,12 +1728,6 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                     }
                 })
                 .show();
-    }
-
-    @Override
-    public void onSelectedCountChange(ImageListAdapter adapter, int selectedCount) {
-        File dir = adapter.getDirectory();
-        mFolderAdapter.updateSelectedCount(dir, selectedCount);
     }
 
     private void showRemoveFileDialog() {
