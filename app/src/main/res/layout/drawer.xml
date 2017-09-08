@@ -32,7 +32,7 @@
 
     <!--T9 键盘-->
     <android.support.v7.widget.CardView
-        android:id="@+id/t9pad_container_layout"
+        android:id="@+id/t9_keypad_container"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
@@ -46,8 +46,8 @@
         tools:visibility="visible"
         >
 
-        <cn.intret.app.picgo.view.T9TelephoneDialpadView
-            android:id="@+id/t9_telephone_dialpad_layout"
+        <cn.intret.app.picgo.view.T9KeypadView
+            android:id="@+id/t9_keypad"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:clickable="true"

@@ -5,19 +5,19 @@ import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.v4.app.Fragment;
+import android.support.design.widget.BottomSheetDialogFragment;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatDialogFragment;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.util.Pair;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.afollestad.sectionedrecyclerview.ItemCoord;
@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
-import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.model.ConflictResolverDialogFragment;
 import cn.intret.app.picgo.model.SystemImageService;
@@ -45,7 +44,7 @@ import cn.intret.app.picgo.utils.RxUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
 import cn.intret.app.picgo.utils.ViewUtil;
 import cn.intret.app.picgo.utils.ViewUtils;
-import cn.intret.app.picgo.view.T9TelephoneDialpadView;
+import cn.intret.app.picgo.view.T9KeypadView;
 import cn.intret.app.picgo.widget.RecyclerItemTouchListener;
 import io.reactivex.ObservableTransformer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -53,32 +52,22 @@ import io.reactivex.schedulers.Schedulers;
 
 
 /**
- * A simple {@link Fragment} subclass.
- * Activities that contain this fragment must implement the
- * {@link MoveFileDialogFragment.OnFragmentInteractionListener} interface
- * to handle interaction events.
- * Use the {@link MoveFileDialogFragment#newInstance} factory method to
- * create an instance of this fragment.
+ * Move selected file ( Fragment argument specified ) to user selected target folder.
  */
-public class MoveFileDialogFragment extends AppCompatDialogFragment implements T9TelephoneDialpadView.OnT9DialpadInteractionHandler {
+public class MoveFileDialogFragment extends BottomSheetDialogFragment implements T9KeypadView.OnT9KeypadInteractionHandler {
 
     public static final String TAG = MoveFileDialogFragment.class.getSimpleName();
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_SELECTED_FILES = "selected_files";
 
-    // TODO: Rename and change types of parameters
     private ArrayList<String> mSelectedFiles;
 
     private OnFragmentInteractionListener mListener;
 
-    View mContentView = null;
-
     @BindView(R.id.folder_list) RecyclerView mFolderList;
     @BindView(R.id.desc) TextView mDesc;
 
-    @BindView(R.id.t9_telephone_dialpad_layout) T9TelephoneDialpadView mT9TelephoneDialpadView;
+    @BindView(R.id.t9_keypad) T9KeypadView mT9KeypadView;
 
     @BindView(R.id.keyboard_switch_layout) View mKeyboardSwitchLayout;
     @BindView(R.id.keyboard_switch_image_view) ImageView mKeyboardSwitchIv;
@@ -87,7 +76,7 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment implements T
         @BindView(R.id.folder_list) public RecyclerView mFolderList;
         @BindView(R.id.desc) public TextView mDesc;
 
-        @BindView(R.id.t9_telephone_dialpad_layout) public T9TelephoneDialpadView mT9TelephoneDialpadView;
+        @BindView(R.id.t9_keypad) public T9KeypadView mT9KeypadView;
     }
 
     DialogViews mDialogViews = new DialogViews();
@@ -126,26 +115,10 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment implements T
 
         Log.d(TAG, "onCreateView() called with: inflater = [" + inflater + "], container = [" + container + "], savedInstanceState = [" + savedInstanceState + "]");
 
-        if (mContentView != null) {
-            container.addView(mContentView);
-        }
-        // Inflate the layout for this fragment
-        final View[] views = {null};
-        SystemImageService.getInstance()
-                .loadFolderListModel(true)
-                .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
-                .subscribe(adapter -> {
-                    View contentView = LayoutInflater.from(getActivity()).inflate(R.layout.fragment_move_file_dialog, container, false);
-
-                    ButterKnife.bind(MoveFileDialogFragment.this, contentView);
-                    initContentView(contentView, adapter);
-                    views[0] = contentView;
-                });
-
-        return views[0];
+        return createDialogContentView(container);
     }
 
-    private View createDialogContentView() {
+    private View createDialogContentView(ViewGroup root) {
 
         final View[] views = {null};
         SystemImageService.getInstance()
@@ -153,8 +126,7 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment implements T
                 .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
                 .subscribe(adapter -> {
 
-                    View contentView = LayoutInflater.from(getActivity()).inflate(R.layout.fragment_move_file_dialog, null, false);
-//                    ButterKnife.bind(MoveFileDialogFragment.this, contentView);
+                    View contentView = LayoutInflater.from(getActivity()).inflate(R.layout.fragment_move_file_dialog, root, false);
 
                     initContentView(contentView, adapter);
 
@@ -171,13 +143,22 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment implements T
     }
 
     private void initListener(View contentView) {
-        ViewGroup dialpadContainer = (ViewGroup) contentView.findViewById(R.id.t9pad_container_layout);
-        T9TelephoneDialpadView t9TelephoneDialpadView = ((T9TelephoneDialpadView) contentView.findViewById(R.id.t9_telephone_dialpad_layout));
-        ImageView keyboardSwitchIv = (ImageView) contentView.findViewById(R.id.keyboard_switch_image_view);
-        View keyboardSwitchLayout = contentView.findViewById(R.id.keyboard_switch_layout);
+        ViewGroup keypadContainer = (ViewGroup) contentView.findViewById(R.id.t9_keypad_container);
+        keypadContainer.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (!hasFocus) {
+                    keypadContainer.setVisibility(View.INVISIBLE);
+                }
+            }
+        });
+        T9KeypadView keypadView = ((T9KeypadView) contentView.findViewById(R.id.t9_keypad));
 
-        keyboardSwitchLayout.setOnClickListener(v -> switchKeyboard(dialpadContainer, keyboardSwitchIv));
-        keyboardSwitchIv.setOnClickListener(v -> switchKeyboard(dialpadContainer, keyboardSwitchIv));
+        ImageView btnKeypadSwitch = (ImageView) contentView.findViewById(R.id.keyboard_switch_image_view);
+        View keypadSwitchLayout = contentView.findViewById(R.id.keyboard_switch_layout);
+
+        keypadSwitchLayout.setOnClickListener(v -> switchKeyboard(keypadContainer, btnKeypadSwitch));
+        btnKeypadSwitch.setOnClickListener(v -> switchKeyboard(keypadContainer, btnKeypadSwitch));
 
 //        mContactsLv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 //
@@ -195,17 +176,29 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment implements T
     }
 
     private void initContentView(View contentView, SectionedFolderListAdapter listAdapter) {
+        initHeader(contentView);
         initFolderList(contentView, listAdapter);
         initDialPad(contentView, listAdapter);
     }
 
+    private void initHeader(View contentView) {
+        Button btnMoveFile = (Button) contentView.findViewById(R.id.btn_move_file);
+
+        btnMoveFile.setText(getResources().getString(R.string.move_file_d_, mSelectedFiles.size()));
+        btnMoveFile.setOnClickListener(v -> {
+            moveFile(contentView);
+            dismiss();
+        });
+    }
+
     private void initDialPad(View contentView, SectionedFolderListAdapter listAdapter) {
-        ViewGroup keypadContainer = (ViewGroup) contentView.findViewById(R.id.t9pad_container_layout);
-        T9TelephoneDialpadView t9TelephoneDialpadView = (T9TelephoneDialpadView) contentView.findViewById(R.id.t9_telephone_dialpad_layout);
+        ViewGroup keypadContainer = (ViewGroup) contentView.findViewById(R.id.t9_keypad_container);
+        T9KeypadView t9KeypadView = (T9KeypadView) contentView.findViewById(R.id.t9_keypad);
         RecyclerView folderList = (RecyclerView) contentView.findViewById(R.id.folder_list);
+        ViewGroup folderListContainer = (ViewGroup) contentView.findViewById(R.id.folder_list_container);
 
 
-        t9TelephoneDialpadView
+        t9KeypadView
                 .getDialpadInputObservable()
                 .debounce(369, TimeUnit.MILLISECONDS)
                 .subscribe(input -> {
@@ -228,12 +221,12 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment implements T
 //        showKeyboard(keypadContainer, (ImageView) contentView.findViewById(R.id.keyboard_switch_image_view));
     }
 
-    private void switchKeyboard(ViewGroup dialpadContainer, ImageView kbSwitchIv) {
+    private void switchKeyboard(ViewGroup keypadContainer, ImageView kbSwitchIv) {
 
-        if (ViewUtil.getViewVisibility(dialpadContainer) != View.VISIBLE) {
-            showKeyboard(dialpadContainer, kbSwitchIv);
+        if (ViewUtil.getViewVisibility(keypadContainer) != View.VISIBLE) {
+            showKeyboard(keypadContainer, kbSwitchIv);
         } else {
-            hideKeyboard(dialpadContainer, kbSwitchIv);
+            hideKeyboard(keypadContainer, kbSwitchIv);
         }
     }
 
@@ -244,21 +237,21 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment implements T
     }
 
     private void hideKeyboard() {
-        ViewUtil.hideView(mT9TelephoneDialpadView);
+        ViewUtil.hideView(mT9KeypadView);
         mKeyboardSwitchIv
                 .setBackgroundResource(R.drawable.keyboard_show_selector);
     }
 
     private void showKeyboard() {
-        ViewUtil.showView(mT9TelephoneDialpadView);
-        mKeyboardSwitchIv
-                .setBackgroundResource(R.drawable.keyboard_hide_selector);
+        ViewUtil.showView(mT9KeypadView);
+        mKeyboardSwitchIv.setBackgroundResource(R.drawable.keyboard_hide_selector);
     }
 
-    private void showKeyboard(ViewGroup t9TelephoneDialpadView, ImageView keyboardSwitchIv) {
-        ViewUtil.showView(t9TelephoneDialpadView);
-        keyboardSwitchIv
-                .setBackgroundResource(R.drawable.keyboard_hide_selector);
+    private void showKeyboard(ViewGroup keypadContainer, ImageView keypadSwitchButton) {
+
+        ViewUtil.showView(keypadContainer);
+        keypadContainer.requestFocus();
+        keypadSwitchButton.setBackgroundResource(R.drawable.keyboard_hide_selector);
     }
 
     private void initFolderList(final View contentView, SectionedFolderListAdapter listAdapter) {
@@ -313,7 +306,7 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment implements T
         // 移动文件描述信息
         ViewUtils.setText(contentView, R.id.desc, msg);
 
-        setDetecting(contentView);
+        setStatusDetecting(contentView);
 
         SystemImageService.getInstance()
                 .detectMoveFileConflict(item.getFile(), Stream.of(mSelectedFiles).map(File::new).toList())
@@ -325,9 +318,18 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment implements T
                     if (moveFileDetectResult != null) {
                         List<Pair<File, File>> conflictFiles = moveFileDetectResult.getConflictFiles();
                         List<Pair<File, File>> canMoveFiles = moveFileDetectResult.getCanMoveFiles();
+                        Button btnMoveFile = (Button) contentView.findViewById(R.id.btn_move_file);
+
                         if (conflictFiles.isEmpty()) {
                             setDetectingResultText(contentView, getString(R.string.can_move_all_files, canMoveFiles.size()), colorOk);
+
+                            btnMoveFile.setTextColor(getResources().getColor(R.color.colorAccent));
                         } else {
+
+                            btnMoveFile.setText(getResources().getString(R.string.move_file_d_d,
+                                    mSelectedFiles.size() - conflictFiles.size(), mSelectedFiles.size()));
+                            btnMoveFile.setTextColor(getResources().getColor(R.color.warnning));
+
                             setDetectingResultText(contentView,
                                     getString(R.string.target_directory_exists__d_files_in_the_same_name,
                                             item.getFile().getName(),
@@ -353,14 +355,10 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment implements T
         detectResult.setText(resultText);
     }
 
-    private void setDetecting(View contentView) {
+    private void setStatusDetecting(View contentView) {
 
         // Show detecting info
         ViewUtils.setViewVisibility(contentView, R.id.detect_info_layout, View.VISIBLE);
-
-        ProgressBar progressBar = (ProgressBar) contentView.findViewById(R.id.detect_progress);
-        progressBar.setIndeterminate(true);
-        progressBar.setVisibility(View.VISIBLE);
 
         ((TextView) contentView.findViewById(R.id.detect_progress_desc))
                 .setText(getString(R.string.detecting_move_file_operationg_result));
@@ -377,70 +375,22 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment implements T
         return null;
     }
 
+    boolean mCreateDialog = false;
     @NonNull
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
 
+        if (!mCreateDialog) {
+            return super.onCreateDialog(savedInstanceState);
+        }
         // All later view operation should relative to this content view, butterknife will failed
-        View contentView = createDialogContentView();
+        View contentView = createDialogContentView(null);
 
         return new AlertDialog.Builder(getActivity())
                 .setTitle(R.string.move_selected_files_to)
                 .setView(contentView)
                 .setPositiveButton(R.string.move_file, (dialog, which) -> {
-                    SectionedFolderListAdapter.Item item = getViewItemTag(contentView, R.id.item);
-                    if (item != null) {
-
-                        File destDir = item.getFile();
-                        SystemImageService.getInstance()
-                                .moveFilesToDirectory(destDir, Stream.of(mSelectedFiles).map(File::new).toList(), true, false)
-                                .compose(RxUtils.workAndShow())
-                                .subscribe(moveFileResult -> {
-                                    storePosition(contentView);
-
-                                    if (moveFileResult != null) {
-                                        List<Pair<File, File>> successFiles = moveFileResult.getSuccessFiles();
-                                        List<Pair<File, File>> conflictFiles = moveFileResult.getConflictFiles();
-                                        List<Pair<File, File>> failedFiles = moveFileResult.getFailedFiles();
-
-                                        try {
-                                            EventBus.getDefault().post(
-                                                    new MoveFileResultMessage()
-                                                            .setDestDir(destDir)
-                                                            .setResult(moveFileResult));
-
-                                        } catch (Throwable e) {
-                                            e.printStackTrace();
-                                        }
-
-                                        int successCount = successFiles.size();
-                                        if (successCount == mSelectedFiles.size()) {
-                                            ToastUtils.toastLong(getActivity(),
-                                                    getActivity().getString(R.string.already_moved_d_files, successCount));
-                                        } else {
-                                            Log.w(TAG, "移动文件冲突: " + conflictFiles);
-                                            if (!conflictFiles.isEmpty()) {
-
-                                            } else {
-                                                ToastUtils.toastShort(getActivity(), R.string.move_files_failed);
-                                            }
-
-                                            if (successCount > 0 && successCount < mSelectedFiles.size()) {
-                                                // 部分文件移动失败
-//                                            ToastUtils.toastShort(getActivity(), R.string.move_files_successfully_but_);
-
-                                            } else {
-                                            }
-                                        }
-                                    }
-                                }, throwable -> {
-                                    throwable.printStackTrace();
-                                    if (getActivity() != null) {
-                                        ToastUtils.toastShort(getActivity(), getString(R.string.move_files_failed));
-                                    }
-                                });
-                    }
-
+                    moveFile(contentView);
                 })
                 .setNegativeButton(R.string.cancel, ((dialog, which) -> {
                     storePosition(contentView);
@@ -455,8 +405,8 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment implements T
                 })
                 .create();
 
-        /*
-        return new MaterialDialog.Builder(this.getContext())
+
+        /*return new MaterialDialog.Builder(this.getContext())
                 .title(R.string.move_selected_files_to)
                 .customView(contentView, false)
                 .positiveText(R.string.move_file)
@@ -489,9 +439,64 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment implements T
                 })
                 //                            .adapter(adapter, new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false))
                 .build();
+*/
 
-                */
 
+    }
+
+    private void moveFile(View contentView) {
+        SectionedFolderListAdapter.Item item = getViewItemTag(contentView, R.id.item);
+        if (item != null) {
+
+            File destDir = item.getFile();
+            SystemImageService.getInstance()
+                    .moveFilesToDirectory(destDir, Stream.of(mSelectedFiles).map(File::new).toList(), true, false)
+                    .compose(RxUtils.workAndShow())
+                    .subscribe(moveFileResult -> {
+                        storePosition(contentView);
+
+                        if (moveFileResult != null) {
+                            List<Pair<File, File>> successFiles = moveFileResult.getSuccessFiles();
+                            List<Pair<File, File>> conflictFiles = moveFileResult.getConflictFiles();
+                            List<Pair<File, File>> failedFiles = moveFileResult.getFailedFiles();
+
+                            try {
+                                EventBus.getDefault().post(
+                                        new MoveFileResultMessage()
+                                                .setDestDir(destDir)
+                                                .setResult(moveFileResult));
+
+                            } catch (Throwable e) {
+                                e.printStackTrace();
+                            }
+
+                            int successCount = successFiles.size();
+                            if (successCount == mSelectedFiles.size()) {
+                                ToastUtils.toastLong(getActivity(),
+                                        getActivity().getString(R.string.already_moved_d_files, successCount));
+                            } else {
+                                Log.w(TAG, "移动文件冲突: " + conflictFiles);
+                                if (!conflictFiles.isEmpty()) {
+
+                                } else {
+                                    ToastUtils.toastShort(getActivity(), R.string.move_files_failed);
+                                }
+
+                                if (successCount > 0 && successCount < mSelectedFiles.size()) {
+                                    // 部分文件移动失败
+//                                            ToastUtils.toastShort(getActivity(), R.string.move_files_successfully_but_);
+
+                                } else {
+                                }
+                            }
+                        }
+                    }, throwable -> {
+                        throwable.printStackTrace();
+                        if (getActivity() != null) {
+                            ToastUtils.toastShort(getActivity(), getString(R.string.move_files_failed));
+                        }
+                    });
+        }
     }
 
     private void storePosition(View contentView) {
@@ -550,21 +555,21 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment implements T
     }
 
     @Override
-    public void onAddDialCharacter(String addCharacter) {
+    public void onKeypadAddCharacter(String addCharacter) {
 
     }
 
     @Override
-    public void onDeleteDialCharacter(String deleteCharacter) {
+    public void onKeypadDeleteCharacter(String deleteCharacter) {
 
     }
 
     @Override
-    public void onDialInputTextChanged(String curCharacter) {
+    public void onKeypadInputTextChanged(String curCharacter) {
     }
 
     @Override
-    public void onHideT9TelephoneDialpadView() {
+    public void onKeypadHide() {
 
     }
 

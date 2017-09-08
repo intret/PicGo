@@ -30,4 +30,6 @@
     <dimen name="margin_right">4dp</dimen>
     <dimen name="margin_top">4dp</dimen>
     <dimen name="margin_bottom">4dp</dimen>
+    <dimen name="bottom_dialog_title_text_size">16sp</dimen>
+    <dimen name="dialog_standard_content_margin">16dp</dimen>
 </resources>

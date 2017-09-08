@@ -99,7 +99,7 @@ import cn.intret.app.picgo.utils.PathUtils;
 import cn.intret.app.picgo.utils.RxUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
-import cn.intret.app.picgo.view.T9TelephoneDialpadView;
+import cn.intret.app.picgo.view.T9KeypadView;
 import cn.intret.app.picgo.widget.RecyclerItemTouchListener;
 import cn.intret.app.picgo.widget.SectionDecoration;
 import io.reactivex.Observable;
@@ -118,8 +118,8 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     @BindView(R.id.floatingToolbar) Toolbar mFloatingToolbar;
 //    @BindView(R.id.fab) FloatingActionButton mFab;
 
-    @BindView(R.id.t9pad_container_layout) ViewGroup mKeypadContainer;
-    @BindView(R.id.t9_telephone_dialpad_layout) T9TelephoneDialpadView mKeypad;
+    @BindView(R.id.t9_keypad_container) ViewGroup mKeypadContainer;
+    @BindView(R.id.t9_keypad) T9KeypadView mKeypad;
     @BindView(R.id.keyboard_switch_layout) ViewGroup mKeypadSwitchLayout;
     @BindView(R.id.keyboard_switch_image_view) ImageView mKeypadSwitch;
 
@@ -1735,10 +1735,13 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
 
     private void showMoveFileDialog() {
+
         List<ImageListAdapter.Item> selectedItems = mCurrentImageAdapter.getSelectedItems();
-        List<File> selectedFiles = Stream.of(selectedItems).map(ImageListAdapter.Item::getFile).toList();
-        showMoveFileFragmentDialog(new ArrayList<>(
-                Stream.of(selectedFiles).map(File::getAbsolutePath).toList()));
+        List<String> selectedFiles = Stream.of(selectedItems)
+                .map(ImageListAdapter.Item::getFile)
+                .map(File::getAbsolutePath)
+                .toList();
+        showMoveFileFragmentDialog(new ArrayList<>(selectedFiles));
 
         /*SystemImageService.getInstance()
                 .loadFolderListModel(true)

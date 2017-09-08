@@ -15,4 +15,5 @@
     <color name="grey">#FFBEBEBE</color>
     <color name="transparent">#00FFFFFF</color>
     <color name="grey21_transparent">#D0363636</color>
+    <color name="warnning">#DC8900</color>
 </resources>
