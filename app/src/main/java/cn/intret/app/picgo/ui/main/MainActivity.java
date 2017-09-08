@@ -25,12 +25,15 @@ import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.PopupWindow;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -549,16 +552,15 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         mToolbar = (Toolbar) findViewById(R.id.my_toolbar);
         setSupportActionBar(mToolbar);
 
-        mToolbar.setNavigationOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
-        });
+        mToolbar.setNavigationOnClickListener(v -> finish());
 
         mToolbar.setOnMenuItemClickListener(item -> {
 
             switch (item.getItemId()) {
+                case R.id.app_bar_recent: {
+                    showRecentHistory();
+                }
+                    break;
                 case R.id.app_bar_search:
                     ToastUtils.toastShort(MainActivity.this, "search");
                     break;
@@ -574,6 +576,25 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
             return true;
         });
+    }
+
+    private void showRecentHistory() {
+        PopupMenu popupMenu = new PopupMenu(this, mToolbar,  Gravity.RIGHT);
+        Menu menu = popupMenu.getMenu();
+        for (int i = 0; i < mRecentHistory.size(); i++) {
+            File file = mRecentHistory.get(i);
+            MenuItem menuItem = menu.add(file.getName());
+            menuItem.setIcon(R.drawable.ic_move_to_folder);
+            menuItem.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                @Override
+                public boolean onMenuItemClick(MenuItem item) {
+                    showImageList(file);
+                    return true;
+                }
+            });
+        }
+
+        popupMenu.show();
     }
 
     private void initDrawer() {
@@ -1443,12 +1464,22 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         return Stream.of(images).map(image -> new ImageListAdapter.Item().setFile(image.getFile())).toList();
     }
 
+    List<File> mRecentHistory = new LinkedList<>();
+
     private void showImageListAdapter(ImageListAdapter adapter) {
 
-        adapter.setOnInteractionListener(this);
+        // Save recent accessed folder
+        int i1 = org.apache.commons.collections4.ListUtils.indexOf(mRecentHistory, file -> file.equals(adapter.getDirectory()));
+        if (i1 != -1) {
+            mRecentHistory.remove(i1);
+        }
+        mRecentHistory.add(0, adapter.getDirectory());
 
+        // Update action bar title for new shown adapter
         updateActionBarTitleCount(adapter, adapter.getSelectedCount());
 
+        // Setup adapter
+        adapter.setOnInteractionListener(this);
         if (mCurrentImageAdapter != null) {
             int i = ((GridLayoutManager) mImageList.getLayoutManager()).findFirstVisibleItemPosition();
             mCurrentImageAdapter.saveFirstVisibleItemPosition(i);
