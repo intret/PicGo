@@ -2,7 +2,7 @@ package cn.intret.app.picgo.model;
 
 
 import android.content.Context;
-import android.text.TextUtils;
+import android.support.annotation.Nullable;
 import android.util.Log;
 import android.util.Pair;
 
@@ -36,6 +36,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import cn.intret.app.picgo.app.CoreModule;
 import cn.intret.app.picgo.utils.DateTimeUtils;
@@ -59,6 +61,11 @@ public class SystemImageService {
                 lname.endsWith(".avi");
     };
 
+    /**
+     * 文件列表项获取的缩略图个数
+     */
+    public static final int DEFAULT_THUMBNAIL_COUNT = 3;
+
     HashMap<String, List<Image>> mImageListMap = new LinkedHashMap<>();
     HashMap<String, List<ImageGroup>> mDayImageGroupsMap = new LinkedHashMap<>();
     HashMap<String, List<ImageGroup>> mWeekImageGroupsMap = new LinkedHashMap<>();
@@ -81,48 +88,61 @@ public class SystemImageService {
     Context mContext;
 
     FolderModel mFolderModel;
+    ReadWriteLock mFolderModelRWLock = new ReentrantReadWriteLock();
 
     /*
      * 文件夹列表
      */
 
     public int getFolderListCount() {
-        if (mFolderModel == null) {
-            loadGalleryFolderList().subscribe(folderInfos -> {
+        try {
+            mFolderModelRWLock.readLock().lock();
+            if (mFolderModel == null) {
+                loadGalleryFolderList().subscribe(folderInfos -> {
 
-            });
-            return mFolderModel.getParentFolderInfos().size();
-        } else {
-            return mFolderModel.getParentFolderInfos().size();
+                });
+                return mFolderModel.getParentFolderInfos().size();
+            } else {
+                return mFolderModel.getParentFolderInfos().size();
+            }
+        } finally {
+            mFolderModelRWLock.readLock().unlock();
         }
     }
 
+    @Deprecated
     public int getSectionForPosition(int position) {
-        if (mFolderModel == null) {
-            return 0;
-        } else {
+        try {
 
-            int begin = 0;
-            int end = 0;
-            List<FolderModel.ParentFolderInfo> parentFolderInfos = mFolderModel.getParentFolderInfos();
-            for (int sectionIndex = 0; sectionIndex < parentFolderInfos.size(); sectionIndex++) {
-                FolderModel.ParentFolderInfo parentFolderInfo = parentFolderInfos.get(sectionIndex);
-                int size = parentFolderInfo.getFolders().size();
+            mFolderModelRWLock.readLock().lock();
+            if (mFolderModel == null) {
+                return 0;
+            } else {
 
-                end += size;
+                int begin = 0;
+                int end = 0;
+                List<FolderModel.ParentFolderInfo> parentFolderInfos = mFolderModel.getParentFolderInfos();
+                for (int sectionIndex = 0; sectionIndex < parentFolderInfos.size(); sectionIndex++) {
+                    FolderModel.ParentFolderInfo parentFolderInfo = parentFolderInfos.get(sectionIndex);
+                    int size = parentFolderInfo.getFolders().size();
 
-                if (position >= begin && position < end) {
-                    Log.d(TAG, "getSectionForPosition: position " + position + " to section " + sectionIndex);
-                    return sectionIndex;
+                    end += size;
+
+                    if (position >= begin && position < end) {
+                        Log.d(TAG, "getSectionForPosition: position " + position + " to section " + sectionIndex);
+                        return sectionIndex;
+                    }
+
+                    begin += size;
                 }
 
-                begin += size;
+                throw new InvalidParameterException(
+                        String.format(Locale.getDefault(),
+                                "Invalid parameter 'position' value '%d', exceeds total item size %d", position, begin));
+
             }
-
-            throw new InvalidParameterException(
-                    String.format(Locale.getDefault(),
-                            "Invalid parameter 'position' value '%d', exceeds total item size %d", position, begin));
-
+        } finally {
+            mFolderModelRWLock.readLock().unlock();
         }
     }
 
@@ -135,15 +155,9 @@ public class SystemImageService {
                     }
 
                     // The variable 'model' is a copy of original model, we can modify it.
-                    FolderModel.ParentFolderInfo parentFolderInfo = model.getParentFolderInfos().get(0);
-                    FolderModel.ParentFolderInfo parentFolderInfo1 = model.getParentFolderInfos().get(1);
-
                     filterModelByT9NumberInput(model, t9NumberInput);
 
-                    model.setFilterResult(true);
-                    parentFolderInfo = model.getParentFolderInfos().get(0);
-                    parentFolderInfo1 = model.getParentFolderInfos().get(1);
-
+                    model.setT9FilterMode(true);
                     return model;
                 });
     }
@@ -183,13 +197,19 @@ public class SystemImageService {
                 emitter -> {
 
                     if (fromCacheFirst) {
-                        if (mFolderModel != null) {
+                        try {
 
-                            FolderModel clone = (FolderModel) mFolderModel.clone();
-                            Log.d(TAG, "loadFolderListModel: get clone " + clone + " of " + mFolderModel);
-                            emitter.onNext(clone);
-                            emitter.onComplete();
-                            return;
+                            mFolderModelRWLock.readLock().lock();
+                            if (mFolderModel != null) {
+
+                                FolderModel clone = (FolderModel) mFolderModel.clone();
+                                Log.d(TAG, "loadFolderListModel: get clone " + clone + " of " + mFolderModel);
+                                emitter.onNext(clone);
+                                emitter.onComplete();
+                                return;
+                            }
+                        } finally {
+                            mFolderModelRWLock.readLock().unlock();
                         }
                     }
 
@@ -205,9 +225,17 @@ public class SystemImageService {
                     List<File> pictureSubFolders = getSortedSubDirectories(picturesDir);
                     addParentFolderInfo(folderModel, picturesDir, pictureSubFolders);
 
-                    mFolderModel = folderModel;
 
-                    emitter.onNext((FolderModel) mFolderModel.clone());
+                    FolderModel cloneModel;
+                    try {
+                        mFolderModelRWLock.writeLock().lock();
+                        mFolderModel = folderModel;
+                        cloneModel = (FolderModel) mFolderModel.clone();
+                    } finally {
+                        mFolderModelRWLock.writeLock().unlock();
+                    }
+
+                    emitter.onNext(cloneModel);
                     emitter.onComplete();
                 });
     }
@@ -243,7 +271,7 @@ public class SystemImageService {
         });
     }
 
-    private List<File> getThumbnailListOfDir(File[] files, final int thumbnailCount) {
+    private List<File> createThumbnailList(File[] files, final int thumbnailCount) {
         // TODO: filter image
 
         List<File> thumbFileList = null;
@@ -266,11 +294,11 @@ public class SystemImageService {
 
         for (int i = 0, s = mediaFolders.size(); i < s; i++) {
             File folder = mediaFolders.get(i);
-            subFolders.add(imageFolderOfDir(folder));
+            subFolders.add(createImageFolder(folder));
         }
 
         // The last item is parent folder, because it  may contains image files.
-        subFolders.add(imageFolderOfDir(dir));
+        subFolders.add(createImageFolder(dir));
 
         parentFolderInfo.setFile(dir);
         parentFolderInfo.setName(dir.getName());
@@ -279,16 +307,69 @@ public class SystemImageService {
         model.addFolderSection(parentFolderInfo);
     }
 
-    private ImageFolder imageFolderOfDir(File folder) {
-        // todo merge with getThumbnailListOfDir
+    private ImageFolder createImageFolder(File folder) {
+        // todo merge with createThumbnailList
         File[] imageFiles = folder.listFiles(MEDIA_FILENAME_FILTER);
 
         return new ImageFolder()
                 .setFile(folder)
                 .setName(folder.getName())
                 .setCount(imageFiles == null ? 0 : imageFiles.length)
-                .setThumbList(getThumbnailListOfDir(imageFiles, 3));
+                .setThumbList(createThumbnailList(imageFiles, DEFAULT_THUMBNAIL_COUNT));
 
+    }
+
+    public Observable<List<File>> rescanDirectoryThumbnailList(File dir) {
+        return Observable.create(e -> {
+            File[] imageFiles = dir.listFiles(MEDIA_FILENAME_FILTER);
+            List<File> thumbnailList = createThumbnailList(imageFiles, DEFAULT_THUMBNAIL_COUNT);
+
+            try {
+                mFolderModelRWLock.writeLock().lock();
+                if (updateFileModelThumbnailList(mFolderModel, dir, thumbnailList)) {
+                    Log.d(TAG, "已经更新目录缩略图列表：" + dir);
+                     mBus.post(new RescanFolderThumbnailListMessage()
+                             .setDirectory(dir)
+                             .setThumbnails(thumbnailList)
+                     );
+                } else {
+                    Log.e(TAG, "更新目录缩略图列表失败或者无需更新：" + dir);
+                }
+            } finally {
+                mFolderModelRWLock.writeLock().unlock();
+            }
+            e.onNext(thumbnailList);
+            e.onComplete();
+        });
+    }
+
+    private boolean updateFileModelThumbnailList(FolderModel folderModel, File dir, List<File> thumbnailList) {
+        ImageFolder imageFolder = getFileModelImageFolder(folderModel, dir);
+        if (imageFolder != null) {
+            if (org.apache.commons.collections4.ListUtils.isEqualList(imageFolder.getThumbList(), thumbnailList)) {
+                Log.w(TAG, "updateFileModelThumbnailList: two thumbnail list ((cache one and new one) ) are equal, don't update");
+                return false;
+            }
+            imageFolder.setThumbList(thumbnailList);
+            return true;
+        }
+        return false;
+    }
+
+    @Nullable
+    private ImageFolder getFileModelImageFolder(FolderModel folderModel, File dir) {
+        ImageFolder imageFolder;List<FolderModel.ParentFolderInfo> parentFolderInfos = folderModel.getParentFolderInfos();
+        for (int i = 0, parentFolderInfosSize = parentFolderInfos.size(); i < parentFolderInfosSize; i++) {
+            FolderModel.ParentFolderInfo parentFolderInfo = parentFolderInfos.get(i);
+            List<ImageFolder> folders = parentFolderInfo.getFolders();
+            for (int i1 = 0, foldersSize = folders.size(); i1 < foldersSize; i1++) {
+                imageFolder = folders.get(i1);
+                if (imageFolder.getFile().equals(dir)) {
+                    return imageFolder;
+                }
+            }
+        }
+        return null;
     }
 
     private void cacheImageGroupList(GroupMode mode) {
@@ -582,9 +663,15 @@ public class SystemImageService {
     }
 
     public String getSectionFileName(int position) {
-        int sectionForPosition = getSectionForPosition(position);
-        FolderModel.ParentFolderInfo parentFolderInfo = mFolderModel.getParentFolderInfos().get(sectionForPosition);
-        return parentFolderInfo.getName();
+        try {
+            mFolderModelRWLock.readLock().lock();
+
+            int sectionForPosition = getSectionForPosition(position);
+            FolderModel.ParentFolderInfo parentFolderInfo = mFolderModel.getParentFolderInfos().get(sectionForPosition);
+            return parentFolderInfo.getName();
+        } finally {
+            mFolderModelRWLock.readLock().unlock();
+        }
     }
 
     void removeCachedFiles(String dirPath, List<File> files) {
@@ -678,6 +765,12 @@ public class SystemImageService {
         });
     }
 
+    /**
+     * Remove file.
+     * Generate {@link RemoveFileMessage} event.
+     * @param file
+     * @return
+     */
     public Observable<Boolean> removeFile(File file) {
         return Observable.create(e -> {
             if (file == null) {
@@ -724,7 +817,7 @@ public class SystemImageService {
 
             if (!parentFolderInfos.isEmpty()) {
                 FolderModel.ParentFolderInfo parentFolderInfo = parentFolderInfos.get(0);
-                parentFolderInfo.getFolders().add(0, imageFolderOfDir(dir));
+                parentFolderInfo.getFolders().add(0, createImageFolder(dir));
 
                 mBus.post(new FolderModelChangeMessage());
             }
@@ -757,23 +850,24 @@ public class SystemImageService {
             FileUtils.deleteDirectory(dir);
 
 
-            Stream.of(mFolderModel.getParentFolderInfos())
-                    .forEach(parentFolderInfo -> {
-                        List<ImageFolder> folders = parentFolderInfo.getFolders();
-                        int i = org.apache.commons.collections4.ListUtils.indexOf(folders, new Predicate<ImageFolder>() {
-                            @Override
-                            public boolean evaluate(ImageFolder object) {
-                                return SystemUtils.isSameFile(object.getFile(), dir);
+            try {
+                mFolderModelRWLock.writeLock().lock();
+                Stream.of(mFolderModel.getParentFolderInfos())
+                        .forEach(parentFolderInfo -> {
+                            List<ImageFolder> folders = parentFolderInfo.getFolders();
+                            int i = org.apache.commons.collections4.ListUtils.indexOf(folders,
+                                    object -> SystemUtils.isSameFile(object.getFile(), dir));
+
+                            if (i != -1) {
+                                Log.d(TAG, "removeFolder: remove folder at " + i);
+                                parentFolderInfo.getFolders().remove(i);
                             }
                         });
 
-                        if (i != -1) {
-                            Log.d(TAG, "removeFolder: remove folder at " + i);
-                            parentFolderInfo.getFolders().remove(i);
-                        }
-                    });
-
-            mBus.post(new FolderModelChangeMessage());
+                mBus.post(new FolderModelChangeMessage());
+            } finally {
+                mFolderModelRWLock.writeLock().unlock();
+            }
 
             e.onNext(true);
             e.onComplete();

@@ -1,14 +1,12 @@
 package cn.intret.app.picgo.ui.adapter;
 
 import android.content.res.Resources;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.SpannableString;
-import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
 import android.util.Log;
@@ -98,7 +96,6 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             notifyItemChanged(getAbsolutePosition(sectionIndex, itemIndex));
         }
     }
-
 
     enum ItemType {
         HEADER,
@@ -266,15 +263,26 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         diffResult.dispatchUpdatesTo(this);
     }
 
-    public void updateThumbList(String dir) {
-        if (dir == null) {
+    public void updateThumbList(File directory, List<File> thumbnails) {
+        if (directory == null || thumbnails == null) {
             return;
         }
-        for (Section section : mSections) {
-            List<Item> items = section.getItems();
-            for (int i = 0, itemsSize = items.size(); i < itemsSize; i++) {
-                Item item = items.get(i);
 
+        for (int secIndex = 0, mSectionsSize = mSections.size(); secIndex < mSectionsSize; secIndex++) {
+            Section section = mSections.get(secIndex);
+            List<Item> items = section.getItems();
+            for (int itemIndex = 0, itemsSize = items.size(); itemIndex < itemsSize; itemIndex++) {
+                Item item = items.get(itemIndex);
+                if (item.getFile().equals(directory)) {
+                    item.setThumbList(thumbnails);
+                    if (mRecyclerView != null) {
+                        RecyclerView.ViewHolder vh = mRecyclerView.findViewHolderForAdapterPosition(getAbsolutePosition(secIndex, itemIndex));
+                        if (vh != null && vh instanceof SectionedFolderListAdapter.ItemViewHolder) {
+                            updateThumbList((ItemViewHolder) vh, item, true);
+                        }
+                    }
+                    return;
+                }
             }
         }
     }
@@ -806,6 +814,13 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 //        vh.setSelectedCountText(item.getSelectedCount(), item.getCount());
 
         // Thumbnail image list
+        updateThumbList(vh, item, false);
+    }
+
+    private void updateThumbList(ItemViewHolder vh, Item item, boolean forceUpdate) {
+        if (forceUpdate) {
+            item.setAdapter(null);
+        }
         if (item.getAdapter() == null) {
             HorizontalImageListAdapter adapter = new HorizontalImageListAdapter(filesToItems(item.getThumbList()));
 

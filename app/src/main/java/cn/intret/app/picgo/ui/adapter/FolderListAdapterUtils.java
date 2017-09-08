@@ -20,7 +20,7 @@ public class FolderListAdapterUtils {
             sections.add(parentFolderToItem(parentFolderInfos.get(i)));
         }
 
-        return new SectionedFolderListAdapter(sections).setShowInFilterMode(model.isFilterResult());
+        return new SectionedFolderListAdapter(sections).setShowInFilterMode(model.isT9FilterMode());
     }
 
     private static SectionedFolderListAdapter.Section parentFolderToItem(FolderModel.ParentFolderInfo parentFolderInfo) {

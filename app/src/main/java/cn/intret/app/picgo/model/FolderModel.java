@@ -1,28 +1,25 @@
 package cn.intret.app.picgo.model;
 
-import org.apache.commons.collections4.ListUtils;
-
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-
-import cn.intret.app.picgo.ui.main.MoveFileDialogFragment;
 
 /**
  * 图片文件夹数据模型，包含多个文件夹。
  */
 public class FolderModel implements Cloneable {
 
-    boolean mIsFilterResult = false;
+    /**
+     * 数据模型是否是使用 T9 过滤得到的结果
+     */
+    boolean mIsT9FilterMode = false;
 
-    public boolean isFilterResult() {
-        return mIsFilterResult;
+    public boolean isT9FilterMode() {
+        return mIsT9FilterMode;
     }
 
-    public FolderModel setFilterResult(boolean filterResult) {
-        mIsFilterResult = filterResult;
+    public FolderModel setT9FilterMode(boolean t9FilterMode) {
+        mIsT9FilterMode = t9FilterMode;
         return this;
     }
 
