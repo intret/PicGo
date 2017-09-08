@@ -97,6 +97,43 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         }
     }
 
+    public void selectItem(File dir) {
+        if (dir == null) {
+            return;
+        }
+
+        // Find single selected item and mark it as 'unselected'
+        for (int si = 0, mSectionsSize = mSections.size(); si < mSectionsSize; si++) {
+
+            Section currSec = mSections.get(si);
+            List<Item> items = currSec.getItems();
+
+            // find current selected item index
+            for (int ii = 0, itemsSize = items.size(); ii < itemsSize; ii++) {
+                Item currItem = items.get(ii);
+
+                // Update 'selected' item to 'unselected'
+                if (currItem.isSelected()) {
+                    if (!currItem.getFile().equals(dir)) {
+                        currItem.setSelected(false);
+                    }
+                    // mark as 'unselected'
+                    int absPos = getAbsolutePosition(si, ii);
+                    currItem.setSelected(false);
+                    updateItemViewHolderCheckStatus(absPos, currItem.isSelected());
+                } else {
+                    int absPos = getAbsolutePosition(si, ii);
+                    if (currItem.getFile().equals(dir)) {
+                        currItem.setSelected(true);
+                        updateItemViewHolderCheckStatus(absPos, currItem.isSelected());
+                    }
+                }
+            }
+
+
+        }
+    }
+
     enum ItemType {
         HEADER,
         FOOTER,
@@ -740,7 +777,6 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                                     int absPos = getAbsolutePosition(si, ii);
                                     currItem.setSelected(false);
                                     updateItemViewHolderCheckStatus(absPos, currItem.isSelected());
-                                    break;
                                 }
                             }
 

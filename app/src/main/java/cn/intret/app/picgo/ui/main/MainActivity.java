@@ -33,7 +33,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.PopupWindow;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -582,13 +581,14 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         PopupMenu popupMenu = new PopupMenu(this, mToolbar,  Gravity.RIGHT);
         Menu menu = popupMenu.getMenu();
         for (int i = 0; i < mRecentHistory.size(); i++) {
-            File file = mRecentHistory.get(i);
-            MenuItem menuItem = menu.add(file.getName());
+            File dir = mRecentHistory.get(i);
+            MenuItem menuItem = menu.add(dir.getName());
             menuItem.setIcon(R.drawable.ic_move_to_folder);
             menuItem.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
                 @Override
                 public boolean onMenuItemClick(MenuItem item) {
-                    showImageList(file);
+                    mFolderAdapter.selectItem(dir);
+                    showDirectoryImageList(dir);
                     return true;
                 }
             });
@@ -1173,7 +1173,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 //        }
     }
 
-    public void changeTitle(String name) {
+    public void updateActionBarTitle(String name) {
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setTitle(name);
@@ -1184,7 +1184,8 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     private void showDirectoryImageList(File directory) {
         mCurrentFolder = directory;
 
-        changeTitle(directory.getName());
+        updateActionBarTitle(directory.getName());
+
         if (mGroupMode == GroupMode.DEFAULT) {
             showImageList(directory);
         } else {
@@ -1193,6 +1194,8 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     }
 
     private void showSectionedImageList(File directory, GroupMode groupMode) {
+
+
         if (groupMode == GroupMode.DEFAULT) {
             throw new IllegalStateException("Group mode shouldn't be 'DEFAULT'.");
         }
@@ -1476,6 +1479,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         mRecentHistory.add(0, adapter.getDirectory());
 
         // Update action bar title for new shown adapter
+        updateActionBarTitle(adapter.getDirectory().getName());
         updateActionBarTitleCount(adapter, adapter.getSelectedCount());
 
         // Setup adapter
