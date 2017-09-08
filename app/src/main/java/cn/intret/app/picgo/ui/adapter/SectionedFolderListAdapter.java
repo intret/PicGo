@@ -1,13 +1,17 @@
 package cn.intret.app.picgo.ui.adapter;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -35,14 +39,16 @@ import cn.intret.app.picgo.utils.SystemUtils;
 public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<SectionedViewHolder> {
 
     private static final String TAG = SectionedFolderListAdapter.class.getSimpleName();
+
     private static final String PAYLOAD_KEY_NAME = "name";
     private static final String PAYLOAD_KEY_FILE = "file";
-
     private boolean mEnableItemClick = true;
+
     /*
      * UI options
      */
     boolean mShowHeaderOptionButton = false;
+    boolean mShowInFilterMode = false;
     boolean mIsSelectable = false;
     boolean mIsCollapsable = true;
     boolean mIsMultiSelect = false;
@@ -90,12 +96,12 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
     }
 
 
-
     enum ItemType {
         HEADER,
         FOOTER,
         ITEM
     }
+
     private ItemType getItemType(SectionedFolderListAdapter adapter, int position) {
         boolean header = adapter.isHeader(position);
         boolean footer = adapter.isFooter(position);
@@ -177,7 +183,6 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                             Item oldItem = SectionedFolderListAdapter.this.getItem(oldCoord);
                             Item newItem = newAdapter.getItem(newCoord);
 
-
                             if (StringUtils.equals(oldItem.getName(), newItem.getName()) &&
                                     SystemUtils.isSameFile(oldItem.getFile(), newItem.getFile())) {
                                 // 目录一样，比较缩略图列表
@@ -227,7 +232,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                         Item newItem = newAdapter.getItem(newCoord);
 
                         // 哪一项不一样就只存哪一项
-                        Bundle res = new Bundle();
+                        Bundle payloadBundle = new Bundle();
                         boolean isSameName = StringUtils.equals(oldItem.getName(), newItem.getName());
 
                         // File 不一样会导致缩略图不一样
@@ -239,19 +244,20 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
                         } else {
                             if (!isSameFile) {
-                                res.putString(PAYLOAD_KEY_FILE, newItem.getFile().getAbsolutePath());
+                                payloadBundle.putString(PAYLOAD_KEY_FILE, newItem.getFile().getAbsolutePath());
                             }
                             if (!isSameName) {
-                                res.putString(PAYLOAD_KEY_NAME, newItem.getName());
+                                payloadBundle.putString(PAYLOAD_KEY_NAME, newItem.getName());
                             }
                         }
-                        return res;
+                        return payloadBundle;
                     }
                 }
                 return super.getChangePayload(oldItemPosition, newItemPosition);
             }
         });
 
+        setShowInFilterMode(newAdapter.isShowInFilterMode());
         mSections = newAdapter.getSections();
         diffResult.dispatchUpdatesTo(this);
     }
@@ -382,6 +388,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
     }
 
     public static final int COUNT_NONE = -1;
+
     public static class Item {
         String mName;
         int mSelectedCount = COUNT_NONE;
@@ -389,6 +396,8 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         File mFile;
         List<File> mThumbList;
         boolean mIsSelected;
+        private int mKeywordStartIndex;
+        private int mKeywordLength;
 
         public int getSelectedCount() {
             return mSelectedCount;
@@ -463,6 +472,24 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                     ", mIsSelected=" + mIsSelected +
                     '}';
         }
+
+        public Item setKeywordStartIndex(int keywordStartIndex) {
+            mKeywordStartIndex = keywordStartIndex;
+            return this;
+        }
+
+        public int getKeywordStartIndex() {
+            return mKeywordStartIndex;
+        }
+
+        public Item setKeywordLength(int keywordLength) {
+            mKeywordLength = keywordLength;
+            return this;
+        }
+
+        public int getKeywordLength() {
+            return mKeywordLength;
+        }
     }
 
     public interface OnItemClickListener {
@@ -483,6 +510,15 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
      /*
      * Getter and setter
      */
+
+    public boolean isShowInFilterMode() {
+        return mShowInFilterMode;
+    }
+
+    public SectionedFolderListAdapter setShowInFilterMode(boolean showInFilterMode) {
+        mShowInFilterMode = showInFilterMode;
+        return this;
+    }
 
     public List<Section> getSections() {
         return mSections;
@@ -741,9 +777,27 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         }
 
         vh.check.setVisibility(item.isSelected() ? View.VISIBLE : View.GONE);
-        vh.name.setText(item.getName());
+
+        // Folder name
+        String name = item.getName();
+        if (mShowInFilterMode) {
+            int keywordStartIndex = item.getKeywordStartIndex();
+            if (keywordStartIndex >= 0 && item.getKeywordLength() > 0 && keywordStartIndex < name.length()) {
+
+                SpannableString nameSpan = new SpannableString(name);
+                nameSpan.setSpan(new ForegroundColorSpan(vh.name.getContext().getResources().getColor(R.color.colorAccent)),
+                        keywordStartIndex, keywordStartIndex + item.getKeywordLength(),
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                vh.name.setText(nameSpan);
+            } else {
+                vh.name.setText(name);
+            }
+        } else {
+            vh.name.setText(name);
+        }
         vh.setSelectedCountText(item.getSelectedCount(), item.getCount());
 
+        // Thumbnail image list
         if (item.getAdapter() == null) {
             HorizontalImageListAdapter adapter = new HorizontalImageListAdapter(filesToItems(item.getThumbList()));
 
@@ -763,7 +817,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         if (mRecyclerView != null) {
             RecyclerView.ViewHolder selectedVH = mRecyclerView.findViewHolderForAdapterPosition(absolutePosition);
             if (selectedVH != null && selectedVH instanceof ItemViewHolder) {
-                ((ItemViewHolder) selectedVH).check.setVisibility( selected ? View.VISIBLE : View.GONE);
+                ((ItemViewHolder) selectedVH).check.setVisibility(selected ? View.VISIBLE : View.GONE);
             }
         }
     }

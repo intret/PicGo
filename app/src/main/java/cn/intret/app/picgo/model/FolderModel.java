@@ -15,6 +15,16 @@ import cn.intret.app.picgo.ui.main.MoveFileDialogFragment;
  */
 public class FolderModel implements Cloneable {
 
+    boolean mIsFilterResult = false;
+
+    public boolean isFilterResult() {
+        return mIsFilterResult;
+    }
+
+    public FolderModel setFilterResult(boolean filterResult) {
+        mIsFilterResult = filterResult;
+        return this;
+    }
 
     /**
      * TODO merge with class {@link ImageFolder}

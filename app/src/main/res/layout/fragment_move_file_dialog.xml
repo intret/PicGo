@@ -1,33 +1,48 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:orientation="vertical"
+              xmlns:app="http://schemas.android.com/apk/res-auto"
               xmlns:tools="http://schemas.android.com/tools"
               android:layout_width="match_parent"
-              android:layout_height="match_parent">
+              android:layout_height="match_parent"
+              android:orientation="vertical">
 
     <!--文件夹列表-->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:minHeight="400dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:minHeight="440dp">
 
         <android.support.v7.widget.RecyclerView
             android:id="@+id/folder_list"
-            android:layout_height="match_parent"
             android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:minHeight="440dp"
             tools:listitem="@layout/folder_list_item"
             >
 
         </android.support.v7.widget.RecyclerView>
 
         <!--T9 键盘-->
-        <cn.intret.app.picgo.view.T9TelephoneDialpadView
-            android:id="@+id/t9_telephone_dialpad_layout"
-            android:layout_width="match_parent"
+        <android.support.v7.widget.CardView
+            android:id="@+id/t9pad_container_layout"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
-            android:clickable="true"
-            />
+            android:layout_marginBottom="16dp"
+            android:layout_marginLeft="100dp"
+            android:layout_marginRight="16dp"
+            android:visibility="invisible"
+            app:cardElevation="8dp"
+            tools:visibility="visible"
+            >
+
+            <cn.intret.app.picgo.view.T9TelephoneDialpadView
+                android:id="@+id/t9_telephone_dialpad_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                />
+        </android.support.v7.widget.CardView>
 
     </FrameLayout>
 
@@ -36,61 +51,68 @@
         android:id="@+id/keyboard_switch_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/ghost_white"
+        android:layout_gravity="right"
+        android:background="@null"
         android:gravity="center"
         android:minHeight="@dimen/bottom_tab_height"
-        android:orientation="vertical">
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/desc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:paddingBottom="8dp"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:paddingTop="8dp"
+            tools:text="选中文件将被移动至：Camera"
+            />
 
         <ImageView
             android:id="@+id/keyboard_switch_image_view"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:layout_margin="@dimen/margin"
+            android:layout_marginBottom="@dimen/margin"
+            android:layout_marginLeft="16dp"
+            android:layout_marginRight="16dp"
+            android:layout_marginTop="@dimen/margin"
             android:background="@drawable/keyboard_show_selector"
             android:clickable="true"/>
     </LinearLayout>
 
 
-    <TextView
-        android:id="@+id/desc"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingLeft="16dp"
-        android:paddingRight="16dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
-        tools:text="选中文件将被移动至：Camera"
-        />
-
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:paddingBottom="8dp"
         android:paddingLeft="16dp"
         android:paddingRight="16dp"
         android:paddingTop="8dp"
-        android:paddingBottom="8dp"
         >
 
         <!--冲突检查进度信息-->
         <LinearLayout
             android:id="@+id/detect_info_layout"
-            android:orientation="horizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="horizontal"
             android:visibility="gone"
             >
+
             <ProgressBar
                 android:id="@+id/detect_progress"
                 style="?android:attr/progressBarStyleSmall"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 />
+
             <TextView
                 android:id="@+id/detect_progress_desc"
-                android:layout_marginLeft="4dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginLeft="4dp"
                 tools:text="正在检测文件移动操作可能的结果..."
                 />
         </LinearLayout>

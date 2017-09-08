@@ -48,10 +48,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_gravity="center"
-                android:background="@color/white"
+                android:textSize="14sp"
+                android:background="@drawable/bg_empty"
                 android:hint="@string/t9_keyboard_input_prompt"
                 android:inputType="phone"
-                android:padding="@dimen/padding" />
+                android:padding="0dp"
+                />
         </LinearLayout>
 
         <LinearLayout

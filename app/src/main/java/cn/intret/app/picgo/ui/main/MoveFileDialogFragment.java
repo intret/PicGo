@@ -2,10 +2,8 @@ package cn.intret.app.picgo.ui.main;
 
 import android.app.Dialog;
 import android.content.Context;
-import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
@@ -13,13 +11,11 @@ import android.support.v7.app.AppCompatDialogFragment;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -33,6 +29,7 @@ import org.greenrobot.eventbus.EventBus;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -63,7 +60,7 @@ import io.reactivex.schedulers.Schedulers;
  * Use the {@link MoveFileDialogFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class MoveFileDialogFragment extends AppCompatDialogFragment implements T9TelephoneDialpadView.OnT9TelephoneDialpadView {
+public class MoveFileDialogFragment extends AppCompatDialogFragment implements T9TelephoneDialpadView.OnT9DialpadInteractionHandler {
 
     public static final String TAG = MoveFileDialogFragment.class.getSimpleName();
 
@@ -174,12 +171,13 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment implements T
     }
 
     private void initListener(View contentView) {
+        ViewGroup dialpadContainer = (ViewGroup) contentView.findViewById(R.id.t9pad_container_layout);
         T9TelephoneDialpadView t9TelephoneDialpadView = ((T9TelephoneDialpadView) contentView.findViewById(R.id.t9_telephone_dialpad_layout));
         ImageView keyboardSwitchIv = (ImageView) contentView.findViewById(R.id.keyboard_switch_image_view);
         View keyboardSwitchLayout = contentView.findViewById(R.id.keyboard_switch_layout);
 
-        keyboardSwitchLayout.setOnClickListener(v -> switchKeyboard(t9TelephoneDialpadView, keyboardSwitchIv));
-        keyboardSwitchIv.setOnClickListener(v -> switchKeyboard(t9TelephoneDialpadView, keyboardSwitchIv));
+        keyboardSwitchLayout.setOnClickListener(v -> switchKeyboard(dialpadContainer, keyboardSwitchIv));
+        keyboardSwitchIv.setOnClickListener(v -> switchKeyboard(dialpadContainer, keyboardSwitchIv));
 
 //        mContactsLv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 //
@@ -202,64 +200,45 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment implements T
     }
 
     private void initDialPad(View contentView, SectionedFolderListAdapter listAdapter) {
+        ViewGroup keypadContainer = (ViewGroup) contentView.findViewById(R.id.t9pad_container_layout);
         T9TelephoneDialpadView t9TelephoneDialpadView = (T9TelephoneDialpadView) contentView.findViewById(R.id.t9_telephone_dialpad_layout);
         RecyclerView folderList = (RecyclerView) contentView.findViewById(R.id.folder_list);
 
-        t9TelephoneDialpadView.setOnT9TelephoneDialpadView(new T9TelephoneDialpadView.OnT9TelephoneDialpadView() {
-            @Override
-            public void onAddDialCharacter(String addCharacter) {
 
-            }
+        t9TelephoneDialpadView
+                .getDialpadInputObservable()
+                .debounce(369, TimeUnit.MILLISECONDS)
+                .subscribe(input -> {
+                    Log.d(TAG, "initDialPad: dial");
+                    String inputString = input.toString();
+                    SystemImageService.getInstance()
+                            .loadFolderListModel(true, inputString)
+                            .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
+                            .compose(RxUtils.workAndShow())
+                            .subscribe(newAdapter -> {
 
-            @Override
-            public void onDeleteDialCharacter(String deleteCharacter) {
+                                if (folderList != null) {
+                                    SectionedFolderListAdapter currAdapter = (SectionedFolderListAdapter) folderList.getAdapter();
 
-            }
+                                    currAdapter.diffUpdateItems(newAdapter);
+                                }
+                            }, Throwable::printStackTrace);
+                });
 
-            @Override
-            public void onDialInputTextChanged(String curCharacter) {
-
-                Log.d(TAG, "onDialInputTextChanged() called with: curCharacter = [" + curCharacter + "]");
-
-                SystemImageService.getInstance()
-                        .loadFolderListModel(true, TextUtils.isEmpty(curCharacter) ? null : curCharacter)
-                        .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
-                        .compose(RxUtils.workAndShow())
-                        .subscribe(newAdapter -> {
-
-                            if (folderList != null) {
-                                SectionedFolderListAdapter currAdapter = (SectionedFolderListAdapter) folderList.getAdapter();
-                                currAdapter.diffUpdateItems(newAdapter);
-                            }
-                        }, Throwable::printStackTrace)
-                ;
-
-            }
-
-            @Override
-            public void onHideT9TelephoneDialpadView() {
-
-            }
-        });
-
-//        mKeyboardSwitchLayout = contentView.findViewById(R.id.keyboard_switch_layout);
-//        mKeyboardSwitchIv = (ImageView) contentView.findViewById(R.id.keyboard_switch_image_view);
-//        showKeyboard();
-
-        showKeyboard(t9TelephoneDialpadView, (ImageView) contentView.findViewById(R.id.keyboard_switch_image_view));
+//        showKeyboard(keypadContainer, (ImageView) contentView.findViewById(R.id.keyboard_switch_image_view));
     }
 
-    private void switchKeyboard(T9TelephoneDialpadView t9TelephoneDialpadView, ImageView kbSwitchIv) {
+    private void switchKeyboard(ViewGroup dialpadContainer, ImageView kbSwitchIv) {
 
-        if (ViewUtil.getViewVisibility(t9TelephoneDialpadView) == View.GONE) {
-            showKeyboard(t9TelephoneDialpadView, kbSwitchIv);
+        if (ViewUtil.getViewVisibility(dialpadContainer) != View.VISIBLE) {
+            showKeyboard(dialpadContainer, kbSwitchIv);
         } else {
-            hideKeyboard(t9TelephoneDialpadView, kbSwitchIv);
+            hideKeyboard(dialpadContainer, kbSwitchIv);
         }
     }
 
-    private void hideKeyboard(T9TelephoneDialpadView t9TelephoneDialpadView, ImageView keyboardSwitchIv) {
-        ViewUtil.hideView(t9TelephoneDialpadView);
+    private void hideKeyboard(ViewGroup t9TelephoneDialpadView, ImageView keyboardSwitchIv) {
+        ViewUtil.invisibleView(t9TelephoneDialpadView);
         keyboardSwitchIv
                 .setBackgroundResource(R.drawable.keyboard_show_selector);
     }
@@ -276,7 +255,7 @@ public class MoveFileDialogFragment extends AppCompatDialogFragment implements T
                 .setBackgroundResource(R.drawable.keyboard_hide_selector);
     }
 
-    private void showKeyboard(T9TelephoneDialpadView t9TelephoneDialpadView, ImageView keyboardSwitchIv) {
+    private void showKeyboard(ViewGroup t9TelephoneDialpadView, ImageView keyboardSwitchIv) {
         ViewUtil.showView(t9TelephoneDialpadView);
         keyboardSwitchIv
                 .setBackgroundResource(R.drawable.keyboard_hide_selector);

@@ -158,6 +158,9 @@ dependencies {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
 //    compile 'com.belerweb:pinyin4j:2.5.0'
+    compile 'com.jakewharton.rxrelay2:rxrelay:2.0.0'
+    compile 'com.jakewharton.rxbinding2:rxbinding:2.0.0'
+    compile 'com.jakewharton.rxbinding2:rxbinding-appcompat-v7:2.0.0'
     compile 'de.cketti.share:share-intent-builder:0.0.2'
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
     compile 'com.andkulikov:transitionseverywhere:1.7.4'

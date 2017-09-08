@@ -140,6 +140,7 @@ public class SystemImageService {
 
                     filterModelByT9NumberInput(model, t9NumberInput);
 
+                    model.setFilterResult(true);
                     parentFolderInfo = model.getParentFolderInfos().get(0);
                     parentFolderInfo1 = model.getParentFolderInfos().get(1);
 

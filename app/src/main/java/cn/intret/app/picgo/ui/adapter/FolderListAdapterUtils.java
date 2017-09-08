@@ -20,7 +20,7 @@ public class FolderListAdapterUtils {
             sections.add(parentFolderToItem(parentFolderInfos.get(i)));
         }
 
-        return new SectionedFolderListAdapter(sections);
+        return new SectionedFolderListAdapter(sections).setShowInFilterMode(model.isFilterResult());
     }
 
     private static SectionedFolderListAdapter.Section parentFolderToItem(FolderModel.ParentFolderInfo parentFolderInfo) {
@@ -33,6 +33,8 @@ public class FolderListAdapterUtils {
                                 .map(item -> new SectionedFolderListAdapter.Item()
                                         .setFile(item.getFile())
                                         .setName(item.getName())
+                                        .setKeywordStartIndex(item.getMatchStartIndex())
+                                        .setKeywordLength(item.getMatchLength())
                                         .setCount(item.getCount())
                                         .setThumbList(item.getThumbList())
                                 )
