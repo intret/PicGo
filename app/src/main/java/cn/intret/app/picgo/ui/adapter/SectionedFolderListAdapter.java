@@ -1,5 +1,6 @@
 package cn.intret.app.picgo.ui.adapter;
 
+import android.content.res.Resources;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -11,6 +12,7 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -32,6 +34,8 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.utils.SystemUtils;
+import q.rorbin.badgeview.Badge;
+import q.rorbin.badgeview.QBadgeView;
 
 /**
  * 分段文件夹列表
@@ -292,7 +296,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                     if (mRecyclerView != null) {
                         RecyclerView.ViewHolder vh = mRecyclerView.findViewHolderForAdapterPosition(absolutePosition);
                         if (vh != null && vh instanceof ItemViewHolder) {
-                            ((ItemViewHolder) vh).setSelectedCountText(item.getSelectedCount(), item.getCount());
+                            ((ItemViewHolder) vh).setSelectedCount(item.getSelectedCount());
                         }
                     }
                     return;
@@ -318,7 +322,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                     if (mRecyclerView != null) {
                         RecyclerView.ViewHolder vh = mRecyclerView.findViewHolderForAdapterPosition(absolutePosition);
                         if (vh != null && vh instanceof ItemViewHolder) {
-                            ((ItemViewHolder) vh).setSelectedCountText(item.getSelectedCount(), item.getCount());
+                            ((ItemViewHolder) vh).setSelectedCount(item.getSelectedCount());
                         }
                     }
                     return;
@@ -795,7 +799,11 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         } else {
             vh.name.setText(name);
         }
-        vh.setSelectedCountText(item.getSelectedCount(), item.getCount());
+
+        vh.setSelectedCount(item.getSelectedCount());
+        vh.count.setText(String.valueOf(item.getCount()));
+
+//        vh.setSelectedCountText(item.getSelectedCount(), item.getCount());
 
         // Thumbnail image list
         if (item.getAdapter() == null) {
@@ -909,6 +917,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         @BindView(R.id.name) TextView name;
         @BindView(R.id.count) TextView count;
         @BindView(R.id.thumb_list) RecyclerView thumbList;
+        Badge badge;
         private LinearLayoutManager mLinearLayoutManager;
 
         ItemViewHolder(View itemView) {
@@ -918,6 +927,15 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             // Setup view holder. You'd want some views to be optional, e.g. the
             // header/footer will have views that normal item views do or do not have.
             //itemView.setOnClickListener(this);
+
+            this.badge = new QBadgeView(itemView.getContext())
+                    .bindTarget(thumbList);
+            Resources resources = itemView.getContext().getResources();
+            badge.setBadgeGravity(Gravity.END | Gravity.TOP)
+                    .setExactMode(true)
+                    .setBadgeBackgroundColor(resources.getColor(R.color.colorAccent))
+                    .setBadgeTextColor(resources.getColor(android.R.color.white))
+            ;
         }
 
         @Override
@@ -950,6 +968,15 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             return mLinearLayoutManager;
         }
 
+        public void setSelectedCount(int selectedCount) {
+            if (selectedCount > 0) {
+                badge.setBadgeNumber(selectedCount);
+            } else {
+                badge.hide(false);
+            }
+        }
+
+        @Deprecated
         public void setSelectedCountText(int selectedCount, int count) {
             if (selectedCount == COUNT_NONE || selectedCount == 0) {
                 this.count.setText(String.valueOf(count));
