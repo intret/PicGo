@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--抽屉菜单-->
+<android.support.constraint.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/drawer"
+    android:layout_width="@dimen/main_drawer_width"
+    android:layout_height="match_parent"
+    android:layout_gravity="start"
+    android:background="#FFF"
+    android:orientation="vertical"
+    android:visibility="visible"
+    >
+
+    <!--文件夹列表-->
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/drawer_folder_list"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginBottom="44dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:layout_constraintBottom_creator="1"
+        tools:layout_constraintRight_creator="1"
+        tools:layout_constraintTop_creator="1"
+        tools:listitem="@layout/folder_list_item"
+        tools:visibility="visible">
+    </android.support.v7.widget.RecyclerView>
+
+    <!--T9 键盘-->
+    <android.support.v7.widget.CardView
+        android:id="@+id/t9pad_container_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginBottom="48dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="0dp"
+        android:visibility="invisible"
+        app:cardElevation="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        tools:visibility="visible"
+        >
+
+        <cn.intret.app.picgo.view.T9TelephoneDialpadView
+            android:id="@+id/t9_telephone_dialpad_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            />
+    </android.support.v7.widget.CardView>
+
+    <!--键盘显示开关-->
+    <FrameLayout
+        android:id="@+id/keyboard_switch_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/margin"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="16dp"
+        android:layout_marginTop="@dimen/margin"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/drawer_folder_list"
+
+        >
+
+        <ImageView
+            android:id="@+id/keyboard_switch_image_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:background="@drawable/keyboard_show_selector"
+
+            />
+    </FrameLayout>
+</android.support.constraint.ConstraintLayout>
+
+

@@ -28,6 +28,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RadioGroup;
@@ -62,6 +63,7 @@ import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.model.ConflictResolverDialogFragment;
 import cn.intret.app.picgo.model.RecentOpenFolderListChangeMessage;
@@ -93,8 +95,10 @@ import cn.intret.app.picgo.ui.pref.SettingActivity;
 import cn.intret.app.picgo.utils.DateTimeUtils;
 import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.utils.PathUtils;
+import cn.intret.app.picgo.utils.RxUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
+import cn.intret.app.picgo.view.T9TelephoneDialpadView;
 import cn.intret.app.picgo.widget.RecyclerItemTouchListener;
 import cn.intret.app.picgo.widget.SectionDecoration;
 import io.reactivex.Observable;
@@ -112,6 +116,11 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     @BindView(R.id.view_mode) RadioGroup mModeRadioGroup;
     @BindView(R.id.floatingToolbar) Toolbar mFloatingToolbar;
 //    @BindView(R.id.fab) FloatingActionButton mFab;
+
+    @BindView(R.id.t9pad_container_layout) ViewGroup mKeypadContainer;
+    @BindView(R.id.t9_telephone_dialpad_layout) T9TelephoneDialpadView mKeypad;
+    @BindView(R.id.keyboard_switch_layout) ViewGroup mKeypadSwitchLayout;
+    @BindView(R.id.keyboard_switch_image_view) ImageView mKeypadSwitch;
 
     private int mSpanCount;
 
@@ -164,12 +173,12 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 //        mFloatingToolbar.setClickListener(new FloatingToolbar.ItemClickListener() {
 //            @Override
 //            public void onItemClick(MenuItem item) {
-//                logger.debug(TAG, "onItemClick() called with: item = [" + item + "]");
+//                Log.d(TAG,"onItemClick() called with: item = [" + item + "]");
 //            }
 //
 //            @Override
 //            public void onItemLongClick(MenuItem item) {
-//                logger.debug(TAG, "onItemLongClick() called with: item = [" + item + "]");
+//                Log.d(TAG,"onItemLongClick() called with: item = [" + item + "]");
 //            }
 //        });
 ////        mFloatingToolbar.attachFab(mFab);
@@ -196,7 +205,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
     @Override
     protected void onStart() {
-        logger.debug("onStart: ");
+        Log.d(TAG,"onStart: ");
 
         super.onStart();
 
@@ -214,7 +223,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
     @Override
     protected void onStop() {
-        logger.debug("onStop: ");
+        Log.d(TAG,"onStop: ");
 
 
 //        changeFloatingCount(FloatWindowService.MSG_DECREASE);
@@ -239,7 +248,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         ActivityCompat.setEnterSharedElementCallback(this, new SharedElementCallback() {
             @Override
             public void onMapSharedElements(List<String> names, Map<String, View> sharedElements) {
-                logger.debug(TAG, "enter onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
+                Log.d(TAG,"enter onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
                 super.onMapSharedElements(names, sharedElements);
             }
         });
@@ -249,7 +258,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
             @Override
             public void onMapSharedElements(List<String> names, Map<String, View> sharedElements) {
 
-                logger.debug(TAG, "exit before onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
+                Log.d(TAG,"exit before onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
                 if (mCurrentShownImageIndex != -1) {
                     ImageListAdapter.Item item = mCurrentImageAdapter.getItem(mCurrentShownImageIndex);
                     String filePath = item.getFile().getAbsolutePath();
@@ -279,7 +288,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                         names.add(fileTypeTransitionName);
                     }
                 }
-                logger.debug(TAG, "exit after onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
+                Log.d(TAG,"exit after onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
 
                 super.onMapSharedElements(names, sharedElements);
             }
@@ -290,7 +299,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     private void showConflictDialog(File destDir, List<android.util.Pair<File, File>> conflictFiles) {
 
         if (conflictFiles.isEmpty()) {
-            Log.w(TAG, "showConflictDialog: conflict files is empty" );
+            Log.w(TAG, "showConflictDialog: conflict files is empty");
             return;
         }
 
@@ -347,7 +356,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(CurrentImageChangeMessage message) {
-        logger.debug(TAG, "onEvent() called with: message = [" + message + "]");
+        Log.d(TAG,"onEvent() called with: message = [" + message + "]");
         mCurrentShownImageIndex = message.getPosition();
 
         mImageList.scrollToPosition(mCurrentShownImageIndex);
@@ -407,7 +416,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     }
 
     private void diffUpdateImageListAdapter(ImageListAdapter adapter, boolean fromCacheFirst) {
-        logger.debug("差量更新图片列表 dir={} fromCacheFirst={}", adapter.getDirectory(), fromCacheFirst);
+        Log.d(TAG, String.format("差量更新图片列表 dir=%s fromCacheFirst=%s", adapter.getDirectory(), fromCacheFirst));
 
         File dir = adapter.getDirectory();
         SystemImageService.getInstance()
@@ -586,11 +595,46 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         //mTitle = mDrawerTitle = getTitle();
 
 
+        // DialPad
+        mKeypad.getDialpadInputObservable().subscribe(input -> {
+            SystemImageService.getInstance()
+                    .loadFolderListModel(true, input.toString())
+                    .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
+                    .compose(RxUtils.workAndShow())
+                    .subscribe(newAdapter -> {
+                        
+                        SectionedFolderListAdapter currAdapter = (SectionedFolderListAdapter) mDrawerFolderList.getAdapter();
+                        currAdapter.diffUpdateItems(newAdapter);
+
+                    }, Throwable::printStackTrace);
+        });
+    }
+
+    @OnClick(R.id.keyboard_switch_layout)
+    public void onButtonClickKeypadLayout(View view) {
+        switchKeyboard();
+    }
+
+    @OnClick(R.id.keyboard_switch_image_view)
+    public void onButtonClickKeypadSwitch(View view) {
+        switchKeyboard();
+    }
+
+    private void switchKeyboard() {
+        boolean isVisible = mKeypadContainer.getVisibility() == View.VISIBLE;
+        int v = isVisible ? View.INVISIBLE : View.VISIBLE;
+        mKeypadContainer.setVisibility(v);
+
+        if (isVisible) {
+            mKeypadSwitch.setBackgroundResource(R.drawable.keyboard_show_selector);
+        } else {
+            mKeypadSwitch.setBackgroundResource(R.drawable.keyboard_hide_selector);
+        }
     }
 
     private void loadFolderList() {
         if (mIsFolderListLoaded) {
-            logger.debug(TAG, "loadFolderList: TODO 检查文件列表变化");
+            Log.d(TAG,"loadFolderList: TODO 检查文件列表变化");
         } else {
             // 初始化相册文件夹列表
             SystemImageService.getInstance()
@@ -623,13 +667,13 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
             @Override
             public void onSectionHeaderOptionButtonClick(View v, SectionedFolderListAdapter.Section section, int sectionIndex) {
-                logger.debug(TAG, "onSectionHeaderOptionButtonClick() called with: section = [" + section + "], sectionIndex = [" + sectionIndex + "]");
+                Log.d(TAG,"onSectionHeaderOptionButtonClick() called with: section = [" + section + "], sectionIndex = [" + sectionIndex + "]");
                 showFolderSectionHeaderOptionPopupMenu(v, section);
             }
 
             @Override
             public void onItemClick(SectionedFolderListAdapter.Section sectionItem, int section, SectionedFolderListAdapter.Item item, int relativePos) {
-                logger.debug(TAG, "onItemClick: 显示目录图片 " + item.getFile());
+                Log.d(TAG,"onItemClick: 显示目录图片 " + item.getFile());
                 mDrawerLayout.closeDrawers();
                 showDirectoryImageList(item.getFile());
             }
@@ -707,7 +751,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
                                                 }
                                             }, throwable -> {
-                                                logger.debug(TAG, "新建文件夹失败：" + throwable.getMessage());
+                                                Log.d(TAG,"新建文件夹失败：" + throwable.getMessage());
                                                 ToastUtils.toastLong(MainActivity.this, R.string.create_folder_failed);
                                             });
                                 }
@@ -815,7 +859,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                 .input(getString(R.string.input_new_directory_name), item.getName(),
                         (dlg, input) -> {
                             boolean isValid = !StringUtils.equals(input, item.getName());
-                            logger.debug(TAG, " name " + input + " " + item.getName() + " " + isValid);
+                            Log.d(TAG," name " + input + " " + item.getName() + " " + isValid);
                             MDButton actionButton = dlg.getActionButton(DialogAction.POSITIVE);
                             actionButton.setEnabled(isValid);
                             actionButton.setClickable(isValid);
@@ -872,14 +916,14 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
                     @Override
                     public void onFooter(SectionedRecyclerViewAdapter adapter, ItemCoord coord) {
-                        logger.debug(TAG, "onItemClick: footer clicked");
+                        Log.d(TAG,"onItemClick: footer clicked");
                     }
 
                     @Override
                     public void onItem(SectionedRecyclerViewAdapter adapter, ItemCoord relativePosition) {
                         SectionedFolderListAdapter.Item item = mSectionedFolderListAdapter.getItem(relativePosition);
 
-                        logger.debug(TAG, "onItemClick: 显示 " + item.getFile());
+                        Log.d(TAG,"onItemClick: 显示 " + item.getFile());
 //                        mDrawerLayout.closeDrawers();
                         showDirectoryImageList(item.getFile());
                     }
@@ -907,7 +951,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 //                    .itemsCallback((dialog, itemView, position, text) -> {
 //                        Map.Entry<String, ImageListAdapter> entry = selectionModeAdapters.get(position);
 //                        File directory = entry.getValue().getDirectory();
-//                        logger.debug(TAG, String.format("on menu item selection : move files from '%s' to '%s'", directory, item.getFile()));
+//                        Log.d(TAG,String.format("on menu item selection : move files from '%s' to '%s'", directory, item.getFile()));
 //                    })
 //                    .show();
 
@@ -999,7 +1043,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                 new RecyclerItemTouchListener(
                         this,
                         mDrawerFolderList,
-                        (view, position) -> logger.debug(TAG, "onItemClick() called with: view = [" + view + "], position = [" + position + "]"),
+                        (view, position) -> Log.d(TAG,"onItemClick() called with: view = [" + view + "], position = [" + position + "]"),
                         null
                 )
         );
@@ -1114,12 +1158,12 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
             throw new IllegalStateException("Group mode shouldn't be 'DEFAULT'.");
         }
 
-        logger.debug(TAG, "showSectionedImageList() called with: directory = [" + directory + "], groupMode = [" + groupMode + "]");
+        Log.d(TAG,"showSectionedImageList() called with: directory = [" + directory + "], groupMode = [" + groupMode + "]");
 
         {
             SectionedImageListAdapter listAdapter = getSectionedImageListAdapter(directory, mGroupMode);
             if (listAdapter != null) {
-                logger.debug(TAG, "show cached sectioned list adapter : " + directory.getName());
+                Log.d(TAG,"show cached sectioned list adapter : " + directory.getName());
                 showSectionedImageList(listAdapter);
             } else {
                 SystemImageService.getInstance()
@@ -1134,7 +1178,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                         .compose(workAndShow())
                         .subscribe(adapter -> {
                             putGroupMode(directory, groupMode, adapter);
-                            logger.debug(TAG, "show newly sectioned list adapter : " + directory.getName());
+                            Log.d(TAG,"show newly sectioned list adapter : " + directory.getName());
                             showSectionedImageList(adapter);
                         }, throwable -> {
                             ToastUtils.toastLong(MainActivity.this, R.string.load_pictures_failed);
@@ -1236,7 +1280,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                         long d = file.lastModified();
                         Date date = new Date(d);
 
-                        logger.debug(TAG, "loadAdapterSections() called with: directory = [" + directory + "], mode = [" + mode + "]");
+                        Log.d(TAG,"loadAdapterSections() called with: directory = [" + directory + "], mode = [" + mode + "]");
 
                         switch (mode) {
                             case DAY:
@@ -1318,10 +1362,10 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         mImageList.setLayoutManager(mGridLayout);
         listAdapter.setLayoutManager(mGridLayout);
         if (mImageList.getAdapter() == null) {
-            logger.debug(TAG, "setAdapter() called with: listAdapter = [" + listAdapter + "]");
+            Log.d(TAG,"setAdapter() called with: listAdapter = [" + listAdapter + "]");
             mImageList.setAdapter(listAdapter);
         } else {
-            logger.debug(TAG, "swapAdapter() called with: listAdapter = [" + listAdapter + "]");
+            Log.d(TAG,"swapAdapter() called with: listAdapter = [" + listAdapter + "]");
             mImageList.swapAdapter(listAdapter, false);
         }
         mImageList.addOnItemTouchListener(
@@ -1413,7 +1457,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     private void loadImageList() {
         if (mIsImageListLoaded) {
 
-            logger.debug(TAG, "loadImageList: TODO 检查并更新图片文件");
+            Log.d(TAG,"loadImageList: TODO 检查并更新图片文件");
 
             if (mCurrentImageAdapter != null) {
                 File directory = mCurrentImageAdapter.getDirectory();
@@ -1504,7 +1548,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
         // handle event
         try {
-            logger.debug(TAG, "Clicked item at position " + position + " " + item.getFile() + " " + item.getTransitionName());
+            Log.d(TAG,"Clicked item at position " + position + " " + item.getFile() + " " + item.getTransitionName());
             startImageViewerActivity(item, mCurrentImageAdapter.getDirectory(), view, position);
         } catch (Exception e) {
             Log.e(TAG, "image list item click exception : " + e.getMessage());
@@ -1513,12 +1557,12 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
     @Override
     public void onItemLongClick(ImageListAdapter.Item item) {
-        logger.debug(TAG, "onItemLongClick: " + item);
+        Log.d(TAG,"onItemLongClick: " + item);
     }
 
     @Override
     public void onItemCheckedChanged(ImageListAdapter.Item item) {
-        logger.debug(TAG, "onItemCheckedChanged: " + item);
+        Log.d(TAG,"onItemCheckedChanged: " + item);
     }
 
     private void startImageViewerActivity(ImageListAdapter.Item item, File directory, View view, int position) {
@@ -1573,7 +1617,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
     @Override
     public void onSelectionModeChange(boolean isSelectionMode) {
-        logger.debug(TAG, "onSelectionModeChange: isSelectionMode " + isSelectionMode);
+        Log.d(TAG,"onSelectionModeChange: isSelectionMode " + isSelectionMode);
         if (isSelectionMode) {
             changeFloatingCount(FloatWindowService.MSG_INCREASE);
 
