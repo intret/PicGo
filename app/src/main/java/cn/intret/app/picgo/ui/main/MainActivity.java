@@ -896,7 +896,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                             }
 
                             SystemImageService.getInstance()
-                                    .renameDir(dir, newDirName)
+                                    .renameDirectory(dir, newDirName)
                                     .compose(workAndShow())
                                     .subscribe(aBoolean -> {
                                         if (aBoolean) {

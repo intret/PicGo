@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -328,10 +329,10 @@ public class SystemImageService {
                 mFolderModelRWLock.writeLock().lock();
                 if (updateFileModelThumbnailList(mFolderModel, dir, thumbnailList)) {
                     Log.d(TAG, "已经更新目录缩略图列表：" + dir);
-                     mBus.post(new RescanFolderThumbnailListMessage()
-                             .setDirectory(dir)
-                             .setThumbnails(thumbnailList)
-                     );
+                    mBus.post(new RescanFolderThumbnailListMessage()
+                            .setDirectory(dir)
+                            .setThumbnails(thumbnailList)
+                    );
                 } else {
                     Log.e(TAG, "更新目录缩略图列表失败或者无需更新：" + dir);
                 }
@@ -358,7 +359,8 @@ public class SystemImageService {
 
     @Nullable
     private ImageFolder getFileModelImageFolder(FolderModel folderModel, File dir) {
-        ImageFolder imageFolder;List<FolderModel.ParentFolderInfo> parentFolderInfos = folderModel.getParentFolderInfos();
+        ImageFolder imageFolder;
+        List<FolderModel.ParentFolderInfo> parentFolderInfos = folderModel.getParentFolderInfos();
         for (int i = 0, parentFolderInfosSize = parentFolderInfos.size(); i < parentFolderInfosSize; i++) {
             FolderModel.ParentFolderInfo parentFolderInfo = parentFolderInfos.get(i);
             List<ImageFolder> folders = parentFolderInfo.getFolders();
@@ -735,7 +737,7 @@ public class SystemImageService {
      * 目录管理
      */
 
-    public Observable<Boolean> renameDir(File srcDir, String newDirName) {
+    public Observable<Boolean> renameDirectory(File srcDir, String newDirName) {
         return Observable.create(e -> {
             if (srcDir == null) {
                 throw new IllegalArgumentException("File should not be null");
@@ -756,9 +758,55 @@ public class SystemImageService {
             File destDir = new File(srcDir.getParentFile(), newDirName);
             FileUtils.moveDirectory(srcDir, destDir);
 
-            mBus.post(new RenameDirectoryMessage()
-                    .setOldDirectory(srcDir)
-                    .setNewDirectory(destDir));
+            try {
+                mFolderModelRWLock.writeLock().lock();
+
+                ImageFolder imageFolder;
+                List<FolderModel.ParentFolderInfo> parentFolderInfos = mFolderModel.getParentFolderInfos();
+                boolean found = false;
+                for (int i = 0, parentFolderInfosSize = parentFolderInfos.size(); i < parentFolderInfosSize; i++) {
+                    FolderModel.ParentFolderInfo parentFolderInfo = parentFolderInfos.get(i);
+                    List<ImageFolder> folders = parentFolderInfo.getFolders();
+
+                    for (int i1 = 0, foldersSize = folders.size(); i1 < foldersSize; i1++) {
+                        imageFolder = folders.get(i1);
+                        if (imageFolder.getFile().equals(srcDir)) {
+                            found = true;
+                            imageFolder.setName(newDirName);
+                            imageFolder.setFile(new File(srcDir.getParentFile(), newDirName));
+
+                            Log.d(TAG, "renameDirectory: rename folder [" + srcDir.getName() + "] in cache to new name [" + newDirName + "]");
+
+                            // Notify
+                            mBus.post(new RenameDirectoryMessage()
+                                    .setOldDirectory(srcDir)
+                                    .setNewDirectory(destDir));
+                            break;
+                        }
+                    }
+
+                    if (found) {
+                        List<ImageFolder> sortedImageFolderList = Stream.of(folders)
+                                .sorted((o1, o2) -> StringUtils.compare(o1.getName(), o2.getName()))
+                                .toList();
+                        parentFolderInfo.setFolders(sortedImageFolderList);
+
+                        mBus.post(new RescanFolderListMessage());
+                    }
+                }
+
+                if (!found) {
+                    Log.w(TAG, "renameDirectory: rename director successfully, but update model data failed.");
+
+                    e.onError(new Exception("Cannot found the specified directory : " + srcDir));
+                    return;
+                }
+            } catch (Exception e1) {
+                e1.printStackTrace();
+            } finally {
+                mFolderModelRWLock.writeLock().unlock();
+            }
+
 
             e.onNext(true);
             e.onComplete();
@@ -768,6 +816,7 @@ public class SystemImageService {
     /**
      * Remove file.
      * Generate {@link RemoveFileMessage} event.
+     *
      * @param file
      * @return
      */
