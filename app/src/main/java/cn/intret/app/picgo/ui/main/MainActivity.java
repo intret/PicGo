@@ -103,6 +103,7 @@ import cn.intret.app.picgo.utils.RxUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
 import cn.intret.app.picgo.view.T9KeypadView;
+import cn.intret.app.picgo.widget.EmptyRecyclerView;
 import cn.intret.app.picgo.widget.RecyclerItemTouchListener;
 import cn.intret.app.picgo.widget.SectionDecoration;
 import cn.intret.app.picgo.widget.SuperRecyclerView;
@@ -117,7 +118,9 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     @BindView(R.id.img_list) SuperRecyclerView mImageList;
     @BindView(R.id.empty_view) View mEmptyView;
     @BindView(R.id.drawer_layout) DrawerLayout mDrawerLayout;
-    @BindView(R.id.drawer_folder_list) RecyclerView mFolderList;
+
+    @BindView(R.id.drawer_folder_list) EmptyRecyclerView mFolderList;
+    @BindView(R.id.folder_list_empty_view) View mFolderListEmptyView;
 
     @BindView(R.id.view_mode) RadioGroup mModeRadioGroup;
     @BindView(R.id.floatingToolbar) Toolbar mFloatingToolbar;
@@ -727,6 +730,9 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         if (mIsFolderListLoaded) {
             Log.d(TAG, "loadFolderList: TODO 检查文件列表变化");
         } else {
+
+            mFolderList.setEmptyView(mFolderListEmptyView);
+
             // 初始化相册文件夹列表
             SystemImageService.getInstance()
                     .loadFolderListModel(true)

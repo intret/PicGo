@@ -14,7 +14,7 @@
     >
 
     <!--文件夹列表-->
-    <android.support.v7.widget.RecyclerView
+    <cn.intret.app.picgo.widget.EmptyRecyclerView
         android:id="@+id/drawer_folder_list"
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -28,7 +28,18 @@
         tools:layout_constraintTop_creator="1"
         tools:listitem="@layout/folder_list_item"
         tools:visibility="visible">
-    </android.support.v7.widget.RecyclerView>
+    </cn.intret.app.picgo.widget.EmptyRecyclerView>
+
+    <ImageView
+        android:id="@+id/folder_list_empty_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_ghost"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        />
 
     <!--T9 键盘-->
     <android.support.v7.widget.CardView
