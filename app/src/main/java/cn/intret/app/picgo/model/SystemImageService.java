@@ -1,7 +1,7 @@
 package cn.intret.app.picgo.model;
 
 
-import android.content.Context;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 import android.util.Pair;
@@ -17,7 +17,6 @@ import com.t9search.util.T9Util;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.greenrobot.eventbus.EventBus;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -25,6 +24,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -38,7 +38,6 @@ import java.util.Random;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import cn.intret.app.picgo.app.CoreModule;
 import cn.intret.app.picgo.model.event.FolderModelChangeMessage;
 import cn.intret.app.picgo.model.event.RemoveFileMessage;
 import cn.intret.app.picgo.model.event.RenameDirectoryMessage;
@@ -47,6 +46,7 @@ import cn.intret.app.picgo.model.event.RescanFolderThumbnailListMessage;
 import cn.intret.app.picgo.model.event.RescanImageDirectoryMessage;
 import cn.intret.app.picgo.utils.DateTimeUtils;
 import cn.intret.app.picgo.utils.ListUtils;
+import cn.intret.app.picgo.utils.PathUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
 import io.reactivex.Observable;
 import io.reactivex.schedulers.Schedulers;
@@ -99,9 +99,9 @@ public class SystemImageService extends BaseService {
                 loadGalleryFolderList().subscribe(folderInfos -> {
 
                 });
-                return mFolderModel.getParentFolderInfos().size();
+                return mFolderModel.getContainerFolders().size();
             } else {
-                return mFolderModel.getParentFolderInfos().size();
+                return mFolderModel.getContainerFolders().size();
             }
         } finally {
             mFolderModelRWLock.readLock().unlock();
@@ -119,10 +119,10 @@ public class SystemImageService extends BaseService {
 
                 int begin = 0;
                 int end = 0;
-                List<FolderModel.ParentFolderInfo> parentFolderInfos = mFolderModel.getParentFolderInfos();
-                for (int sectionIndex = 0; sectionIndex < parentFolderInfos.size(); sectionIndex++) {
-                    FolderModel.ParentFolderInfo parentFolderInfo = parentFolderInfos.get(sectionIndex);
-                    int size = parentFolderInfo.getFolders().size();
+                List<FolderModel.ContainerFolder> containerFolders = mFolderModel.getContainerFolders();
+                for (int sectionIndex = 0; sectionIndex < containerFolders.size(); sectionIndex++) {
+                    FolderModel.ContainerFolder containerFolder = containerFolders.get(sectionIndex);
+                    int size = containerFolder.getFolders().size();
 
                     end += size;
 
@@ -144,11 +144,11 @@ public class SystemImageService extends BaseService {
         }
     }
 
-    public Observable<FolderModel> loadFolderListModel(boolean fromCacheFirst, String t9NumberInput) {
-        return loadFolderListModel(fromCacheFirst)
+    public Observable<FolderModel> loadFolderList(boolean fromCacheFirst, String t9NumberInput) {
+        return loadFolderList(fromCacheFirst)
                 .map(model -> {
                     if (StringUtils.isBlank(t9NumberInput)) {
-                        Log.e(TAG, "loadFolderListModel: T9 input is blank, don't filter the folder model.");
+                        Log.e(TAG, "loadFolderList: T9 input is blank, don't filter the folder model.");
                         return model;
                     }
 
@@ -161,7 +161,7 @@ public class SystemImageService extends BaseService {
     }
 
     private void filterModelByT9NumberInput(FolderModel model, String t9Numbers) {
-        for (FolderModel.ParentFolderInfo folderInfo : model.getParentFolderInfos()) {
+        for (FolderModel.ContainerFolder folderInfo : model.getContainerFolders()) {
 
             List<ImageFolder> folders = folderInfo.getFolders();
             {
@@ -190,7 +190,7 @@ public class SystemImageService extends BaseService {
     }
 
 
-    public Observable<FolderModel> loadFolderListModel(boolean fromCacheFirst) {
+    public Observable<FolderModel> loadFolderList(boolean fromCacheFirst) {
         return Observable.create(
                 emitter -> {
 
@@ -201,7 +201,7 @@ public class SystemImageService extends BaseService {
                             if (mFolderModel != null) {
 
                                 FolderModel clone = (FolderModel) mFolderModel.clone();
-                                Log.d(TAG, "loadFolderListModel: get clone " + clone + " of " + mFolderModel);
+                                Log.d(TAG, "loadFolderList: get clone " + clone + " of " + mFolderModel);
                                 emitter.onNext(clone);
                                 emitter.onComplete();
                                 return;
@@ -222,7 +222,6 @@ public class SystemImageService extends BaseService {
                     File picturesDir = SystemUtils.getPicturesDir();
                     List<File> pictureSubFolders = getSortedSubDirectories(picturesDir);
                     addParentFolderInfo(folderModel, picturesDir, pictureSubFolders);
-
 
                     FolderModel cloneModel;
                     try {
@@ -287,7 +286,7 @@ public class SystemImageService extends BaseService {
     }
 
     private void addParentFolderInfo(FolderModel model, File dir, List<File> mediaFolders) {
-        FolderModel.ParentFolderInfo parentFolderInfo = new FolderModel.ParentFolderInfo();
+        FolderModel.ContainerFolder containerFolder = new FolderModel.ContainerFolder();
         List<ImageFolder> subFolders = new LinkedList<>();
 
         for (int i = 0, s = mediaFolders.size(); i < s; i++) {
@@ -295,14 +294,11 @@ public class SystemImageService extends BaseService {
             subFolders.add(createImageFolder(folder));
         }
 
-        // The last item is parent folder, because it  may contains image files.
-        subFolders.add(createImageFolder(dir));
+        containerFolder.setFile(dir);
+        containerFolder.setName(dir.getName());
+        containerFolder.setFolders(subFolders);
 
-        parentFolderInfo.setFile(dir);
-        parentFolderInfo.setName(dir.getName());
-        parentFolderInfo.setFolders(subFolders);
-
-        model.addFolderSection(parentFolderInfo);
+        model.addFolderSection(containerFolder);
     }
 
     private ImageFolder createImageFolder(File folder) {
@@ -313,10 +309,15 @@ public class SystemImageService extends BaseService {
                 .setFile(folder)
                 .setName(folder.getName())
                 .setCount(imageFiles == null ? 0 : imageFiles.length)
-                .setThumbList(createThumbnailList(imageFiles, DEFAULT_THUMBNAIL_COUNT));
+                .setThumbList(createThumbnailList(imageFiles, DEFAULT_THUMBNAIL_COUNT))
+                .setMediaFiles(imageFiles);
 
     }
 
+
+    /**
+     *  扫描目录，产生 {@link RescanFolderThumbnailListMessage} 通知。
+     */
     public Observable<List<File>> rescanDirectoryThumbnailList(File dir) {
         return Observable.create(e -> {
             File[] imageFiles = dir.listFiles(MEDIA_FILENAME_FILTER);
@@ -357,10 +358,10 @@ public class SystemImageService extends BaseService {
     @Nullable
     private ImageFolder getFileModelImageFolder(FolderModel folderModel, File dir) {
         ImageFolder imageFolder;
-        List<FolderModel.ParentFolderInfo> parentFolderInfos = folderModel.getParentFolderInfos();
-        for (int i = 0, parentFolderInfosSize = parentFolderInfos.size(); i < parentFolderInfosSize; i++) {
-            FolderModel.ParentFolderInfo parentFolderInfo = parentFolderInfos.get(i);
-            List<ImageFolder> folders = parentFolderInfo.getFolders();
+        List<FolderModel.ContainerFolder> containerFolders = folderModel.getContainerFolders();
+        for (int i = 0, parentFolderInfosSize = containerFolders.size(); i < parentFolderInfosSize; i++) {
+            FolderModel.ContainerFolder containerFolder = containerFolders.get(i);
+            List<ImageFolder> folders = containerFolder.getFolders();
             for (int i1 = 0, foldersSize = folders.size(); i1 < foldersSize; i1++) {
                 imageFolder = folders.get(i1);
                 if (imageFolder.getFile().equals(dir)) {
@@ -484,6 +485,11 @@ public class SystemImageService extends BaseService {
      * 扫描目录
      */
 
+    /**
+     * 产生 {@link RescanImageDirectoryMessage}
+     * @param destDir
+     * @param onlyCached
+     */
     private void rescanImageDirectory(File destDir, boolean onlyCached) {
 
         boolean loadImageList = false;
@@ -526,7 +532,7 @@ public class SystemImageService extends BaseService {
     }
 
     private void rescanFolderDirectory(File file) {
-        loadFolderListModel(false)
+        loadFolderList(false)
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.io())
                 .subscribe(model -> {
@@ -546,8 +552,11 @@ public class SystemImageService extends BaseService {
             return new LinkedList<>();
         }
 
+        List<File> allFileList = new LinkedList<>(Arrays.asList(allFiles));
+        allFileList.add(directory);
+
         // Long.compare(file2.lastModified(), file.lastModified())
-        return Stream.of(allFiles)
+        return Stream.of(allFileList)
                 .sorted((file1, file2) -> StringUtils.compare(file1.getName(), file2.getName()))
                 .toList();
     }
@@ -645,14 +654,14 @@ public class SystemImageService extends BaseService {
 
     public Observable<List<ImageFolder>> loadGalleryFolderList() {
 
-        return loadFolderListModel(true)
+        return loadFolderList(true)
                 .map(folderModel -> {
-                    List<FolderModel.ParentFolderInfo> parentFolderInfos = folderModel.getParentFolderInfos();
+                    List<FolderModel.ContainerFolder> containerFolders = folderModel.getContainerFolders();
 
                     List<ImageFolder> imageFolderList = new LinkedList<ImageFolder>();
-                    for (int i = 0; i < parentFolderInfos.size(); i++) {
-                        FolderModel.ParentFolderInfo parentFolderInfo = parentFolderInfos.get(i);
-                        List<ImageFolder> folders = parentFolderInfo.getFolders();
+                    for (int i = 0; i < containerFolders.size(); i++) {
+                        FolderModel.ContainerFolder containerFolder = containerFolders.get(i);
+                        List<ImageFolder> folders = containerFolder.getFolders();
                         imageFolderList.addAll(folders);
                     }
 
@@ -666,8 +675,8 @@ public class SystemImageService extends BaseService {
             mFolderModelRWLock.readLock().lock();
 
             int sectionForPosition = getSectionForPosition(position);
-            FolderModel.ParentFolderInfo parentFolderInfo = mFolderModel.getParentFolderInfos().get(sectionForPosition);
-            return parentFolderInfo.getName();
+            FolderModel.ContainerFolder containerFolder = mFolderModel.getContainerFolders().get(sectionForPosition);
+            return containerFolder.getName();
         } finally {
             mFolderModelRWLock.readLock().unlock();
         }
@@ -759,11 +768,11 @@ public class SystemImageService extends BaseService {
                 mFolderModelRWLock.writeLock().lock();
 
                 ImageFolder imageFolder;
-                List<FolderModel.ParentFolderInfo> parentFolderInfos = mFolderModel.getParentFolderInfos();
+                List<FolderModel.ContainerFolder> containerFolders = mFolderModel.getContainerFolders();
                 boolean found = false;
-                for (int i = 0, parentFolderInfosSize = parentFolderInfos.size(); i < parentFolderInfosSize; i++) {
-                    FolderModel.ParentFolderInfo parentFolderInfo = parentFolderInfos.get(i);
-                    List<ImageFolder> folders = parentFolderInfo.getFolders();
+                for (int i = 0, parentFolderInfosSize = containerFolders.size(); i < parentFolderInfosSize; i++) {
+                    FolderModel.ContainerFolder containerFolder = containerFolders.get(i);
+                    List<ImageFolder> folders = containerFolder.getFolders();
 
                     for (int i1 = 0, foldersSize = folders.size(); i1 < foldersSize; i1++) {
                         imageFolder = folders.get(i1);
@@ -787,7 +796,7 @@ public class SystemImageService extends BaseService {
                         List<ImageFolder> sortedImageFolderList = Stream.of(folders)
                                 .sorted((o1, o2) -> StringUtils.compare(o1.getName(), o2.getName()))
                                 .toList();
-                        parentFolderInfo.setFolders(sortedImageFolderList);
+                        containerFolder.setFolders(sortedImageFolderList);
 
                         mBus.post(new RescanFolderListMessage());
                     }
@@ -857,19 +866,19 @@ public class SystemImageService extends BaseService {
 
             FileUtils.forceMkdir(dir);
 
-            List<FolderModel.ParentFolderInfo> parentFolderInfos = Stream.of(mFolderModel.getParentFolderInfos())
+            List<FolderModel.ContainerFolder> containerFolders = Stream.of(mFolderModel.getContainerFolders())
                     .filter(value -> SystemUtils.isSameFile(value.getFile(), dir.getParentFile()))
                     .limit(1)
                     .toList();
 
-            if (!parentFolderInfos.isEmpty()) {
-                FolderModel.ParentFolderInfo parentFolderInfo = parentFolderInfos.get(0);
-                parentFolderInfo.getFolders().add(0, createImageFolder(dir));
+            if (!containerFolders.isEmpty()) {
+                FolderModel.ContainerFolder containerFolder = containerFolders.get(0);
+                containerFolder.getFolders().add(0, createImageFolder(dir));
 
                 mBus.post(new FolderModelChangeMessage());
             }
 
-//            loadFolderListModel(false)
+//            loadFolderList(false)
 //                    .subscribeOn(Schedulers.io())
 //                    .observeOn(Schedulers.io())
 //                    .subscribe(model -> {
@@ -899,15 +908,15 @@ public class SystemImageService extends BaseService {
 
             try {
                 mFolderModelRWLock.writeLock().lock();
-                Stream.of(mFolderModel.getParentFolderInfos())
-                        .forEach(parentFolderInfo -> {
-                            List<ImageFolder> folders = parentFolderInfo.getFolders();
+                Stream.of(mFolderModel.getContainerFolders())
+                        .forEach(containerFolder -> {
+                            List<ImageFolder> folders = containerFolder.getFolders();
                             int i = org.apache.commons.collections4.ListUtils.indexOf(folders,
                                     object -> SystemUtils.isSameFile(object.getFile(), dir));
 
                             if (i != -1) {
                                 Log.d(TAG, "removeFolder: remove folder at " + i);
-                                parentFolderInfo.getFolders().remove(i);
+                                containerFolder.getFolders().remove(i);
                             }
                         });
 
@@ -986,20 +995,64 @@ public class SystemImageService extends BaseService {
         });
     }
 
+    public Observable<DetectFileExistenceResult> detectFileExistence(List<File> selectedFiles) {
+        return Observable.create(e -> {
+            DetectFileExistenceResult result = new DetectFileExistenceResult();
+            try {
+                mFolderModelRWLock.readLock().lock();
+
+                List<FolderModel.ContainerFolder> containerFolders = mFolderModel.getContainerFolders();
+                for (int i = 0, containerFoldersSize = containerFolders.size(); i < containerFoldersSize; i++) {
+                    FolderModel.ContainerFolder containerFolder = containerFolders.get(i);
+                    for (ImageFolder imageFolder : containerFolder.getFolders()) {
+                        List<Pair<File, File>> conflictFiles = intersectMoveFiles(
+                                imageFolder.getFile(),
+                                Arrays.asList(imageFolder.getMediaFiles()), selectedFiles, null);
+                        if (!conflictFiles.isEmpty()) {
+                            result.getExistedFiles()
+                                    .put(imageFolder.getFile(),
+                                            Stream.of(conflictFiles)
+                                                    .map(fileFilePair -> fileFilePair.first)
+                                                    .toList()
+                                    );
+                        }
+                    }
+                }
+
+                e.onNext(result);
+                e.onComplete();
+
+            } catch (Throwable th) {
+                e.onError(th);
+            } finally {
+                mFolderModelRWLock.readLock().unlock();
+            }
+        });
+    }
+
     /**
      * @param destDir
      * @param destDirFiles All the files should in the same directory
      * @param sourceFiles  The files are not always in the same directory.
      * @return
      */
-    private List<Pair<File, File>> intersectMoveFiles(File destDir, final List<File> destDirFiles,
-                                                      final List<File> sourceFiles, List<Pair<File, File>> outCanMoveFiles) {
-        outCanMoveFiles.clear();
+    @NonNull
+    private List<Pair<File, File>> intersectMoveFiles(File destDir,
+                                                      final List<File> destDirFiles,
+                                                      final List<File> sourceFiles,
+                                                      @Nullable List<Pair<File, File>> outCanMoveFiles) {
+        if (outCanMoveFiles != null) {
+            outCanMoveFiles.clear();
+        }
 
         if (destDirFiles.isEmpty()) {
             // No conflict files
             Stream.of(sourceFiles)
-                    .forEach(file -> outCanMoveFiles.add(new Pair<>(new File(destDir, file.getName()), file)));
+                    .forEach(file -> {
+                        if (outCanMoveFiles != null) {
+                            outCanMoveFiles.add(new Pair<>(new File(destDir, file.getName()), file));
+                        }
+                    });
             return new ArrayList<>();
         }
 
@@ -1007,7 +1060,7 @@ public class SystemImageService extends BaseService {
 
         File dir = destDirFiles.get(0).getParentFile();
 
-        List<String> destDirFileNames = Stream.of(destDirFiles).map(File::getName).toList();
+        List<String> destDirFileNames = PathUtils.fileListToPathList(destDirFiles);
         final HashSet<String> destDirFileNameHashSet = new HashSet<String>(destDirFileNames);
 
         for (final File sourceFile : sourceFiles) {
@@ -1018,7 +1071,9 @@ public class SystemImageService extends BaseService {
                 // TODO if the source files are in the same directory, we should uncomment the code below
                 // destDirFileNameHashSet.remove(l);
             } else {
-                outCanMoveFiles.add(new Pair<>(new File(dir, name), sourceFile));
+                if (outCanMoveFiles != null) {
+                    outCanMoveFiles.add(new Pair<>(new File(dir, name), sourceFile));
+                }
             }
         }
         return result;
@@ -1109,10 +1164,13 @@ public class SystemImageService extends BaseService {
         }
     }
 
+    /*
+     * @return Conflict files
+     */
     private List<Pair<File, File>> detectMoveFileConflict(File destDir, List<File> sourceFiles,
-                                                          List<Pair<File, File>> canMoveFiles) {
+                                                          List<Pair<File, File>> outCanMoveFiles) {
         return intersectMoveFiles(destDir, Stream.of(destDir.listFiles()).toList(),
-                sourceFiles, canMoveFiles);
+                sourceFiles, outCanMoveFiles);
 
     }
 

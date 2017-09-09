@@ -411,12 +411,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                 diffUpdateImageListAdapter(adapter, true);
             }
 
-            SystemImageService.getInstance()
-                    .rescanDirectoryThumbnailList(file.getParentFile())
-                    .compose(workAndShow())
-                    .subscribe(files -> {
-
-                    });
+            updateFolderListItemThumbnailList(file.getParentFile());
         }
     }
 
@@ -429,12 +424,17 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void onEvent(RescanImageDirectoryMessage message) {
+
+        Log.d(TAG, "onEvent() called with: message = [" + message + "]");
+
         File dir = message.getDirectory();
 
         ImageListAdapter adapter = mImageListAdapters.get(dir.getAbsolutePath());
         if (adapter != null) {
             diffUpdateImageListAdapter(adapter, true);
         }
+
+        updateFolderListItemThumbnailList(dir);
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -448,7 +448,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
         com.orhanobut.logger.Logger.d("RenameDirectoryMessage " + message);
         File oldDirectory = message.getOldDirectory();
-        mFolderAdapter.renameDirectory(oldDirectory, message.getNewDirectory());
+        //mFolderAdapter.renameDirectory(oldDirectory, message.getNewDirectory());
 
 
         // Update Title & Subtitle
@@ -484,10 +484,10 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         logger.info("差量更新文件夹列表");
 
         SystemImageService.getInstance()
-                .loadFolderListModel(true)
+                .loadFolderList(true)
                 .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
                 .compose(workAndShow())
-                .subscribe(adapter::diffUpdateItems,
+                .subscribe(adapter::diffUpdate,
                         Throwable::printStackTrace);
     }
 
@@ -690,14 +690,14 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         // DialPad
         mKeypad.getDialpadInputObservable().subscribe(input -> {
             SystemImageService.getInstance()
-                    .loadFolderListModel(true, input.toString())
+                    .loadFolderList(true, input.toString())
                     .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
                     .compose(RxUtils.workAndShow())
                     .subscribe(newAdapter -> {
 
                         SectionedFolderListAdapter currAdapter = (SectionedFolderListAdapter) mFolderList.getAdapter();
                         if (currAdapter != null) {
-                            currAdapter.diffUpdateItems(newAdapter);
+                            currAdapter.diffUpdate(newAdapter);
                         }
 
                     }, Throwable::printStackTrace);
@@ -735,7 +735,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
             // 初始化相册文件夹列表
             SystemImageService.getInstance()
-                    .loadFolderListModel(true)
+                    .loadFolderList(true)
                     .compose(workAndShow())
                     .doOnError(Throwable::printStackTrace)
                     .subscribe(this::showFolderList);
@@ -1111,9 +1111,9 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
         List<SectionFolderListAdapter.SectionItem> sectionItems = new LinkedList<>();
 
-        List<FolderModel.ParentFolderInfo> parentFolderInfos = model.getParentFolderInfos();
-        for (int i = 0, s = parentFolderInfos.size(); i < s; i++) {
-            sectionItems.add(folderInfoToItem(parentFolderInfos.get(i)));
+        List<FolderModel.ContainerFolder> containerFolders = model.getContainerFolders();
+        for (int i = 0, s = containerFolders.size(); i < s; i++) {
+            sectionItems.add(folderInfoToItem(containerFolders.get(i)));
         }
 
         SectionFolderListAdapter listAdapter = new SectionFolderListAdapter(sectionItems);
@@ -1151,12 +1151,12 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 //        }
     }
 
-    private SectionFolderListAdapter.SectionItem folderInfoToItem(FolderModel.ParentFolderInfo parentFolderInfo) {
+    private SectionFolderListAdapter.SectionItem folderInfoToItem(FolderModel.ContainerFolder containerFolder) {
         SectionFolderListAdapter.SectionItem sectionItem = new SectionFolderListAdapter.SectionItem();
-        sectionItem.setName(parentFolderInfo.getName());
-        sectionItem.setFile(parentFolderInfo.getFile());
+        sectionItem.setName(containerFolder.getName());
+        sectionItem.setFile(containerFolder.getFile());
         sectionItem.setItems(
-                Stream.of(parentFolderInfo.getFolders())
+                Stream.of(containerFolder.getFolders())
                         .map(item -> new SectionFolderListAdapter.Item()
                                 .setFile(item.getFile())
                                 .setName(item.getName())
@@ -1582,6 +1582,9 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         if (mIsImageListLoaded) {
 
             if (mCurrentImageAdapter != null) {
+
+                updateFolderListItemThumbnailList(mCurrentImageAdapter.getDirectory());
+
                 File directory = mCurrentImageAdapter.getDirectory();
                 if (directory != null) {
                     diffUpdateImageListAdapter(mCurrentImageAdapter, false);
@@ -1652,6 +1655,15 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
 //        mImageList.addItemDecoration(new GridSpacingItemDecoration(mSpanCount,
 //                getResources().getDimensionPixelSize(R.dimen.image_list_item_space), true));
+    }
+
+    private void updateFolderListItemThumbnailList(File directory) {
+        SystemImageService.getInstance()
+                .rescanDirectoryThumbnailList(directory)
+                .compose(workAndShow())
+                .subscribe(files -> {
+
+                });
     }
 
     private ImageListAdapter createImageListAdapter(List<ImageListAdapter.Item> items) {
@@ -1919,7 +1931,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         showMoveFileFragmentDialog(new ArrayList<>(selectedFiles));
 
         /*SystemImageService.getInstance()
-                .loadFolderListModel(true)
+                .loadFolderList(true)
                 .compose(workAndShow())
                 .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
                 .subscribe(adapter -> {

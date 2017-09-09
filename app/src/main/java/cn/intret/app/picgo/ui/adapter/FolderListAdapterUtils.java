@@ -15,21 +15,21 @@ public class FolderListAdapterUtils {
     public static SectionedFolderListAdapter folderModelToSectionedFolderListAdapter(FolderModel model) {
         List<SectionedFolderListAdapter.Section> sections = new LinkedList<>();
 
-        List<FolderModel.ParentFolderInfo> parentFolderInfos = model.getParentFolderInfos();
-        for (int i = 0, s = parentFolderInfos.size(); i < s; i++) {
-            sections.add(parentFolderToItem(parentFolderInfos.get(i)));
+        List<FolderModel.ContainerFolder> containerFolders = model.getContainerFolders();
+        for (int i = 0, s = containerFolders.size(); i < s; i++) {
+            sections.add(parentFolderToItem(containerFolders.get(i)));
         }
 
         return new SectionedFolderListAdapter(sections).setShowInFilterMode(model.isT9FilterMode());
     }
 
-    private static SectionedFolderListAdapter.Section parentFolderToItem(FolderModel.ParentFolderInfo parentFolderInfo) {
+    private static SectionedFolderListAdapter.Section parentFolderToItem(FolderModel.ContainerFolder containerFolder) {
         SectionedFolderListAdapter.Section section = new SectionedFolderListAdapter.Section();
 
-        return section.setName(parentFolderInfo.getName())
-                .setFile(parentFolderInfo.getFile())
+        return section.setName(containerFolder.getName())
+                .setFile(containerFolder.getFile())
                 .setItems(
-                        Stream.of(parentFolderInfo.getFolders())
+                        Stream.of(containerFolder.getFolders())
                                 .map(item -> new SectionedFolderListAdapter.Item()
                                         .setFile(item.getFile())
                                         .setName(item.getName())

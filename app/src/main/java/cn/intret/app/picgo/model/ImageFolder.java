@@ -10,14 +10,27 @@ import java.util.List;
 
 
 /**
- * 图片文件夹模型，也就是这个文件中至少有一张图片。
+ * 图片文件夹数据模型。
  */
 public class ImageFolder implements Cloneable {
+    /**
+     * Folder file
+     */
     File mFile;
+    /*
+     * File count in folder
+     */
     int mCount;
+    /**
+     * Folder name
+     */
     private String mName;
     List<File> mThumbList;
+    File[] mMediaFiles;
 
+    /*
+     * T9 键盘过滤信息
+     */
     PinyinSearchUnit mPinyinSearchUnit;
     private StringBuffer mMatchKeywords;        //Used to save the type of Match Keywords.(name or phoneNumber)
     private int mMatchStartIndex;                //the match start  position of mMatchKeywords in original string(name or phoneNumber).
@@ -34,6 +47,15 @@ public class ImageFolder implements Cloneable {
 
     public ImageFolder setPinyinSearchUnit(PinyinSearchUnit pinyinSearchUnit) {
         mPinyinSearchUnit = pinyinSearchUnit;
+        return this;
+    }
+
+    public File[] getMediaFiles() {
+        return mMediaFiles;
+    }
+
+    public ImageFolder setMediaFiles(File[] mediaFiles) {
+        mMediaFiles = mediaFiles;
         return this;
     }
 

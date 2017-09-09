@@ -26,7 +26,7 @@ public class FolderModel implements Cloneable {
     /**
      * TODO merge with class {@link ImageFolder}
      */
-    public static class ParentFolderInfo implements Cloneable {
+    public static class ContainerFolder implements Cloneable {
         File mFile;
         String mName;
 
@@ -36,7 +36,7 @@ public class FolderModel implements Cloneable {
             return mFolders;
         }
 
-        public ParentFolderInfo setFolders(List<ImageFolder> folders) {
+        public ContainerFolder setFolders(List<ImageFolder> folders) {
             mFolders = folders;
             return this;
         }
@@ -45,7 +45,7 @@ public class FolderModel implements Cloneable {
             return mFile;
         }
 
-        public ParentFolderInfo setFile(File file) {
+        public ContainerFolder setFile(File file) {
             mFile = file;
             return this;
         }
@@ -54,14 +54,14 @@ public class FolderModel implements Cloneable {
             return mName;
         }
 
-        public ParentFolderInfo setName(String name) {
+        public ContainerFolder setName(String name) {
             mName = name;
             return this;
         }
 
         @Override
         public Object clone() throws CloneNotSupportedException {
-            ParentFolderInfo clone = (ParentFolderInfo) super.clone();
+            ContainerFolder clone = (ContainerFolder) super.clone();
             clone.setFile(new File(mFile.getAbsolutePath()));
             if (mFolders != null) {
                 List<ImageFolder> newFolders = new LinkedList<>();
@@ -76,26 +76,26 @@ public class FolderModel implements Cloneable {
         }
     }
 
-    List<ParentFolderInfo> mParentFolderInfos = new LinkedList<>();
+    List<ContainerFolder> mContainerFolders = new LinkedList<>();
 
-    public List<ParentFolderInfo> getParentFolderInfos() {
-        return mParentFolderInfos;
+    public List<ContainerFolder> getContainerFolders() {
+        return mContainerFolders;
     }
 
-    public void addFolderSection(ParentFolderInfo section) {
-        mParentFolderInfos.add(section);
+    public void addFolderSection(ContainerFolder section) {
+        mContainerFolders.add(section);
     }
 
     @Override
     public Object clone() throws CloneNotSupportedException {
         FolderModel clone = (FolderModel) super.clone();
-        if (mParentFolderInfos != null) {
-            List<ParentFolderInfo> parentFolderInfos = new LinkedList<>();
-            for (int i = 0, mParentFolderInfosSize = mParentFolderInfos.size(); i < mParentFolderInfosSize; i++) {
-                ParentFolderInfo parentFolderInfo = mParentFolderInfos.get(i);
-                parentFolderInfos.add((ParentFolderInfo) parentFolderInfo.clone());
+        if (mContainerFolders != null) {
+            List<ContainerFolder> containerFolders = new LinkedList<>();
+            for (int i = 0, mParentFolderInfosSize = mContainerFolders.size(); i < mParentFolderInfosSize; i++) {
+                ContainerFolder containerFolder = mContainerFolders.get(i);
+                containerFolders.add((ContainerFolder) containerFolder.clone());
             }
-            clone.mParentFolderInfos = parentFolderInfos;
+            clone.mContainerFolders = containerFolders;
         }
         return clone;
     }

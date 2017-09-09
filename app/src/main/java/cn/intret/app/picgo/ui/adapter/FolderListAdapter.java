@@ -187,11 +187,13 @@ public class FolderListAdapter extends RecyclerView.Adapter<FolderListAdapter.Vi
                 viewHolder.itemView.setTag(R.id.item, null);
             }
 
+
             holder.name.setText(null);
             holder.count.setText(null);
         }
-        super.onViewRecycled(holder);
-    }
+
+
+        super.onViewRecycled(holder);    }
 
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {

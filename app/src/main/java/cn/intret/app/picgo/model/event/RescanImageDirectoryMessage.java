@@ -17,4 +17,11 @@ public class RescanImageDirectoryMessage {
     public File getDirectory() {
         return mDirectory;
     }
+
+    @Override
+    public String toString() {
+        return "RescanImageDirectoryMessage{" +
+                "mDirectory=" + mDirectory +
+                '}';
+    }
 }

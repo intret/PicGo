@@ -13,7 +13,6 @@ import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.util.Pair;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -28,10 +27,12 @@ import org.greenrobot.eventbus.EventBus;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
+import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.model.ConflictResolverDialogFragment;
 import cn.intret.app.picgo.model.SystemImageService;
@@ -60,7 +61,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
 
     private static final String ARG_SELECTED_FILES = "selected_files";
 
-    private ArrayList<String> mSelectedFiles;
+    private List<File> mSelectedFiles;
 
     private OnFragmentInteractionListener mListener;
 
@@ -71,6 +72,8 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
 
     @BindView(R.id.keyboard_switch_layout) View mKeyboardSwitchLayout;
     @BindView(R.id.keyboard_switch_image_view) ImageView mKeyboardSwitchIv;
+    private SectionedFolderListAdapter mListAdapter;
+
 
     class DialogViews {
         @BindView(R.id.folder_list) public RecyclerView mFolderList;
@@ -105,7 +108,12 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            mSelectedFiles = getArguments().getStringArrayList(ARG_SELECTED_FILES);
+            ArrayList<String> files = getArguments().getStringArrayList(ARG_SELECTED_FILES);
+            if (files == null) {
+                mSelectedFiles = new LinkedList<>();
+            } else {
+                mSelectedFiles = Stream.of(files).map(File::new).toList();
+            }
         }
     }
 
@@ -115,41 +123,81 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
 
         Log.d(TAG, "onCreateView() called with: inflater = [" + inflater + "], container = [" + container + "], savedInstanceState = [" + savedInstanceState + "]");
 
-        return createDialogContentView(container);
+        return createContentView(container);
     }
 
-    private View createDialogContentView(ViewGroup root) {
+    @Override
+    public void onStart() {
+        super.onStart();
+        Log.d(TAG, "onStart() called");
 
-        final View[] views = {null};
         SystemImageService.getInstance()
-                .loadFolderListModel(true)
+                .loadFolderList(true)
                 .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
+                .doOnNext(adapter -> mListAdapter = adapter)
                 .subscribe(adapter -> {
 
-                    View contentView = LayoutInflater.from(getActivity()).inflate(R.layout.fragment_move_file_dialog, root, false);
+                    // Show loaded adapter
+                    mFolderList.setAdapter(mListAdapter);
 
-                    initContentView(contentView, adapter);
+                    // Restore position
+                    int visibleItemPosition = UserDataService.getInstance().getMoveFileDialogFirstVisibleItemPosition();
+                    if (visibleItemPosition != RecyclerView.NO_POSITION) {
+                        mFolderList.scrollToPosition(visibleItemPosition);
+                    }
 
-                    ViewUtil.setHideIme(getActivity(), contentView);
+                    SystemImageService.getInstance()
+                            .detectFileExistence(mSelectedFiles)
+                            .compose(workAndShow())
+                            .subscribe(detectFileExistenceResult -> {
+                                Log.w(TAG, "onStart: 文件冲突 " + detectFileExistenceResult );
 
-                    initListener(contentView);
+                                mListAdapter.diffUpdateConflict(detectFileExistenceResult.getExistedFiles());
 
-                    views[0] = contentView;
-
-//                    showMoveFileDialog(selectedFiles, adapter);
+                            }, Throwable::printStackTrace);
+                }, throwable -> {
+                    ToastUtils.toastShort(MoveFileDialogFragment.this.getActivity(), R.string.load_folder_list_failed);
                 });
 
-        return views[0];
+
+    }
+
+    @Override
+    public void onResume() {
+        Log.d(TAG, "onResume() called");
+        super.onResume();
+    }
+
+    @Override
+    public void onStop() {
+        Log.d(TAG, "onStop() called");
+        super.onStop();
+    }
+
+    @Override
+    public void onDestroyView() {
+        Log.d(TAG, "onDestroyView() called");
+        super.onDestroyView();
+    }
+
+    private View createContentView(ViewGroup root) {
+        View contentView = LayoutInflater.from(getActivity()).inflate(R.layout.fragment_move_file_dialog, root, false);
+        ButterKnife.bind(MoveFileDialogFragment.this, contentView);
+
+        initContentView(contentView);
+
+        ViewUtil.setHideIme(getActivity(), contentView);
+
+        initListener(contentView);
+
+        return contentView;
     }
 
     private void initListener(View contentView) {
         ViewGroup keypadContainer = (ViewGroup) contentView.findViewById(R.id.t9_keypad_container);
-        keypadContainer.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-            @Override
-            public void onFocusChange(View v, boolean hasFocus) {
-                if (!hasFocus) {
-                    keypadContainer.setVisibility(View.INVISIBLE);
-                }
+        keypadContainer.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus) {
+                keypadContainer.setVisibility(View.INVISIBLE);
             }
         });
         T9KeypadView keypadView = ((T9KeypadView) contentView.findViewById(R.id.t9_keypad));
@@ -175,10 +223,10 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
 //        });
     }
 
-    private void initContentView(View contentView, SectionedFolderListAdapter listAdapter) {
+    private void initContentView(View contentView) {
         initHeader(contentView);
-        initFolderList(contentView, listAdapter);
-        initDialPad(contentView, listAdapter);
+        initFolderList(contentView);
+        initDialPad(contentView);
     }
 
     private void initHeader(View contentView) {
@@ -191,7 +239,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
         });
     }
 
-    private void initDialPad(View contentView, SectionedFolderListAdapter listAdapter) {
+    private void initDialPad(View contentView) {
         ViewGroup keypadContainer = (ViewGroup) contentView.findViewById(R.id.t9_keypad_container);
         T9KeypadView t9KeypadView = (T9KeypadView) contentView.findViewById(R.id.t9_keypad);
         RecyclerView folderList = (RecyclerView) contentView.findViewById(R.id.folder_list);
@@ -205,7 +253,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
                     Log.d(TAG, "initDialPad: dial");
                     String inputString = input.toString();
                     SystemImageService.getInstance()
-                            .loadFolderListModel(true, inputString)
+                            .loadFolderList(true, inputString)
                             .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
                             .compose(RxUtils.workAndShow())
                             .subscribe(newAdapter -> {
@@ -213,7 +261,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
                                 if (folderList != null) {
                                     SectionedFolderListAdapter currAdapter = (SectionedFolderListAdapter) folderList.getAdapter();
 
-                                    currAdapter.diffUpdateItems(newAdapter);
+                                    currAdapter.diffUpdate(newAdapter);
                                 }
                             }, Throwable::printStackTrace);
                 });
@@ -254,20 +302,16 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
         keypadSwitchButton.setBackgroundResource(R.drawable.keyboard_hide_selector);
     }
 
-    private void initFolderList(final View contentView, SectionedFolderListAdapter listAdapter) {
+    private void initFolderList(final View contentView) {
         RecyclerView folderList = (RecyclerView) contentView.findViewById(R.id.folder_list);
 
-        folderList.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false));
-        folderList.setAdapter(listAdapter);
+        mFolderList = folderList;
 
-        // Restore position
-        int visibleItemPosition = UserDataService.getInstance().getMoveFileDialogFirstVisibleItemPosition();
-        if (visibleItemPosition != RecyclerView.NO_POSITION) {
-            folderList.scrollToPosition(visibleItemPosition);
-        }
+        folderList.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false));
+
 
         RecyclerItemTouchListener.OnItemClickListener clickListener = (view, position) -> {
-            new SectionedListItemClickDispatcher(listAdapter)
+            new SectionedListItemClickDispatcher<SectionedRecyclerViewAdapter>(mListAdapter)
                     .dispatch(position, new SectionedListItemDispatchListener() {
                         @Override
                         public void onHeader(SectionedRecyclerViewAdapter adapter, ItemCoord coord) {
@@ -296,8 +340,9 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
         RecyclerItemTouchListener.OnItemLongClickListener longClickListener = (view, position) -> {
 
         };
-        folderList.addOnItemTouchListener(new RecyclerItemTouchListener(
-                getActivity(), folderList, clickListener, longClickListener));
+        folderList.addOnItemTouchListener(
+                new RecyclerItemTouchListener(
+                        getActivity(), folderList, clickListener, longClickListener));
     }
 
     private void onClickFolderListItem(SectionedFolderListAdapter.Item item, View contentView) {
@@ -309,7 +354,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
         setStatusDetecting(contentView);
 
         SystemImageService.getInstance()
-                .detectMoveFileConflict(item.getFile(), Stream.of(mSelectedFiles).map(File::new).toList())
+                .detectMoveFileConflict(item.getFile(), mSelectedFiles)
                 .compose(RxUtils.workAndShow())
                 .subscribe(moveFileDetectResult -> {
                     int colorOk = MoveFileDialogFragment.this.getResources().getColor(android.R.color.holo_green_dark);
@@ -376,6 +421,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
     }
 
     boolean mCreateDialog = false;
+
     @NonNull
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
@@ -384,7 +430,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
             return super.onCreateDialog(savedInstanceState);
         }
         // All later view operation should relative to this content view, butterknife will failed
-        View contentView = createDialogContentView(null);
+        View contentView = createContentView(null);
 
         return new AlertDialog.Builder(getActivity())
                 .setTitle(R.string.move_selected_files_to)
@@ -450,7 +496,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
 
             File destDir = item.getFile();
             SystemImageService.getInstance()
-                    .moveFilesToDirectory(destDir, Stream.of(mSelectedFiles).map(File::new).toList(), true, false)
+                    .moveFilesToDirectory(destDir, mSelectedFiles, true, false)
                     .compose(RxUtils.workAndShow())
                     .subscribe(moveFileResult -> {
                         storePosition(contentView);

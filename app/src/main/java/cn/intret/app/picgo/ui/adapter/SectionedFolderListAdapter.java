@@ -17,22 +17,24 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.afollestad.dragselectrecyclerview.DragSelectRecyclerView;
-import com.afollestad.dragselectrecyclerview.IDragSelectAdapter;
 import com.afollestad.sectionedrecyclerview.ItemCoord;
 import com.afollestad.sectionedrecyclerview.SectionedRecyclerViewAdapter;
 import com.afollestad.sectionedrecyclerview.SectionedViewHolder;
+import com.annimon.stream.Stream;
 
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
+import cn.intret.app.picgo.utils.PathUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
 import q.rorbin.badgeview.Badge;
 import q.rorbin.badgeview.QBadgeView;
@@ -44,23 +46,27 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
     private static final String TAG = SectionedFolderListAdapter.class.getSimpleName();
 
-    private static final String PAYLOAD_KEY_NAME = "name";
+    private static final String PAYLOAD_KEY_SECTION_NAME = "name";
     private static final String PAYLOAD_KEY_FILE = "file";
+    private static final String PAYLOAD_KEY_ITEM_NAME = "item_name";
+    private static final String PAYLOAD_KEY_THUMB_LIST = "item_thum_list";
+    private static final String PAYLOAD_KEY_CONFLICT_FILES = "item_conflict_files";
+    private static final String PAYLOAD_KEY_SELECTION = "item_selection";
     private boolean mEnableItemClick = true;
 
     /*
      * UI options
      */
-    boolean mShowHeaderOptionButton = false;
-    boolean mShowInFilterMode = false;
-    boolean mIsSelectable = false;
-    boolean mIsCollapsable = true;
-    boolean mIsMultiSelect = false;
+    private boolean mShowHeaderOptionButton = false;
+    private boolean mShowInFilterMode = false;
+    private boolean mIsSelectable = false;
+    private boolean mIsCollapsable = true;
+    private boolean mIsMultiSelect = false;
 
     /*
      * Data
      */
-    List<Section> mSections = new LinkedList<>();
+    private List<Section> mSections = new LinkedList<>();
     private RecyclerView mRecyclerView;
 
     public Item getItem(ItemCoord relativePosition) {
@@ -153,11 +159,20 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         }
     }
 
-    public void diffUpdateItems(SectionedFolderListAdapter newAdapter) {
+    public void diffUpdateConflict(Map<File, List<File>> existedFiles) {
+
+    }
+
+    /**
+     * 局部刷新更新
+     *
+     * @param newAdapter
+     */
+    public void diffUpdate(SectionedFolderListAdapter newAdapter) {
         int oldItemCount = getItemCount();
         int newItemCount = newAdapter.getItemCount();
 
-        Log.d(TAG, "diffUpdateItems: 计算差异 old " + oldItemCount + " new " + newItemCount);
+        Log.d(TAG, "diffUpdate: 计算差异 old " + oldItemCount + " new " + newItemCount);
 
         DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtil.Callback() {
 
@@ -180,19 +195,38 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                 ItemType newItemType = getItemType(newAdapter, newItemPosition);
 
                 if (oldItemType == newItemType) {
-                    // 类型一样 Section 索引
+                    // 都是 Header 比较 Section 对应的文件
                     if (oldItemType == ItemType.HEADER) {
-                        return oldCoord.section() == newCoord.section();
+                        Section oldSec = mSections.get(oldCoord.section());
+                        Section newSec = newAdapter.getSections().get(newCoord.section());
+
+                        return oldSec.getFile().equals(newSec.getFile());
                     }
 
+                    // 都是 Footer 比较 Section 对应的文件
                     if (oldItemType == ItemType.FOOTER) {
-                        return oldCoord.section() == newCoord.section();
+                        Section oldSec = mSections.get(oldCoord.section());
+                        Section newSec = newAdapter.getSections().get(newCoord.section());
+
+                        return oldSec.getFile().equals(newSec.getFile());
                     }
 
                     if (oldItemType == ItemType.ITEM) {
-                        return oldCoord.section() == newCoord.section() && oldCoord.relativePos() == newCoord.relativePos();
+                        Item oldItem = SectionedFolderListAdapter.this.getItem(oldCoord);
+                        Item newItem = newAdapter.getItem(newCoord);
+
+                        boolean equals = oldItem.getFile().equals(newItem.getFile());
+//                        if (!equals) {
+//                            Log.d(TAG, String.format("areItemsTheSame() called with: oldItemPosition = [%d], newItemPosition = [%d] equal = %s, diff : %s, %s",
+//                                    oldItemPosition, newItemPosition, equals, oldItem.getFile(), newItem.getFile()));
+//                        }
+
+                        return equals;
+//                        return oldCoord.section() == newCoord.section() && oldCoord.relativePos() == newCoord.relativePos();
                     }
                 }
+
+                // 类型不一样这两项自然是不一样
                 return false;
             }
 
@@ -205,7 +239,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                 ItemType newItemType = getItemType(newAdapter, newItemPosition);
 
                 if (oldItemType == newItemType) {
-                    // 类型一样比较值
+                    // Item 类型一样比较 Item 的值
                     switch (oldItemType) {
 
                         case HEADER:
@@ -213,27 +247,24 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                             Section oldSec = mSections.get(oldCoord.section());
                             Section newSec = newAdapter.getSections().get(newCoord.section());
 
-                            File oldFile = oldSec.getFile();
-                            File newFile = newSec.getFile();
-
-                            return SystemUtils.isSameFile(oldFile, newFile) && StringUtils.equals(oldSec.getName(), newSec.getName());
+                            // Section Header 的显示名称是否一样
+                            return StringUtils.equals(oldSec.getName(), newSec.getName());
                         }
                         case ITEM: {
                             Item oldItem = SectionedFolderListAdapter.this.getItem(oldCoord);
                             Item newItem = newAdapter.getItem(newCoord);
 
-                            if (StringUtils.equals(oldItem.getName(), newItem.getName()) &&
-                                    SystemUtils.isSameFile(oldItem.getFile(), newItem.getFile())) {
-                                // 目录一样，比较缩略图列表
-                                List<File> oldThumbList = oldItem.getThumbList();
-                                List<File> newThumbList = newItem.getThumbList();
+                            List<File> oldConflictFiles = oldItem.getConflictFiles();
+                            List<File> newConflictFiles = newItem.getConflictFiles();
 
-                                return ListUtils.isEqualList(oldThumbList, newThumbList);
-                            } else {
+                            // TODO: 不用如此严格检测冲突文件列表顺序的吧？
+                            boolean isSameConflictFileList = ListUtils.isEqualList(oldConflictFiles, newConflictFiles);
+                            boolean isSameName = StringUtils.equals(oldItem.getName(), newItem.getName());
+                            boolean isSameThumbList = ListUtils.isEqualList(oldItem.getThumbList(), newItem.getThumbList());
 
-                                // 名称和目录有一项不一样就重新绑定 ViewHolder
-                                return false;
-                            }
+                            boolean isSameSelection = oldItem.isSelected() == newItem.isSelected();
+
+                            return isSameName && isSameThumbList && isSameConflictFileList && isSameSelection;
                         }
                     }
                 }
@@ -254,40 +285,51 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
                     case FOOTER:
                     case HEADER: {
+                        // 执行到这里说明 Section 名称不一样，保存新的 Section 名称即可
                         Section oldSec = mSections.get(oldCoord.section());
                         Section newSec = newAdapter.getSections().get(newCoord.section());
 
                         Bundle res = new Bundle();
                         if (!StringUtils.equals(oldSec.getName(), newSec.getName())) {
-                            res.putString(PAYLOAD_KEY_NAME, newSec.getName());
+                            res.putString(PAYLOAD_KEY_SECTION_NAME, newSec.getName());
                         }
-
-                        // todo 处理 name 一样但是 file 不一样的情况
-
                         return res;
                     }
                     case ITEM: {
                         Item oldItem = SectionedFolderListAdapter.this.getItem(oldCoord);
                         Item newItem = newAdapter.getItem(newCoord);
 
+                        List<File> oldConflictFiles = oldItem.getConflictFiles();
+                        List<File> newConflictFiles = newItem.getConflictFiles();
+
+                        // TODO: 不用如此严格检测冲突文件列表顺序的吧？
+                        boolean isSameConflictFileList = ListUtils.isEqualList(oldConflictFiles, newConflictFiles);
+                        boolean isSameName = StringUtils.equals(oldItem.getName(), newItem.getName());
+                        boolean isSameThumbList = ListUtils.isEqualList(oldItem.getThumbList(), newItem.getThumbList());
+                        boolean isSameSelection = oldItem.isSelected() == newItem.isSelected();
+
                         // 哪一项不一样就只存哪一项
                         Bundle payloadBundle = new Bundle();
-                        boolean isSameName = StringUtils.equals(oldItem.getName(), newItem.getName());
+                        if (!isSameName) {
+                            Log.w(TAG, "getChangePayload: PAYLOAD_KEY_ITEM_NAME " + newItem.getName());
+                            payloadBundle.putString(PAYLOAD_KEY_ITEM_NAME, newItem.getName());
+                        }
 
-                        // File 不一样会导致缩略图不一样
-                        boolean isSameFile = SystemUtils.isSameFile(oldItem.getFile(), newItem.getFile());
-                        if (isSameName && isSameFile) {
-                            // 重新绑定 ViewHolder
-                            // TODO 更细致的局部更新，因为缩略图也是使用 RecyclerView 所以可以使用 DiffUtil
-                            return super.getChangePayload(oldItemPosition, newItemPosition);
+                        if (!isSameThumbList) {
+                            Log.w(TAG, "getChangePayload: PAYLOAD_KEY_THUMB_LIST " + newItem.getThumbList());
+                            payloadBundle.putStringArrayList(PAYLOAD_KEY_THUMB_LIST,
+                                    PathUtils.fileListToPathArrayList(newItem.getThumbList()));
+                        }
 
-                        } else {
-                            if (!isSameFile) {
-                                payloadBundle.putString(PAYLOAD_KEY_FILE, newItem.getFile().getAbsolutePath());
-                            }
-                            if (!isSameName) {
-                                payloadBundle.putString(PAYLOAD_KEY_NAME, newItem.getName());
-                            }
+                        if (!isSameConflictFileList) {
+                            Log.w(TAG, "getChangePayload: PAYLOAD_KEY_CONFLICT_FILES" + newItem.getConflictFiles() );
+                            payloadBundle.putStringArrayList(PAYLOAD_KEY_CONFLICT_FILES,
+                                    PathUtils.fileListToPathArrayList(newItem.getConflictFiles()));
+                        }
+
+                        if (!isSameSelection) {
+                            Log.w(TAG, "getChangePayload: PAYLOAD_KEY_SELECTION(old) " + oldItem.isSelected() );
+                            payloadBundle.putBoolean(PAYLOAD_KEY_SELECTION, oldItem.isSelected());
                         }
                         return payloadBundle;
                     }
@@ -445,9 +487,20 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         int mCount;
         File mFile;
         List<File> mThumbList;
+        List<File> mConflictFiles;
         boolean mIsSelected;
+
         private int mKeywordStartIndex;
         private int mKeywordLength;
+
+        public List<File> getConflictFiles() {
+            return mConflictFiles;
+        }
+
+        public Item setConflictFiles(List<File> conflictFiles) {
+            mConflictFiles = conflictFiles;
+            return this;
+        }
 
         public int getSelectedCount() {
             return mSelectedCount;
@@ -464,17 +517,6 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
         public Item setThumbList(List<File> thumbList) {
             mThumbList = thumbList;
-            return this;
-        }
-
-        HorizontalImageListAdapter mAdapter;
-
-        public HorizontalImageListAdapter getAdapter() {
-            return mAdapter;
-        }
-
-        public Item setAdapter(HorizontalImageListAdapter adapter) {
-            mAdapter = adapter;
             return this;
         }
 
@@ -847,20 +889,20 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
     private void updateThumbList(ItemViewHolder vh, Item item, boolean forceUpdate) {
         if (forceUpdate) {
-            item.setAdapter(null);
+            vh.mAdapter = null;
         }
-        if (item.getAdapter() == null) {
-            HorizontalImageListAdapter adapter = new HorizontalImageListAdapter(filesToItems(item.getThumbList()));
 
-            item.setAdapter(adapter);
+        if (vh.mAdapter == null) {
+
+            vh.mAdapter = new HorizontalImageListAdapter(filesToItems(item.getThumbList()));
             vh.thumbList.setClickable(false);
 
             vh.thumbList.setLayoutManager(vh.getLayout());
-            vh.thumbList.setAdapter(item.getAdapter());
+            vh.thumbList.setAdapter(vh.mAdapter);
         } else {
             vh.thumbList.setClickable(false);
             vh.thumbList.setLayoutManager(vh.getLayout());
-            vh.thumbList.swapAdapter(item.getAdapter(), false);
+            vh.thumbList.swapAdapter(vh.mAdapter, false);
         }
     }
 
@@ -878,23 +920,56 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
     @Override
     public void onBindViewHolder(SectionedViewHolder holder, int section, int relativePosition, int absolutePosition, List<Object> payload) {
         if (payload.isEmpty()) {
+            Log.w(TAG, "onBindViewHolder: payload is empty" );
             super.onBindViewHolder(holder, section, relativePosition, absolutePosition, payload);
         } else {
             Object o = payload.get(0);
             if (o instanceof Bundle) {
-                ItemViewHolder vh = (ItemViewHolder) holder;
 
                 Bundle bundle = (Bundle) o;
-                String name = bundle.getString(PAYLOAD_KEY_NAME);
-                if (name != null) {
+                if (isHeader(absolutePosition)) {
+                    SectionedImageListAdapter.SectionHeaderViewHolder viewHolder =
+                            (SectionedImageListAdapter.SectionHeaderViewHolder) holder;
+                    String name = bundle.getString(PAYLOAD_KEY_SECTION_NAME);
+                    ((SectionedImageListAdapter.SectionHeaderViewHolder) holder).title.setText(name);
+                } else if (isFooter(absolutePosition)) {
+                    Log.w(TAG, "onBindViewHolder: update footer do nothing");
+                } else {
+                    ItemViewHolder vh = (ItemViewHolder) holder;
 
-                    vh.name.setText(name);
-                }
+                    String name = bundle.getString(PAYLOAD_KEY_ITEM_NAME);
+                    if (name != null) {
+                        Log.d(TAG, "onBindViewHolder: 部分更新 Item 名称 : " + name);
+                        vh.name.setText(name);
+                    }
 
-                String filePath = bundle.getString(PAYLOAD_KEY_FILE);
-                if (filePath != null) {
-                    Log.d(TAG, "onBindViewHolder: do nothing for partial update with file path : " + filePath);
+                    ArrayList<String> thumbList = bundle.getStringArrayList(PAYLOAD_KEY_THUMB_LIST);
+                    if (thumbList != null) {
+                        Log.d(TAG, "onBindViewHolder: partial update thumbList: " + thumbList);
+
+                        vh.mAdapter = new HorizontalImageListAdapter(
+                                filesToItems(PathUtils.stringArrayListToFileList(thumbList)));
+                        vh.thumbList.setClickable(false);
+
+                        vh.thumbList.setLayoutManager(vh.getLayout());
+                        vh.thumbList.setAdapter(vh.mAdapter);
+                    } else {
+                        vh.thumbList.setAdapter(null);
+                    }
+
+                    ArrayList<String> conflictFileList = bundle.getStringArrayList(PAYLOAD_KEY_CONFLICT_FILES);
+                    if (conflictFileList != null) {
+                        Log.w(TAG, "onBindViewHolder: do nothing for conflict file partial update : " + conflictFileList );
+                    }
+
+                    Boolean selected = bundle.getBoolean(PAYLOAD_KEY_SELECTION, false);
+                    if (selected != null) {
+                        Log.d(TAG, "onBindViewHolder: partial update selected status, " + section + ":" + relativePosition + " selected : " + selected);
+                        vh.check.setVisibility(selected ? View.VISIBLE : View.GONE);
+                    }
                 }
+            } else {
+                Log.w(TAG, "onBindViewHolder: no bundle at list : " + o );
             }
         }
     }
@@ -903,7 +978,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         if (thumbList == null) {
             return null;
         }
-        return com.annimon.stream.Stream.of(thumbList).map(file -> new HorizontalImageListAdapter.Item().setFile(file)).toList();
+        return Stream.of(thumbList).map(file -> new HorizontalImageListAdapter.Item().setFile(file)).toList();
     }
 
     @Override
@@ -925,6 +1000,19 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                 return new ItemViewHolder(v);
             }
         }
+    }
+
+    @Override
+    public void onViewRecycled(SectionedViewHolder holder) {
+
+        if (holder instanceof ItemViewHolder) {
+            Object tag = ((ItemViewHolder) holder).itemView.getTag(R.id.item);
+
+            ((ItemViewHolder) holder).mAdapter = null;
+            ((ItemViewHolder) holder).mLinearLayoutManager = null;
+        }
+
+        super.onViewRecycled(holder);
     }
 
     /*
@@ -963,6 +1051,8 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         @BindView(R.id.count) TextView count;
         @BindView(R.id.thumb_list) RecyclerView thumbList;
         Badge badge;
+
+        HorizontalImageListAdapter mAdapter;
         private LinearLayoutManager mLinearLayoutManager;
 
         ItemViewHolder(View itemView) {
@@ -976,7 +1066,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             this.badge = new QBadgeView(itemView.getContext())
                     .bindTarget(thumbList);
             Resources resources = itemView.getContext().getResources();
-            badge.setBadgeGravity(Gravity.END | Gravity.TOP)
+            badge.setBadgeGravity(Gravity.START | Gravity.TOP)
                     .setExactMode(true)
                     .setBadgeBackgroundColor(resources.getColor(R.color.colorAccent))
                     .setBadgeTextColor(resources.getColor(android.R.color.white))
