@@ -101,11 +101,13 @@
                 tools:text="正在检测移动操作..."
                 tools:textColor="@android:color/holo_red_light"
                 />
+
         </LinearLayout>
 
         <!--冲突检测结果-->
         <TextView
             android:id="@+id/detect_result_info"
+            style="@style/Base.TextAppearance.AppCompat.Subhead"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
@@ -113,6 +115,7 @@
             tools:text="目标文件夹存在 6 个同名文件。"
             tools:textColor="@android:color/holo_red_light"
             />
+
     </FrameLayout>
 
     <!--文件夹列表-->

@@ -73,6 +73,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
     @BindView(R.id.keyboard_switch_layout) View mKeyboardSwitchLayout;
     @BindView(R.id.keyboard_switch_image_view) ImageView mKeyboardSwitchIv;
     private SectionedFolderListAdapter mListAdapter;
+    private boolean mEnableDetectSelectedFolder = false;
 
 
     class DialogViews {
@@ -389,9 +390,12 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
     }
 
     private void setDetectingResultText(View contentView, String resultText, int textColor) {
+        if (!mEnableDetectSelectedFolder) {
+            return;
+        }
 
         // hide detect progress
-        ViewUtils.setViewVisibility(contentView, R.id.detect_info_layout, View.GONE);
+        ViewUtils.setViewVisibility(contentView, R.id.detect_info_layout, View.INVISIBLE);
 
         // detect result
         TextView detectResult = (TextView) contentView.findViewById(R.id.detect_result_info);
@@ -402,6 +406,9 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
 
     private void setStatusDetecting(View contentView) {
 
+        if (!mEnableDetectSelectedFolder) {
+            return;
+        }
         // Show detecting info
         ViewUtils.setViewVisibility(contentView, R.id.detect_info_layout, View.VISIBLE);
 
@@ -409,7 +416,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
                 .setText(getString(R.string.detecting_move_file_operationg_result));
 
         // Hide detect result info
-        ViewUtils.setViewVisibility(contentView, R.id.detect_result_info, View.GONE);
+        ViewUtils.setViewVisibility(contentView, R.id.detect_result_info, View.INVISIBLE);
     }
 
     private <R> R getViewItemTag(View view, int id) {

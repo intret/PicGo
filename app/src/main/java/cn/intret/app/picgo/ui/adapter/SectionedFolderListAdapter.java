@@ -105,9 +105,9 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         }
     }
 
-    public void selectItem(File dir) {
+    public boolean selectItem(File dir) {
         if (dir == null) {
-            return;
+            return false;
         }
 
         // Find single selected item and mark it as 'unselected'
@@ -139,6 +139,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                 }
             }
         }
+        return false;
     }
 
     private enum ItemType {
@@ -329,7 +330,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
                         if (!isSameSelection) {
                             Log.w(TAG, "getChangePayload: PAYLOAD_KEY_SELECTION(old) " + oldItem.isSelected() );
-                            payloadBundle.putBoolean(PAYLOAD_KEY_SELECTION, oldItem.isSelected());
+                            payloadBundle.putBoolean(PAYLOAD_KEY_SELECTION, newItem.isSelected());
                         }
                         return payloadBundle;
                     }
@@ -797,9 +798,10 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                 int adapterPosition = holder.getAdapterPosition();
                 ItemCoord coor = getRelativePosition(adapterPosition);
 
+                Item clickItem = mSections.get(coor.section()).getItems().get(coor.relativePos());
                 // Mark as 'selected'
                 {
-                    if (!item.isSelected()) {
+                    if (!clickItem.isSelected()) {
 
                         // Section loop : Find single selected item and mark it as 'unselected'
                         for (int si = 0, mSectionsSize = mSections.size(); si < mSectionsSize; si++) {
@@ -821,8 +823,8 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                         }
 
                         // Mark the current clicked item as 'selected'
-                        item.setSelected(true);
-                        updateItemViewHolderCheckStatus(adapterPosition, item.isSelected());
+                        clickItem.setSelected(true);
+                        updateItemViewHolderCheckStatus(adapterPosition, clickItem.isSelected());
                     } else {
                         Log.w(TAG, "item view clicked: click a selected item at coor " + coor);
                     }
