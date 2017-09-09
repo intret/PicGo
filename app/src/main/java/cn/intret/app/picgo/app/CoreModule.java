@@ -12,8 +12,8 @@ public class CoreModule {
     private CoreModule() {
     }
 
-    Context mAppContext;
-    public void init(Context appContext) {
+    private Context mAppContext;
+    void init(Context appContext) {
         mAppContext = appContext;
     }
 

@@ -1,5 +1,7 @@
 package cn.intret.app.picgo.utils;
 
+import org.apache.commons.collections4.Predicate;
+
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -43,5 +45,14 @@ public class ListUtils {
         }
 
         return list.get(list.size() - 1);
+    }
+
+    public static <E> boolean removeListElement(List<E> list, Predicate<E> predicate) {
+        int i = org.apache.commons.collections4.ListUtils.indexOf(list, predicate);
+        if (i != -1) {
+            list.remove(i);
+            return true;
+        }
+        return false;
     }
 }

@@ -116,16 +116,19 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                 if (currItem.isSelected()) {
                     if (!currItem.getFile().equals(dir)) {
                         currItem.setSelected(false);
+                        // mark as 'unselected'
+                    } else {
+                        currItem.setSelected(true);
                     }
-                    // mark as 'unselected'
                     int absPos = getAbsolutePosition(si, ii);
-                    currItem.setSelected(false);
                     updateItemViewHolderCheckStatus(absPos, currItem.isSelected());
                 } else {
                     int absPos = getAbsolutePosition(si, ii);
                     if (currItem.getFile().equals(dir)) {
                         currItem.setSelected(true);
                         updateItemViewHolderCheckStatus(absPos, currItem.isSelected());
+                    } else {
+
                     }
                 }
             }
@@ -758,21 +761,16 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                 {
                     if (!item.isSelected()) {
 
-                        int selectedSectionIndex = -1;
-                        int selectedItemIndex = -1;
-
-                        // Find single selected item and mark it as 'unselected'
+                        // Section loop : Find single selected item and mark it as 'unselected'
                         for (int si = 0, mSectionsSize = mSections.size(); si < mSectionsSize; si++) {
 
                             Section currSec = mSections.get(si);
                             List<Item> items = currSec.getItems();
 
-                            // find current selected item index
-                            selectedItemIndex = -1;
+                            // Item loop : find current selected item index
                             for (int ii = 0, itemsSize = items.size(); ii < itemsSize; ii++) {
                                 Item currItem = items.get(ii);
                                 if (currItem.isSelected()) {
-                                    selectedItemIndex = ii;
                                     // mark as 'unselected'
                                     int absPos = getAbsolutePosition(si, ii);
                                     currItem.setSelected(false);
@@ -780,17 +778,13 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                                 }
                             }
 
-                            if (selectedItemIndex != -1) {
-                                selectedSectionIndex = si;
-                                break;
-                            }
                         }
 
                         // Mark the current clicked item as 'selected'
                         item.setSelected(true);
                         updateItemViewHolderCheckStatus(adapterPosition, item.isSelected());
                     } else {
-                        Log.d(TAG, "item view clicked: click a selected item at coor " + coor);
+                        Log.w(TAG, "item view clicked: click a selected item at coor " + coor);
                     }
                 }
 
@@ -873,6 +867,8 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
     }
 
     private void updateItemViewHolderCheckStatus(int absolutePosition, boolean selected) {
+        Log.d(TAG, "updateItemViewHolderCheckStatus() called with: absolutePosition = [" + absolutePosition + "], selected = [" + selected + "]");
+
         if (mRecyclerView != null) {
             RecyclerView.ViewHolder selectedVH = mRecyclerView.findViewHolderForAdapterPosition(absolutePosition);
             if (selectedVH != null && selectedVH instanceof ItemViewHolder) {

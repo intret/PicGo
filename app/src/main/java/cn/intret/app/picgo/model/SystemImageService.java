@@ -51,7 +51,7 @@ import cn.intret.app.picgo.utils.SystemUtils;
 import io.reactivex.Observable;
 import io.reactivex.schedulers.Schedulers;
 
-public class SystemImageService {
+public class SystemImageService extends BaseService {
 
     private static final SystemImageService ourInstance = new SystemImageService();
     private static final String TAG = SystemImageService.class.getSimpleName();
@@ -75,7 +75,6 @@ public class SystemImageService {
     HashMap<String, List<ImageGroup>> mDayImageGroupsMap = new LinkedHashMap<>();
     HashMap<String, List<ImageGroup>> mWeekImageGroupsMap = new LinkedHashMap<>();
     HashMap<String, List<ImageGroup>> mMonthImageGroupsMap = new LinkedHashMap<>();
-    private EventBus mBus;
 
 
     public static SystemImageService getInstance() {
@@ -83,14 +82,8 @@ public class SystemImageService {
     }
 
     private SystemImageService() {
-        if (CoreModule.getInstance().getAppContext() == null) {
-            throw new IllegalStateException("Please initialize the CoreModule class (CoreModule.getInstance().init(appContext).");
-        }
-        mContext = CoreModule.getInstance().getAppContext();
-        mBus = EventBus.getDefault();
+        super();
     }
-
-    Context mContext;
 
     FolderModel mFolderModel;
     ReadWriteLock mFolderModelRWLock = new ReentrantReadWriteLock();
@@ -777,7 +770,8 @@ public class SystemImageService {
                         if (imageFolder.getFile().equals(srcDir)) {
                             found = true;
                             imageFolder.setName(newDirName);
-                            imageFolder.setFile(new File(srcDir.getParentFile(), newDirName));
+                            File newDir = new File(srcDir.getParentFile(), newDirName);
+                            imageFolder.setFile(newDir);
 
                             Log.d(TAG, "renameDirectory: rename folder [" + srcDir.getName() + "] in cache to new name [" + newDirName + "]");
 

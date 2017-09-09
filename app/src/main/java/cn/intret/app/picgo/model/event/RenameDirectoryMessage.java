@@ -27,4 +27,12 @@ public class RenameDirectoryMessage {
     public File getNewDirectory() {
         return mNewDirectory;
     }
+
+    @Override
+    public String toString() {
+        return "RenameDirectoryMessage{" +
+                "mOldDirectory=" + mOldDirectory +
+                ", mNewDirectory=" + mNewDirectory +
+                '}';
+    }
 }

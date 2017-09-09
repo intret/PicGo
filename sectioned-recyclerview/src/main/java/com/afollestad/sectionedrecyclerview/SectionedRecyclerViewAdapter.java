@@ -126,6 +126,10 @@ public abstract class SectionedRecyclerViewAdapter<VH extends SectionedViewHolde
         return positionManager.sectionFooterIndex(section);
     }
 
+    public boolean isItemPosition(int position) {
+        return !(isHeader(position) || isFooter(position));
+    }
+
     /**
      * Toggle whether or not section headers are shown when a section has no items. Makes a call to
      * notifyDataSetChanged().
