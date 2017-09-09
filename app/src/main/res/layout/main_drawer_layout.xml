@@ -71,11 +71,12 @@
             </RadioGroup>
 
             <!--图片列表-->
-            <android.support.v7.widget.RecyclerView
+            <com.afollestad.dragselectrecyclerview.DragSelectRecyclerView
                 android:id="@+id/img_list"
                 android:layout_width="0dp"
                 android:layout_height="0dp"
                 android:clipToPadding="false"
+                android:scrollbars="vertical"
                 android:padding="4dp"
                 android:scrollbarStyle="outsideOverlay"
                 app:layout_constraintBottom_toTopOf="@+id/floatingToolbar"
@@ -83,13 +84,15 @@
                 app:layout_constraintLeft_toLeftOf="parent"
                 app:layout_constraintRight_toRightOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/view_mode"
+                app:dsrv_autoScrollEnabled="true"
+                app:dsrv_autoScrollHotspotHeight="56dp"
                 tools:layout_constraintBottom_creator="1"
                 tools:layout_constraintLeft_creator="1"
                 tools:layout_constraintRight_creator="1"
                 tools:layout_constraintTop_creator="1"
                 tools:listitem="@layout/image_list_item">
 
-            </android.support.v7.widget.RecyclerView>
+            </com.afollestad.dragselectrecyclerview.DragSelectRecyclerView>
 
             <!--选中文件操作工具栏-->
             <android.support.v7.widget.Toolbar

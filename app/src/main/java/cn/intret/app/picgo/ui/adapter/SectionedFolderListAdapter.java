@@ -17,6 +17,8 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.afollestad.dragselectrecyclerview.DragSelectRecyclerView;
+import com.afollestad.dragselectrecyclerview.IDragSelectAdapter;
 import com.afollestad.sectionedrecyclerview.ItemCoord;
 import com.afollestad.sectionedrecyclerview.SectionedRecyclerViewAdapter;
 import com.afollestad.sectionedrecyclerview.SectionedViewHolder;
@@ -127,17 +129,13 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                     if (currItem.getFile().equals(dir)) {
                         currItem.setSelected(true);
                         updateItemViewHolderCheckStatus(absPos, currItem.isSelected());
-                    } else {
-
                     }
                 }
             }
-
-
         }
     }
 
-    enum ItemType {
+    private enum ItemType {
         HEADER,
         FOOTER,
         ITEM

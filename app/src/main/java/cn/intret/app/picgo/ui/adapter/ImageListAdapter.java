@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
+import com.afollestad.dragselectrecyclerview.IDragSelectAdapter;
 import com.annimon.stream.Stream;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
@@ -31,9 +32,17 @@ import cn.intret.app.picgo.utils.ViewUtils;
 /**
  * Waterfall Image List Adapter class for {@link RecyclerView}
  */
-public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.ViewHolder> implements View.OnLongClickListener, View.OnClickListener {
+public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.ViewHolder>
+        implements View.OnLongClickListener, View.OnClickListener, IDragSelectAdapter {
 
     private int mFirstVisibleItem = RecyclerView.NO_POSITION;
+    public static final String TAG = ImageListAdapter.class.getSimpleName();
+
+    private RecyclerView mRecyclerView;
+    private int mSpanCount = 2;
+    boolean mIsSelectionMode = false;
+    OnInteractionListener mOnInteractionListener;
+
 
     @Override
     public String toString() {
@@ -54,10 +63,18 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         return mDirectory;
     }
 
-    @MainThread
-    public void diffUpdateWithItems(List<Item> items) {
+    public List<Item> getSelectedItemUntil(final int count) {
+        return Stream.of(mItems)
+                .filter(Item::isSelected)
+                .limit(count)
+                .toList()
+                ;
+    }
 
-        Log.d(TAG, "diffUpdateWithItems: 计算差异：old " + mItems.size() + " new " + items.size());
+    @MainThread
+    public void diffUpdate(List<Item> items) {
+
+        Log.d(TAG, "diffUpdate: 计算差异：old " + mItems.size() + " new " + items.size());
 
         DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtil.Callback() {
             @Override
@@ -116,14 +133,6 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         }
     }
 
-    public List<Item> getSelectedItemUntil(final int count) {
-        return Stream.of(mItems)
-                .filter(Item::isSelected)
-                .limit(count)
-                .toList()
-                ;
-    }
-
     public void removeFile(File file) {
         int i = org.apache.commons.collections4.ListUtils.indexOf(mItems, item -> SystemUtils.isSameFile(item.getFile(), file));
         if (i != -1) {
@@ -170,9 +179,19 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         return mFirstVisibleItem;
     }
 
+    public Item getItem(int position) {
+        if (position < 0 || position >= mItems.size()) {
+            throw new IllegalArgumentException("Invalid argument 'position' value '" + position + "'.");
+        }
+        return mItems.get(position);
+    }
+
+    /*
+     * Interaction
+     */
     public interface OnInteractionListener {
 
-        void onItemLongClick(Item item);
+        void onItemLongClick(Item item, int position);
 
         void onItemCheckedChanged(Item item);
 
@@ -185,25 +204,14 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         void onSelectedCountChange(ImageListAdapter adapter, int selectedCount);
     }
 
-    public static final String TAG = ImageListAdapter.class.getSimpleName();
-
-    private RecyclerView mRecyclerView;
-    private int mSpanCount = 2;
-    boolean mIsSelectionMode = false;
-    OnInteractionListener mOnInteractionListener;
-
     public ImageListAdapter setOnInteractionListener(OnInteractionListener onInteractionListener) {
         mOnInteractionListener = onInteractionListener;
         return this;
     }
 
-
-    public Item getItem(int position) {
-        if (position < 0 || position >= mItems.size()) {
-            throw new IllegalArgumentException("Invalid argument 'position' value '" + position + "'.");
-        }
-        return mItems.get(position);
-    }
+    /*
+     * View.OnClickListener View.OnLongClickListener
+     */
 
     @Override
     public void onClick(View v) {
@@ -234,26 +242,52 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
         if (mIsSelectionMode) {
             Log.d(TAG, "handleItemLongClickEvent: ignore long click on item " + position);
 
-            if (item.isSelected() && mOnInteractionListener != null) {
-                mOnInteractionListener.onDragBegin(itemView, position, item);
+            if (item.isSelected()) {
+                if (mOnInteractionListener != null) {
+                    mOnInteractionListener.onDragBegin(itemView, position, item);
+                }
+            } else {
+                if (mOnInteractionListener != null) {
+                    mOnInteractionListener.onItemLongClick(item, position);
+                }
             }
         } else {
             Log.d(TAG, "handleItemLongClickEvent: entered selection mode from item (" + position + ") click");
 
-            // update item data
-            item.setSelected(true);
-
-            // Update item ui
-            ViewUtils.setViewVisibility(itemView, R.id.checkbox, item.isSelected() ? View.VISIBLE : View.GONE);
-
-            mIsSelectionMode = true;
-
-            // Notify entering selecting mode
             if (mOnInteractionListener != null) {
-                mOnInteractionListener.onSelectionModeChange(this, true);
-                mOnInteractionListener.onSelectedCountChange(this, 1);
+                mOnInteractionListener.onItemLongClick(item, position);
+            }
+//            // update item data
+//            item.setSelected(true);
+//
+//            // Update item ui
+//            ViewUtils.setViewVisibility(itemView, R.id.checkbox, item.isSelected() ? View.VISIBLE : View.GONE);
+//
+//            mIsSelectionMode = true;
+//
+//            // Notify entering selecting mode
+//            if (mOnInteractionListener != null) {
+//                mOnInteractionListener.onSelectionModeChange(this, true);
+//                mOnInteractionListener.onSelectedCountChange(this, 1);
+//            }
+        }
+    }
+
+    public boolean selectItem(int position) {
+        Item item = mItems.get(position);
+        if (item.isSelected()) {
+            return false;
+        }
+
+        item.setSelected(true);
+
+        if (mRecyclerView != null) {
+            RecyclerView.ViewHolder vh = mRecyclerView.findViewHolderForAdapterPosition(position);
+            if (vh != null && vh instanceof ViewHolder) {
+                ((ViewHolder) vh).setChecked(item.isSelected());
             }
         }
+        return true;
     }
 
     public void handleItemClickEvent(View itemView, int position) {
@@ -270,7 +304,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
                 if (mOnInteractionListener != null) {
                     mIsSelectionMode = false;
                     mOnInteractionListener.onSelectionModeChange(this, false);
-                    mOnInteractionListener.onSelectedCountChange(this, 0 );
+                    mOnInteractionListener.onSelectedCountChange(this, 0);
                 }
                 item.setSelected(false);
 
@@ -292,6 +326,10 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
             }
         }
     }
+
+    /*
+     * Internal class
+     */
 
     public static class Item {
         @Override
@@ -372,7 +410,7 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
     }
 
     public int getSelectedCount() {
-        if (mItems == null || !mIsSelectionMode) {
+        if (mItems == null) {
             return 0;
         }
         return (int) Stream.of(mItems).filter(Item::isSelected).count();
@@ -381,6 +419,10 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
     public List<Item> getSelectedItems() {
         return Stream.of(mItems).filter(Item::isSelected).toList();
     }
+
+    /*
+     * RecyclerView
+     */
 
     @Override
     public void onAttachedToRecyclerView(RecyclerView recyclerView) {
@@ -489,11 +531,68 @@ public class ImageListAdapter extends RecyclerView.Adapter<ImageListAdapter.View
 //        holder.image.setOnClickListener(this);
     }
 
+    /*
+     * interface IDragSelectAdapter
+     */
+
+    @Override
+    public void setSelected(int index, boolean selected) {
+        Log.d(TAG, "setSelected() called with: index = [" + index + "], selected = [" + selected + "]");
+
+        // 1. Make this index as selected in your implementation.
+
+        Item item = mItems.get(index);
+        item.setSelected(selected);
+
+        int selectedCount = getSelectedCount();
+        if (selectedCount == 1) {
+            mIsSelectionMode = true;
+            if (mOnInteractionListener != null) {
+                mOnInteractionListener.onSelectionModeChange(this, true);
+                mOnInteractionListener.onSelectedCountChange(this, 1);
+            }
+        } else if (selectedCount == 0) {
+            mIsSelectionMode = false;
+            if (mOnInteractionListener != null) {
+                mOnInteractionListener.onSelectedCountChange(this, 0);
+                mOnInteractionListener.onSelectionModeChange(this, false);
+            }
+        } else {
+            if (mOnInteractionListener != null) {
+                mOnInteractionListener.onSelectedCountChange(this, selectedCount);
+            }
+        }
+
+        // 2. Tell the RecyclerView.Adapter to render this item's changes.
+//        notifyItemChanged(index);
+
+        if (mRecyclerView != null) {
+            RecyclerView.ViewHolder vh = mRecyclerView.findViewHolderForAdapterPosition(index);
+            if (vh != null && vh instanceof ViewHolder) {
+                ((ViewHolder) vh).setChecked(selected);
+            }
+        }
+    }
+
+    @Override
+    public boolean isIndexSelectable(int index) {
+        Log.d(TAG, "isIndexSelectable() called with: index = [" + index + "]");
+
+//        Item item = mItems.get(index);
+
+        // Return false if you don't want this position to be selectable.
+        // Useful for items like section headers.
+        return true;
+    }
+
     @Override
     public int getItemCount() {
         return mItems.size();
     }
 
+    /*
+     * View holder
+     */
 
     public class ViewHolder extends RecyclerView.ViewHolder {
 

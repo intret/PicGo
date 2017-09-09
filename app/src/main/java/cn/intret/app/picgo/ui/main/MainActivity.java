@@ -37,6 +37,7 @@ import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.afollestad.dragselectrecyclerview.DragSelectRecyclerView;
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.afollestad.materialdialogs.internal.MDButton;
@@ -68,28 +69,28 @@ import butterknife.ButterKnife;
 import butterknife.OnClick;
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.model.ConflictResolverDialogFragment;
-import cn.intret.app.picgo.model.RecentRecord;
-import cn.intret.app.picgo.model.event.RecentOpenFolderListChangeMessage;
-import cn.intret.app.picgo.model.event.RescanFolderListMessage;
-import cn.intret.app.picgo.model.event.RescanFolderThumbnailListMessage;
-import cn.intret.app.picgo.model.event.RescanImageDirectoryMessage;
 import cn.intret.app.picgo.model.FolderModel;
-import cn.intret.app.picgo.model.event.FolderModelChangeMessage;
 import cn.intret.app.picgo.model.GroupMode;
 import cn.intret.app.picgo.model.Image;
 import cn.intret.app.picgo.model.ImageFolder;
 import cn.intret.app.picgo.model.ImageGroup;
-import cn.intret.app.picgo.model.event.RemoveFileMessage;
-import cn.intret.app.picgo.model.event.RenameDirectoryMessage;
+import cn.intret.app.picgo.model.RecentRecord;
 import cn.intret.app.picgo.model.SystemImageService;
 import cn.intret.app.picgo.model.UserDataService;
+import cn.intret.app.picgo.model.event.FolderModelChangeMessage;
+import cn.intret.app.picgo.model.event.RecentOpenFolderListChangeMessage;
+import cn.intret.app.picgo.model.event.RemoveFileMessage;
+import cn.intret.app.picgo.model.event.RenameDirectoryMessage;
+import cn.intret.app.picgo.model.event.RescanFolderListMessage;
+import cn.intret.app.picgo.model.event.RescanFolderThumbnailListMessage;
+import cn.intret.app.picgo.model.event.RescanImageDirectoryMessage;
 import cn.intret.app.picgo.ui.adapter.FlatFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.FolderListAdapter;
+import cn.intret.app.picgo.ui.adapter.FolderListAdapterUtils;
 import cn.intret.app.picgo.ui.adapter.ImageListAdapter;
 import cn.intret.app.picgo.ui.adapter.ImageTransitionNameGenerator;
 import cn.intret.app.picgo.ui.adapter.SectionFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedFolderListAdapter;
-import cn.intret.app.picgo.ui.adapter.FolderListAdapterUtils;
 import cn.intret.app.picgo.ui.adapter.SectionedImageListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedListItemClickDispatcher;
 import cn.intret.app.picgo.ui.adapter.SectionedListItemDispatchListener;
@@ -113,47 +114,71 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
     private static final String TAG = "MainActivity";
 
-    @BindView(R.id.img_list) RecyclerView mImageList;
+    @BindView(R.id.img_list) DragSelectRecyclerView mImageList;
     @BindView(R.id.drawer_layout) DrawerLayout mDrawerLayout;
     @BindView(R.id.drawer_folder_list) RecyclerView mFolderList;
 
     @BindView(R.id.view_mode) RadioGroup mModeRadioGroup;
     @BindView(R.id.floatingToolbar) Toolbar mFloatingToolbar;
-//    @BindView(R.id.fab) FloatingActionButton mFab;
 
     @BindView(R.id.t9_keypad_container) ViewGroup mKeypadContainer;
     @BindView(R.id.t9_keypad) T9KeypadView mKeypad;
     @BindView(R.id.keyboard_switch_layout) ViewGroup mKeypadSwitchLayout;
     @BindView(R.id.keyboard_switch_image_view) ImageView mKeypadSwitch;
 
-    private int mSpanCount;
 
+    /*
+     * ActionBar/Toolbar
+     */
+
+    private Toolbar mToolbar;
     private ActionBarDrawerToggle mDrawerToggle;
 
+    /*
+     * Folder list
+     */
     private FolderListAdapter mFolderListAdapter;
+    private File mCurrentFolder;
+    private SectionedFolderListAdapter mFolderAdapter;
+
+    /*
+     * Floating view
+     */
     private Intent mStartFloatingIntent;
+
+    /*
+     * Image List
+     */
 
     /**
      * Key: file absolute path
-     * Value: ImageListAdapter
      */
     Map<String, ImageListAdapter> mImageListAdapters = new LinkedHashMap<>();
     private ImageListAdapter mCurrentImageAdapter;
     private GridLayoutManager mGridLayoutManager;
 
-    Map<String, SectionedImageListAdapter> mSectionedImageListAdapters = new LinkedHashMap<>();
     Map<String, SectionedImageListAdapter> mWeekSectionedImageListAdapters = new LinkedHashMap<>();
     Map<String, SectionedImageListAdapter> mDaySectionedImageListAdapters = new LinkedHashMap<>();
     Map<String, SectionedImageListAdapter> mMonthSectionedImageListAdapters = new LinkedHashMap<>();
+
     private GridLayoutManager mGridLayout;
     private SectionedImageListAdapter mCurrentAdapter;
+
+    // Image list configuration
+
+    private int mSpanCount;
+    private int mCurrentShownImageIndex = -1;
+
+    private GroupMode mGroupMode = GroupMode.DEFAULT;
+
+    /*
+     * Data loading status
+     */
     private boolean mIsFolderListLoaded = false;
     private boolean mIsImageListLoaded = false;
-    private GroupMode mGroupMode = GroupMode.DEFAULT;
-    private File mCurrentFolder;
-    private int mCurrentShownImageIndex = -1;
-    private SectionedFolderListAdapter mFolderAdapter;
-    private Toolbar mToolbar;
+
+    List<File> mRecentHistory = new LinkedList<>();
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -215,7 +240,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         super.onStart();
 
         loadFolderList();
-        loadImageList();
+        reloadImageList();
     }
 
     @Override
@@ -467,7 +492,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                 .loadImageList(dir, fromCacheFirst)
                 .map(this::imagesToListItems)
                 .compose(workAndShow())
-                .subscribe(adapter::diffUpdateWithItems,
+                .subscribe(adapter::diffUpdate,
                         Throwable::printStackTrace);
     }
 
@@ -514,7 +539,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
     private void switchToViewMode(GroupMode mode) {
         mGroupMode = mode;
-        showDirectoryImageList(mCurrentFolder, true);
+        showDirectoryImages(mCurrentFolder, true);
     }
 
     @Override
@@ -612,7 +637,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
             menuItem.setIcon(R.drawable.ic_move_to_folder);
             menuItem.setOnMenuItemClickListener(item -> {
 
-                showDirectoryImageList(dir, true);
+                showDirectoryImages(dir, true);
                 return true;
             });
         }
@@ -737,7 +762,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
             public void onItemClick(SectionedFolderListAdapter.Section sectionItem, int section, SectionedFolderListAdapter.Item item, int relativePos) {
                 Log.d(TAG, "onItemClick: 显示目录图片 " + item.getFile());
                 mDrawerLayout.closeDrawers();
-                showDirectoryImageList(item.getFile(), true);
+                showDirectoryImages(item.getFile(), true);
             }
 
             @Override
@@ -773,7 +798,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         if (sectionItem != null) {
             SectionedFolderListAdapter.Item item = ListUtils.firstOf(sectionItem.getItems());
             if (item != null) {
-                showDirectoryImageList(item.getFile());
+                showDirectoryImages(item.getFile());
             }
         }*/
     }
@@ -970,7 +995,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
                     Log.d(TAG, "onItemClick: 显示 " + item.getFile());
 //                        mDrawerLayout.closeDrawers();
-                    showDirectoryImageList(item.getFile(), false);
+                    showDirectoryImages(item.getFile(), false);
                 });
     }
 
@@ -1066,6 +1091,10 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                 });
     }
 
+
+    /*
+     * 文件夹列表
+     */
     private void showFolderModel(FolderModel model) {
 
         List<SectionFolderListAdapter.SectionItem> sectionItems = new LinkedList<>();
@@ -1079,7 +1108,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
         listAdapter.setOnItemClickListener((sectionItem, item) -> {
             mDrawerLayout.closeDrawers();
-            showDirectoryImageList(item.getFile(), true);
+            showDirectoryImages(item.getFile(), true);
         });
         mFolderList.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         mFolderList.setAdapter(listAdapter);
@@ -1096,7 +1125,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         if (sectionItem != null) {
             SectionFolderListAdapter.Item item = ListUtils.firstOf(sectionItem.getItems());
             if (item != null) {
-                showDirectoryImageList(item.getFile(), true);
+                showDirectoryImages(item.getFile(), true);
             }
         }
 //        // show firstOf folder's images in activity content field.
@@ -1105,7 +1134,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 //            SectionFolderListAdapter.Section item = sectionItems.get(0);
 //            List<SectionFolderListAdapter.Item> items = item.getItems();
 //            if (items != null && !items.isEmpty()) {
-//                showDirectoryImageList(items.get(0).getFile());
+//                showDirectoryImages(items.get(0).getFile());
 //            }
 //        }
     }
@@ -1155,7 +1184,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
             mDrawerLayout.closeDrawers();
 
-            showDirectoryImageList(item.getDirectory(), true);
+            showDirectoryImages(item.getDirectory(), true);
 
         });
         mFolderList.addItemDecoration(new SectionDecoration(this, new SectionDecoration.DecorationCallback() {
@@ -1176,9 +1205,13 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 //        if (items != null && items.size() > 0) {
 //
 //            FolderListAdapter.Item item = items.get(0);
-//            showDirectoryImageList(item.getDirectory());
+//            showDirectoryImages(item.getDirectory());
 //        }
     }
+
+    /*
+     * Actionbar
+     */
 
     public void updateActionBarTitle(String name) {
         ActionBar actionBar = getSupportActionBar();
@@ -1187,25 +1220,30 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         }
     }
 
+    /*
+     * Image list
+     */
     @MainThread
-    private void showDirectoryImageList(File directory, boolean updateFolderList) {
+    private void showDirectoryImages(File directory, boolean updateFolderList) {
         mCurrentFolder = directory;
 
+        // Update folder list select status
         if (updateFolderList && mFolderAdapter != null) {
             mFolderAdapter.selectItem(directory);
         }
 
+        // Action bar title
         updateActionBarTitle(directory.getName());
 
+        // Image list based on view mode
         if (mGroupMode == GroupMode.DEFAULT) {
-            showImageList(directory);
+            showDefaultImageList(directory);
         } else {
             showSectionedImageList(directory, mGroupMode);
         }
     }
 
     private void showSectionedImageList(File directory, GroupMode groupMode) {
-
 
         if (groupMode == GroupMode.DEFAULT) {
             throw new IllegalStateException("Group mode shouldn't be 'DEFAULT'.");
@@ -1296,7 +1334,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
             }
             section.setItems(items);
         }
-        section.setDescription(getDescription(section.getStartDate(), MainActivity.this.mGroupMode));
+        section.setDescription(getSectionDescription(section.getStartDate(), MainActivity.this.mGroupMode));
         return section;
     }
 
@@ -1373,7 +1411,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                                 section.setItems(itemList);
                                 section.setStartDate(firstItem.getDate());
                                 section.setEndDate(lastItem.getDate());
-                                section.setDescription(getDescription(firstItem.getDate(), MainActivity.this.mGroupMode));
+                                section.setDescription(getSectionDescription(firstItem.getDate(), MainActivity.this.mGroupMode));
 
                                 sections.add(section);
                             };
@@ -1391,7 +1429,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         });
     }
 
-    private String getDescription(Date date, GroupMode groupMode) {
+    private String getSectionDescription(Date date, GroupMode groupMode) {
 
         switch (groupMode) {
 
@@ -1437,15 +1475,15 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                 ));
     }
 
-    private void showImageList(File directory) {
+    private void showDefaultImageList(File directory) {
         ImageListAdapter listAdapter = mImageListAdapters.get(directory.getAbsolutePath());
         if (listAdapter != null) {
-            com.orhanobut.logger.Logger.d("showImageList 切换显示目录 " + directory);
+            com.orhanobut.logger.Logger.d("showDefaultImageList 切换显示目录 " + directory);
             showImageListAdapter(listAdapter);
 
         } else {
 
-            com.orhanobut.logger.Logger.d("showImageList 加载并显示目录 " + directory);
+            com.orhanobut.logger.Logger.d("showDefaultImageList 加载并显示目录 " + directory);
 
             SystemImageService.getInstance()
                     .loadImageList(directory, true)
@@ -1477,8 +1515,6 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     private List<ImageListAdapter.Item> imagesToListItems(List<Image> images) {
         return Stream.of(images).map(image -> new ImageListAdapter.Item().setFile(image.getFile())).toList();
     }
-
-    List<File> mRecentHistory = new LinkedList<>();
 
     private void showImageListAdapter(ImageListAdapter adapter) {
 
@@ -1529,11 +1565,9 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                 }, Throwable::printStackTrace);
     }
 
-    private void loadImageList() {
+    private void reloadImageList() {
 
         if (mIsImageListLoaded) {
-
-            Log.d(TAG, "loadImageList: TODO 检查并更新图片文件");
 
             if (mCurrentImageAdapter != null) {
                 File directory = mCurrentImageAdapter.getDirectory();
@@ -1569,6 +1603,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 //
 //            mImageList.addItemDecoration(marginDecoration);
 
+            // Load recent history and show the first one
             UserDataService.getInstance()
                     .loadRecentOpenFolders(true)
                     .compose(workAndShow())
@@ -1577,13 +1612,13 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                         mRecentHistory = Stream.of(recentRecords).map(r -> new File(r.getFilePath())).toList();
 
                         if (ListUtils.isEmpty(recentRecords)) {
-                            showDirectoryImageList(SystemUtils.getCameraDir(), true);
+                            showDirectoryImages(SystemUtils.getCameraDir(), true);
                         } else {
                             RecentRecord recentRecord = ListUtils.firstOf(recentRecords);
 
                             File directory = new File(recentRecord.getFilePath());
-                            Log.d(TAG, "loadImageList: show recent access folder : " + directory);
-                            showDirectoryImageList(directory, true);
+                            Log.d(TAG, "reloadImageList: show recent access folder : " + directory);
+                            showDirectoryImages(directory, true);
                         }
 
                     }, Throwable::printStackTrace);
@@ -1651,8 +1686,11 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
     }
 
     @Override
-    public void onItemLongClick(ImageListAdapter.Item item) {
+    public void onItemLongClick(ImageListAdapter.Item item, int position) {
         Log.d(TAG, "onItemLongClick: " + item);
+        if (!item.isSelected()) {
+            mImageList.setDragSelectActive(true, position);
+        }
     }
 
     @Override
