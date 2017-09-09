@@ -82,6 +82,13 @@ public class PathUtils {
         return com.annimon.stream.Stream.of(files).map(File::getAbsolutePath).toList();
     }
 
+    public static List<String> fileListToNameList(List<File> files) {
+        if (files == null) {
+            return null;
+        }
+        return com.annimon.stream.Stream.of(files).map(File::getName).toList();
+    }
+
 
     @Nullable
     public static ArrayList<String> fileListToPathArrayList(@Nullable List<File> files) {

@@ -1060,7 +1060,7 @@ public class SystemImageService extends BaseService {
 
         File dir = destDirFiles.get(0).getParentFile();
 
-        List<String> destDirFileNames = PathUtils.fileListToPathList(destDirFiles);
+        List<String> destDirFileNames = PathUtils.fileListToNameList(destDirFiles);
         final HashSet<String> destDirFileNameHashSet = new HashSet<String>(destDirFileNames);
 
         for (final File sourceFile : sourceFiles) {
