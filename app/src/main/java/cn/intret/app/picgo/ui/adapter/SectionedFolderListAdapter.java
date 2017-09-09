@@ -710,7 +710,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         }
     }
 
-    public <R> R extractTagValue(View view, int id) {
+    private <R> R extractTagValue(View view, int id) {
         Object tag = view.getTag(id);
         if (tag != null) {
             return ((R) tag);

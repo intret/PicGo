@@ -37,7 +37,6 @@ import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.afollestad.dragselectrecyclerview.DragSelectRecyclerView;
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.afollestad.materialdialogs.internal.MDButton;
@@ -106,6 +105,7 @@ import cn.intret.app.picgo.utils.ToastUtils;
 import cn.intret.app.picgo.view.T9KeypadView;
 import cn.intret.app.picgo.widget.RecyclerItemTouchListener;
 import cn.intret.app.picgo.widget.SectionDecoration;
+import cn.intret.app.picgo.widget.SuperRecyclerView;
 import io.reactivex.Observable;
 
 public class MainActivity extends BaseAppCompatActivity implements ImageListAdapter.OnInteractionListener {
@@ -114,7 +114,8 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
     private static final String TAG = "MainActivity";
 
-    @BindView(R.id.img_list) DragSelectRecyclerView mImageList;
+    @BindView(R.id.img_list) SuperRecyclerView mImageList;
+    @BindView(R.id.empty_view) View mEmptyView;
     @BindView(R.id.drawer_layout) DrawerLayout mDrawerLayout;
     @BindView(R.id.drawer_folder_list) RecyclerView mFolderList;
 
@@ -138,6 +139,9 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
      * Folder list
      */
     private FolderListAdapter mFolderListAdapter;
+    /*
+     * The image list current showing folder
+     */
     private File mCurrentFolder;
     private SectionedFolderListAdapter mFolderAdapter;
 
@@ -730,7 +734,6 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                     .doOnError(Throwable::printStackTrace)
                     .subscribe(this::showFolderList);
         }
-
     }
 
     /*
@@ -782,6 +785,9 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         // Set adapter
         mFolderList.setAdapter(listAdapter);
         mFolderAdapter = listAdapter;
+
+        // TODO Initial selection status
+
 
         // List item click event
         RecyclerItemTouchListener itemTouchListener = new RecyclerItemTouchListener(this,
@@ -1578,6 +1584,9 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 
         } else {
             mSpanCount = 3; // columns
+
+            // EmptyView
+            mImageList.setEmptyView(mEmptyView);
 
             // Item Click event TODO: move code to adapter
             mImageList.addOnItemTouchListener(new RecyclerItemTouchListener(this,
