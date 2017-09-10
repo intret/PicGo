@@ -2,6 +2,7 @@ package cn.intret.app.picgo.ui.adapter;
 
 import android.content.res.Resources;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.LinearLayoutManager;
@@ -160,8 +161,33 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         }
     }
 
-    public void diffUpdateConflict(Map<File, List<File>> existedFiles) {
+    public void diffUpdateConflict(@NonNull Map<File, List<File>> existedFiles) {
 
+        Log.d(TAG, "diffUpdateConflict() called with: existedFiles = [" + existedFiles + "]");
+
+        for (int si = 0, mSectionsSize = mSections.size(); si < mSectionsSize; si++) {
+            Section section = mSections.get(si);
+            List<Item> items = section.getItems();
+            for (int ii = 0, itemsSize = items.size(); ii < itemsSize; ii++) {
+                Item item = items.get(ii);
+
+                if (existedFiles.containsKey(item.getFile())) {
+                    List<File> conflictFiles = existedFiles.get(item.getFile());
+                    item.setConflictFiles(conflictFiles);
+
+                    if (mRecyclerView != null) {
+                        RecyclerView.ViewHolder vh = mRecyclerView.findViewHolderForAdapterPosition(getAbsolutePosition(si, ii));
+                        if (vh != null && vh instanceof ItemViewHolder) {
+                            Log.d(TAG, "diffUpdateConflict: update conflict file count");
+
+                            ((ItemViewHolder) vh).badge.setBadgeNumber(conflictFiles.size());
+                            int colorWarn = vh.itemView.getContext().getResources().getColor(R.color.warnning);
+                            ((ItemViewHolder) vh).badge.setBadgeBackgroundColor(colorWarn);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -447,7 +473,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
     /*
      * Interfaces and Classes
      */
-    public static class Section {
+    public static class Section implements Cloneable {
         String name;
         File mFile;
         List<Item> mItems;
@@ -478,11 +504,25 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             mItems = items;
             return this;
         }
+
+        @Override
+        protected Object clone() throws CloneNotSupportedException {
+            Section clone = (Section) super.clone();
+            clone.setFile(new File(mFile.getAbsolutePath()));
+
+            if (mItems != null) {
+                clone.mItems = new LinkedList<>();
+                for (Item item : mItems) {
+                    clone.mItems.add(item);
+                }
+            }
+            return clone;
+        }
     }
 
     public static final int COUNT_NONE = -1;
 
-    public static class Item {
+    public static class Item implements Cloneable {
         String mName;
         int mSelectedCount = COUNT_NONE;
         int mCount;
@@ -499,6 +539,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         }
 
         public Item setConflictFiles(List<File> conflictFiles) {
+            Log.d(TAG, "setConflictFiles: set " + mName + " conflict files :" + conflictFiles);
             mConflictFiles = conflictFiles;
             return this;
         }
@@ -582,6 +623,31 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
         public int getKeywordLength() {
             return mKeywordLength;
+        }
+
+        @Override
+        protected Object clone() {
+            try {
+                Item item = (Item) super.clone();
+                item.setFile(this.getFile() == null ? null : new File(this.getFile().getAbsolutePath()));
+                if (this.mThumbList != null) {
+                    item.mThumbList = new LinkedList<>();
+                    for (File file : this.mThumbList) {
+                        item.mThumbList.add(file);
+                    }
+                }
+                if (this.mConflictFiles != null) {
+                    item.mConflictFiles = new LinkedList<>();
+                    for (File conflictFile : this.mConflictFiles) {
+                        item.mConflictFiles.add(conflictFile);
+                    }
+                }
+
+                return item;
+            } catch (CloneNotSupportedException e) {
+                e.printStackTrace();
+            }
+            return null;
         }
     }
 
@@ -880,7 +946,11 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             vh.name.setText(name);
         }
 
-        vh.setSelectedCount(item.getSelectedCount());
+        if (item.getConflictFiles() != null && !item.getConflictFiles().isEmpty()) {
+            vh.setConflictCount(item.getConflictFiles().size());
+        } else {
+            vh.setSelectedCount(item.getSelectedCount());
+        }
         vh.count.setText(String.valueOf(item.getCount()));
 
 //        vh.setSelectedCountText(item.getSelectedCount(), item.getCount());
@@ -923,7 +993,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
     public void onBindViewHolder(SectionedViewHolder holder, int section, int relativePosition, int absolutePosition, List<Object> payload) {
         if (payload.isEmpty()) {
             Log.w(TAG, "onBindViewHolder: payload is empty" );
-            super.onBindViewHolder(holder, section, relativePosition, absolutePosition, payload);
+            onBindViewHolder(holder, section, relativePosition, absolutePosition);
         } else {
             Object o = payload.get(0);
             if (o instanceof Bundle) {
@@ -1107,10 +1177,17 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
         public void setSelectedCount(int selectedCount) {
             if (selectedCount > 0) {
+                badge.setBadgeBackgroundColor(itemView.getContext().getResources().getColor(R.color.colorAccent));
                 badge.setBadgeNumber(selectedCount);
             } else {
                 badge.hide(false);
             }
+        }
+
+        void setConflictCount(int conflictCount) {
+            badge.setBadgeBackgroundColor(itemView.getContext().getResources().getColor(R.color.warnning));
+//            badge.setBadgeNumber(conflictCount);
+            badge.setBadgeText(itemView.getContext().getResources().getString(R.string.conflict_d, conflictCount));
         }
 
         @Deprecated

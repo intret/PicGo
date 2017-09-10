@@ -1,6 +1,8 @@
 package cn.intret.app.picgo.model;
 
 
+import android.graphics.BitmapFactory;
+import android.media.ExifInterface;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -316,7 +318,7 @@ public class SystemImageService extends BaseService {
 
 
     /**
-     *  扫描目录，产生 {@link RescanFolderThumbnailListMessage} 通知。
+     * 扫描目录，产生 {@link RescanFolderThumbnailListMessage} 通知。
      */
     public Observable<List<File>> rescanDirectoryThumbnailList(File dir) {
         return Observable.create(e -> {
@@ -487,6 +489,7 @@ public class SystemImageService extends BaseService {
 
     /**
      * 产生 {@link RescanImageDirectoryMessage}
+     *
      * @param destDir
      * @param onlyCached
      */
@@ -1174,4 +1177,34 @@ public class SystemImageService extends BaseService {
 
     }
 
+    /**
+     * @implNote https://developer.android.com/reference/android/media/ExifInterface.html
+     */
+    public Observable<ImageFileInformation> loadImageInfo(File imageFile) {
+        return Observable.create(e -> {
+            if (imageFile == null) {
+                throw new IllegalArgumentException("ImageFile should not be null.");
+            }
+            if (imageFile.isDirectory()) {
+                throw new IllegalArgumentException("File should not be a directory.");
+            }
+
+            ExifInterface exifInterface = new ExifInterface(imageFile.getAbsolutePath());
+            BitmapFactory.Options bitMapOption = new BitmapFactory.Options();
+            bitMapOption.inJustDecodeBounds = true;
+            BitmapFactory.decodeFile(imageFile.getAbsolutePath(), bitMapOption);
+            int imageWidth = bitMapOption.outWidth;
+            int imageHeight = bitMapOption.outHeight;
+
+            ImageFileInformation info = new ImageFileInformation();
+            info.setExif(exifInterface);
+            info.setLastModifed(imageFile.lastModified());
+            info.setFileSize(imageFile.length());
+            info.setImageWidth(imageWidth);
+            info.setImageHeight(imageHeight);
+
+            e.onNext(info);
+            e.onComplete();
+        });
+    }
 }

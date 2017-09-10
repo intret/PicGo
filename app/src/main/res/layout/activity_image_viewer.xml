@@ -8,13 +8,14 @@
     tools:context="cn.intret.app.picgo.ui.main.ImageViewerActivity">
 
     <FrameLayout
+        android:id="@+id/pager_container"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
         >
 
         <cn.intret.app.picgo.view.HackyViewPager
@@ -34,9 +35,9 @@
         android:layout_gravity="bottom"
         android:layout_weight="0"
         android:background="@drawable/bg_tool_bar_gradient"
+        android:gravity="right"
         android:orientation="horizontal"
         android:padding="16dp"
-        android:gravity="right"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
@@ -49,9 +50,9 @@
 
         <ImageView
             android:id="@+id/btn_share"
+            style="@style/image_viewer_toolbar_btn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            style="@style/image_viewer_toolbar_btn"
             android:src="@drawable/ic_share_white_24px"
 
             />
@@ -73,5 +74,140 @@
             />
     </LinearLayout>
 
+    <RelativeLayout
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0">
+
+        <ImageView
+            android:id="@+id/blur_layout"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@android:color/transparent"
+            android:visibility="gone"
+            tools:visibility="visible"
+            >
+        </ImageView>
+
+        <LinearLayout
+            android:id="@+id/file_detail_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_centerInParent="true"
+            android:visibility="gone"
+            tools:visibility="visible"
+            >
+
+            <GridLayout
+                android:id="@+id/grid_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginLeft="@dimen/dialog_standard_content_margin"
+                android:layout_marginRight="@dimen/dialog_standard_content_margin"
+                android:columnCount="5"
+                android:rowCount="5"
+                >
+
+                <!-- 文件路径 -->
+                <TextView
+                    android:id="@+id/title_file_path"
+                    style="@style/ImageDetailTextBase.Title.Cell"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_column="0"
+                    android:layout_columnSpan="2"
+                    android:layout_row="0"
+                    android:gravity="right"
+                    android:text="@string/file_path_"
+                    />
+
+                <TextView
+                    android:id="@+id/value_file_path"
+                    style="@style/ImageDetailTextBase.Value.Cell"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_column="2"
+                    android:layout_columnSpan="3"
+                    android:layout_row="0"
+                    tools:text="@string/tools_file_path"/>
+
+                <!-- 分辨率 -->
+                <TextView
+                    android:id="@+id/title_resolution"
+                    style="@style/ImageDetailTextBase.Title.Cell"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_column="0"
+                    android:layout_columnSpan="2"
+                    android:layout_row="1"
+                    android:text="@string/resolution_"
+                    />
+
+                <TextView
+                    android:id="@+id/value_resolution"
+                    style="@style/ImageDetailTextBase.Value.Cell"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_column="2"
+                    android:layout_columnSpan="3"
+                    android:layout_row="1"
+                    tools:text="@string/tools_image_resolution"/>
+
+                <!--大小-->
+                <TextView
+                    android:id="@+id/title_file_size"
+                    style="@style/ImageDetailTextBase.Title.Cell"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_column="0"
+                    android:layout_columnSpan="2"
+                    android:layout_row="2"
+                    android:text="@string/image_size_"
+                    />
+
+                <TextView
+                    android:id="@+id/value_file_size"
+                    style="@style/ImageDetailTextBase.Value.Cell"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_column="2"
+                    android:layout_columnSpan="3"
+                    android:layout_row="2"
+                    tools:text="@string/tools_image_file_size"/>
+
+
+                <!--时间-->
+                <TextView
+                    android:id="@+id/title_capture_time"
+                    style="@style/ImageDetailTextBase.Title.Cell"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_column="0"
+                    android:layout_columnSpan="2"
+                    android:layout_row="3"
+                    android:text="@string/capture_time"
+                    />
+
+                <TextView
+                    android:id="@+id/value_capture_time"
+                    style="@style/ImageDetailTextBase.Value.Cell"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_column="2"
+                    android:layout_columnSpan="3"
+                    android:layout_row="3"
+                    tools:text="17/9/9 12:11"/>
+
+            </GridLayout>
+        </LinearLayout>
+
+
+    </RelativeLayout>
 
 </android.support.constraint.ConstraintLayout>

@@ -6,6 +6,18 @@ import android.view.View;
 import android.widget.TextView;
 
 public class ViewUtils {
+
+    public static boolean isShow(View view) {
+        if (view == null) {
+            return false;
+        }
+        return view.getVisibility() == View.VISIBLE;
+    }
+
+    public static boolean isHide(View view) {
+        return !isShow(view);
+    }
+
     public static void setViewVisibility(View view, @IdRes int id, int visibility) {
         View v = view.findViewById(id);
         if (v != null) {

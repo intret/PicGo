@@ -3,6 +3,7 @@ package cn.intret.app.picgo.ui.main;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -31,6 +32,9 @@ import com.github.chrisbanes.photoview.PhotoView;
 import com.orhanobut.logger.Logger;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.time.DateFormatUtils;
+import org.apache.commons.lang3.time.DateUtils;
+import org.apache.commons.lang3.time.FastDateFormat;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
@@ -46,16 +50,21 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import cn.intret.app.picgo.R;
+import cn.intret.app.picgo.model.ImageFileInformation;
 import cn.intret.app.picgo.model.event.RemoveFileMessage;
 import cn.intret.app.picgo.model.SystemImageService;
 import cn.intret.app.picgo.ui.adapter.ImageListAdapter;
 import cn.intret.app.picgo.ui.adapter.ImageTransitionNameGenerator;
 import cn.intret.app.picgo.ui.event.CurrentImageChangeMessage;
+import cn.intret.app.picgo.utils.FileSizeUtils;
 import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.utils.PathUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
+import cn.intret.app.picgo.utils.ViewUtil;
+import cn.intret.app.picgo.utils.ViewUtils;
 import io.reactivex.Observable;
+import jp.wasabeef.blurry.Blurry;
 import pl.droidsonroids.gif.GifDrawable;
 
 /**
@@ -78,6 +87,9 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
     @BindView(R.id.brief) TextView mBrief;
     @BindView(R.id.btn_delete) ImageView mBtnDelete;
     @BindView(R.id.btn_detail) ImageView mBtnDetail;
+    @BindView(R.id.pager_container) ViewGroup mPagerContainer;
+    @BindView(R.id.blur_layout) ImageView mBlurLayout;
+    @BindView(R.id.file_detail_container) ViewGroup mDetailContainer;
 
     private PagerAdapter mImageAdapter;
     private String mImageFilePath;
@@ -116,7 +128,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
     }
 
     @OnClick(R.id.btn_delete)
-    public void onBtnDelete(View view) {
+    public void onClickDeleteButton(View view) {
 
         SystemImageService.getInstance()
                 .removeFile(mPagerAdapter.getImage(mCurrentItem).getFile())
@@ -132,18 +144,72 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
     }
 
     @OnClick(R.id.btn_detail)
-    public void onBtnDetail(View view) {
-        ToastUtils.toastShort(this, R.string.unimplemented);
+    public void onClickDetailButton(View view) {
+
+        if (mDetailContainer.getVisibility() == View.VISIBLE) {
+            hideImageDetailViews();
+
+        } else {
+
+            Blurry.with(this)
+                    .radius(25)
+                    .sampling(2)
+                    .async()
+                    .animate()
+                    .capture(mViewPager)
+                    .into(mBlurLayout);
+
+            File showingImageFile = getShowingImageFile();
+            SystemImageService.getInstance()
+                    .loadImageInfo(showingImageFile)
+                    .compose(workAndShow())
+                    .subscribe(info -> updateFileDetailInformation(showingImageFile, info));
+
+            mBlurLayout.setOnClickListener(v -> {
+                hideImageDetailViews();
+            });
+            mBlurLayout.setVisibility(View.VISIBLE);
+            mDetailContainer.setVisibility(View.VISIBLE);
+        }
     }
 
-    File getCurrentFile() {
+    private void updateFileDetailInformation(File showingImageFile, ImageFileInformation info) {
+        // Size
+        ViewUtils.setText(mDetailContainer,
+                R.id.value_file_size,
+                FileSizeUtils.formatFileSize(info.getFileSize(), false));
+
+        ViewUtils.setText(mDetailContainer,
+                R.id.value_file_path,
+                showingImageFile.getAbsolutePath());
+
+        if (info.getExif() != null) {
+            ViewUtils.setText(
+                    mDetailContainer,
+                    R.id.value_capture_time,
+                    DateFormatUtils.format(info.getLastModified(),
+                            FastDateFormat.getDateInstance(FastDateFormat.FULL).getPattern()));
+        }
+
+        ViewUtils.setText(mDetailContainer,
+                R.id.value_resolution,
+                info.getImageWidth() == 0 ? "-" : info.getImageWidth() + " × " + info.getImageHeight());
+    }
+
+    private void hideImageDetailViews() {
+        mBlurLayout.setImageDrawable(null);
+        mDetailContainer.setVisibility(View.INVISIBLE);
+        mBlurLayout.setVisibility(View.INVISIBLE);
+    }
+
+    File getShowingImageFile() {
         return mPagerAdapter.getImage(mCurrentItem).getFile();
     }
 
     @OnClick(R.id.btn_share)
-    public void onBtnShare(View view) {
+    public void onClickShareButton(View view) {
 
-        File currentFile = getCurrentFile();
+        File currentFile = getShowingImageFile();
         Logger.d("share file : " + currentFile);
 
 //        final Intent shareIntent = new Intent(Intent.ACTION_SEND);
@@ -342,6 +408,17 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
     protected void onDestroy() {
         Log.d(TAG, "onDestroy: ");
         super.onDestroy();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (ViewUtils.isShow(mDetailContainer)) {
+            ViewUtil.hideView(mDetailContainer);
+            mBlurLayout.setImageDrawable(null);
+            return;
+        }
+
+        super.onBackPressed();
     }
 
     public static Intent newIntentViewFile(Context context, File file) {

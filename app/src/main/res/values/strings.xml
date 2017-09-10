@@ -88,5 +88,14 @@
     <string name="fmt_main_image_selected_title">%1$s(%2$d/%3$d)</string>
     <string name="image_list_empty_view_desc">Nothing,nothing,nothing!</string>
     <string name="load_folder_list_failed">加载文件夹列表失败</string>
+    <string name="conflict_d">冲突 %1$d</string>
+    <string name="file_path">文件路径</string>
+    <string name="file_path_">文件路径：</string>
+    <string name="tools_file_path">/storage/0/SDCard/DCIM/Fuck/it/all.jpg</string>
+    <string name="resolution_">尺寸：</string>
+    <string name="tools_image_resolution">1080x1920</string>
+    <string name="tools_image_file_size">8.12 MB</string>
+    <string name="image_size_">大小：</string>
+    <string name="capture_time">时间：</string>
 
 </resources>
