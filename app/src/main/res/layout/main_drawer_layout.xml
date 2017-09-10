@@ -114,7 +114,7 @@
                 android:layout_gravity="bottom"
                 android:background="@android:color/white"
                 android:visibility="gone"
-                app:floatingMenu="@menu/selected_images_action"
+                app:floatingMenu="@menu/image_action_menu"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintLeft_toLeftOf="parent"
                 app:layout_constraintRight_toRightOf="parent"

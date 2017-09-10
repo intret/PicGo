@@ -23,16 +23,24 @@ import cn.intret.app.picgo.model.event.RecentOpenFolderListChangeMessage;
 import cn.intret.app.picgo.model.event.RenameDirectoryMessage;
 import cn.intret.app.picgo.utils.Action1;
 import cn.intret.app.picgo.utils.ListUtils;
+import cn.intret.app.picgo.utils.MapAction1;
 import io.reactivex.Observable;
 import io.reactivex.schedulers.Schedulers;
 
 public class UserDataService extends BaseService {
 
     public static final String PREF_KEY_FOLDER_ACCESS_RECENT_HISTORY = "folder_access_recent_history";
+    public static final java.lang.String PREF_KEY_IMAGE_VIEW_MODE = "image_view_mode";
+    public static final String VIEW_MODE_LIST_VIEW = "list_view";
+    public static final String VIEW_MODE_GRID_VIEW = "grid_view";
     private final int mMaxRecentHistorySize = 10;
     RxSharedPreferences mPreferences;
 
     EventBus mEventBus = EventBus.getDefault();
+
+    public RxSharedPreferences getPreferences() {
+        return mPreferences;
+    }
 
     int mMoveFileDialogFirstVisibleItemPosition = 0;
 
@@ -61,6 +69,14 @@ public class UserDataService extends BaseService {
         mEventBus.register(this);
 
         validateRecentFolderList();
+    }
+
+    public  <R> R getStringPreference(String key, MapAction1<R, String> mapAction) {
+        String val = mPreferences.getString(key).get();
+        if (mapAction != null) {
+            return mapAction.onMap(val);
+        }
+        return null;
     }
 
     private void validateRecentFolderList() {

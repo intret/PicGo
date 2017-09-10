@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+      xmlns:android="http://schemas.android.com/apk/res/android"
+    >
+
+    <group android:menuCategory="container">
+        <item
+            android:id="@+id/item_grid_view"
+            android:title="@string/grid_view"
+            android:icon="@drawable/ic_grid_on_black_24px"
+            android:orderInCategory="0"
+            android:checkable="true"
+            app:showAsAction="always"
+            >
+
+        </item>
+        <item
+            android:id="@+id/item_list_view"
+            android:checkable="true"
+            android:icon="@drawable/ic_view_list_black_24px"
+            app:showAsAction="always"
+            android:title="@string/list_view"
+            />
+    </group>
+</menu>

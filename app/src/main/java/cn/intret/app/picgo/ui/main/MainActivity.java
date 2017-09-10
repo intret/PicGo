@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.DrawableRes;
+import android.support.annotation.IdRes;
 import android.support.annotation.MainThread;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -47,6 +49,7 @@ import com.annimon.stream.Stream;
 import com.annimon.stream.function.BiConsumer;
 import com.annimon.stream.function.Function;
 import com.annimon.stream.function.Supplier;
+import com.f2prateek.rx.preferences2.Preference;
 
 import org.apache.commons.lang3.StringUtils;
 import org.greenrobot.eventbus.EventBus;
@@ -76,6 +79,7 @@ import cn.intret.app.picgo.model.ImageGroup;
 import cn.intret.app.picgo.model.RecentRecord;
 import cn.intret.app.picgo.model.SystemImageService;
 import cn.intret.app.picgo.model.UserDataService;
+import cn.intret.app.picgo.model.ViewMode;
 import cn.intret.app.picgo.model.event.FolderModelChangeMessage;
 import cn.intret.app.picgo.model.event.RecentOpenFolderListChangeMessage;
 import cn.intret.app.picgo.model.event.RemoveFileMessage;
@@ -222,7 +226,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
 ////        mFloatingToolbar.handleFabClick(true);
 //        mFloatingToolbar.enableAutoHide(true);
 
-        mFloatingToolbar.inflateMenu(R.menu.selected_images_action);
+        mFloatingToolbar.inflateMenu(R.menu.image_action_menu);
         mFloatingToolbar.setOnMenuItemClickListener(item -> {
             switch (item.getItemId()) {
                 case R.id.action_copy: {
@@ -274,9 +278,31 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
         super.onDestroy();
     }
 
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
+
         getMenuInflater().inflate(R.menu.main_menu, menu);
+        ViewMode viewMode = UserDataService.getInstance()
+                .getStringPreference(UserDataService.PREF_KEY_IMAGE_VIEW_MODE, ViewMode::fromString);
+
+        if (viewMode == ViewMode.UNKNOWN) {
+            UserDataService.getInstance()
+                    .getPreferences()
+                    .getString(UserDataService.PREF_KEY_IMAGE_VIEW_MODE)
+                    .set(ViewMode.GRID_VIEW.toString());
+        } else {
+
+            MenuItem item = menu.findItem(R.id.app_bar_view_mode);
+            switch (viewMode) {
+                case GRID_VIEW:
+                    item.setIcon(R.drawable.ic_grid_on_black_24px);
+                    break;
+                case LIST_VIEW:
+                    item.setIcon(R.drawable.ic_list_black_24px);
+                    break;
+            }
+        }
         return true;
     }
 
@@ -623,16 +649,72 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                     break;
                 case R.id.app_bar_setting: {
                     MainActivity.this.startActivity(new Intent(MainActivity.this, SettingActivity.class));
-//                    ToastUtils.toastShort(MainActivity.this, "setting");
                 }
                 break;
                 case R.id.app_bar_view_mode:
-                    ToastUtils.toastShort(MainActivity.this, "viewmode");
+                    showViewModeMenu();
                     break;
             }
 
             return true;
         });
+    }
+
+    private void showViewModeMenu() {
+        PopupMenu popupMenu = new PopupMenu(this, mToolbar, Gravity.RIGHT);
+        popupMenu.inflate(R.menu.view_mode_menu);
+
+        ViewMode mode = UserDataService.getInstance()
+                .getStringPreference(UserDataService.PREF_KEY_IMAGE_VIEW_MODE, ViewMode::fromString);
+
+
+        Preference<String> viewModePref = UserDataService.getInstance()
+                .getPreferences()
+                .getString(UserDataService.PREF_KEY_IMAGE_VIEW_MODE);
+
+
+        MenuItem itemGridView = popupMenu.getMenu().findItem(R.id.item_grid_view);
+        MenuItem itemListView = popupMenu.getMenu().findItem(R.id.item_list_view);
+        if (mode == ViewMode.UNKNOWN) {
+
+            setToolbarViewModeIcon(R.drawable.ic_grid_on_black_24px);
+
+            viewModePref.set(UserDataService.VIEW_MODE_GRID_VIEW);
+
+            itemGridView.setChecked(true).setEnabled(false);
+            itemListView.setChecked(false).setEnabled(true);
+        } else {
+
+            switch (mode) {
+                case GRID_VIEW:
+                    itemGridView.setChecked(true).setEnabled(false);
+                    itemListView.setChecked(false).setEnabled(true);
+                    break;
+                case LIST_VIEW:
+                    itemGridView.setChecked(false).setEnabled(true);
+                    itemListView.setChecked(true).setEnabled(false);
+                    break;
+            }
+        }
+
+        popupMenu.setOnMenuItemClickListener(item -> {
+            switch (item.getItemId()) {
+                case R.id.item_grid_view:
+                    setToolbarViewModeIcon(R.drawable.ic_grid_on_black_24px);
+                    viewModePref.set(ViewMode.GRID_VIEW.toString());
+                    break;
+                case R.id.item_list_view:
+                    setToolbarViewModeIcon(R.drawable.ic_list_black_24px);
+                    viewModePref.set(ViewMode.LIST_VIEW.toString());
+                    break;
+            }
+            return false;
+        });
+        popupMenu.show();
+    }
+
+    private void setToolbarViewModeIcon(int resId) {
+        mToolbar.getMenu().findItem(R.id.app_bar_view_mode).setIcon(resId);
     }
 
     private void showRecentHistoryMenu() {
