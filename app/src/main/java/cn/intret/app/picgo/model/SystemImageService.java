@@ -7,6 +7,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 import android.util.Pair;
+import android.util.Size;
 
 import com.annimon.stream.Collector;
 import com.annimon.stream.Stream;
@@ -17,6 +18,7 @@ import com.annimon.stream.function.Supplier;
 import com.t9search.model.PinyinSearchUnit;
 import com.t9search.util.T9Util;
 
+import org.apache.commons.io.FileSystemUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -47,6 +49,7 @@ import cn.intret.app.picgo.model.event.RescanFolderListMessage;
 import cn.intret.app.picgo.model.event.RescanFolderThumbnailListMessage;
 import cn.intret.app.picgo.model.event.RescanImageDirectoryMessage;
 import cn.intret.app.picgo.utils.DateTimeUtils;
+import cn.intret.app.picgo.utils.FileSizeUtils;
 import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.utils.PathUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
@@ -1189,22 +1192,34 @@ public class SystemImageService extends BaseService {
                 throw new IllegalArgumentException("File should not be a directory.");
             }
 
-            ExifInterface exifInterface = new ExifInterface(imageFile.getAbsolutePath());
-            BitmapFactory.Options bitMapOption = new BitmapFactory.Options();
-            bitMapOption.inJustDecodeBounds = true;
-            BitmapFactory.decodeFile(imageFile.getAbsolutePath(), bitMapOption);
-            int imageWidth = bitMapOption.outWidth;
-            int imageHeight = bitMapOption.outHeight;
-
             ImageFileInformation info = new ImageFileInformation();
-            info.setExif(exifInterface);
+
+            Size imageSize = null;
+            if (PathUtils.isStaticImageFile(imageFile.getAbsolutePath())) {
+                imageSize = getImageSize(imageFile);
+                info.setImageSize(imageSize);
+            }
+
             info.setLastModifed(imageFile.lastModified());
             info.setFileSize(imageFile.length());
-            info.setImageWidth(imageWidth);
-            info.setImageHeight(imageHeight);
+
+
+            // Exif
+            ExifInterface exifInterface = new ExifInterface(imageFile.getAbsolutePath());
+            info.setExif(exifInterface);
 
             e.onNext(info);
             e.onComplete();
         });
+    }
+
+    private Size getImageSize(File imageFile) {
+
+        BitmapFactory.Options bitMapOption = new BitmapFactory.Options();
+        bitMapOption.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(imageFile.getAbsolutePath(), bitMapOption);
+        int imageWidth = bitMapOption.outWidth;
+        int imageHeight = bitMapOption.outHeight;
+        return new Size(imageWidth, imageHeight);
     }
 }

@@ -2,6 +2,9 @@ package cn.intret.app.picgo.model;
 
 
 import android.media.ExifInterface;
+import android.util.Size;
+
+import java.io.File;
 
 public class ImageFileInformation {
     private ExifInterface mExif;
@@ -9,6 +12,7 @@ public class ImageFileInformation {
     private long mFileSize;
     private int mImageWidth;
     private int mImageHeight;
+    private Size mImageSize;
 
     public ImageFileInformation setExif(ExifInterface exif) {
         mExif = exif;
@@ -55,5 +59,13 @@ public class ImageFileInformation {
 
     public int getImageHeight() {
         return mImageHeight;
+    }
+
+    public void setImageSize(Size size) {
+        mImageSize = size;
+    }
+
+    public Size getImageSize() {
+        return mImageSize;
     }
 }

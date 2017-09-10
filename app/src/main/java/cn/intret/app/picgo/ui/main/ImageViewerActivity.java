@@ -45,6 +45,7 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -64,6 +65,8 @@ import cn.intret.app.picgo.utils.ToastUtils;
 import cn.intret.app.picgo.utils.ViewUtil;
 import cn.intret.app.picgo.utils.ViewUtils;
 import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.schedulers.Schedulers;
 import jp.wasabeef.blurry.Blurry;
 import pl.droidsonroids.gif.GifDrawable;
 
@@ -169,7 +172,12 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
                 hideImageDetailViews();
             });
             mBlurLayout.setVisibility(View.VISIBLE);
-            mDetailContainer.setVisibility(View.VISIBLE);
+            Observable.just(mDetailContainer)
+                    .delay(200, TimeUnit.MILLISECONDS)
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(viewGroup -> {
+                        viewGroup.setVisibility(View.VISIBLE);
+                    }, throwable -> throwable.printStackTrace());
         }
     }
 
@@ -193,7 +201,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
         ViewUtils.setText(mDetailContainer,
                 R.id.value_resolution,
-                info.getImageWidth() == 0 ? "-" : info.getImageWidth() + " × " + info.getImageHeight());
+                info.getImageSize() == null ? "-" : info.getImageSize().getWidth() + " × " + info.getImageSize().getHeight());
     }
 
     private void hideImageDetailViews() {
