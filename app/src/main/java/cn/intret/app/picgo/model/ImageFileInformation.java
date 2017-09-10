@@ -13,6 +13,7 @@ public class ImageFileInformation {
     private int mImageWidth;
     private int mImageHeight;
     private Size mImageSize;
+    private int mVideoDuration;
 
     public ImageFileInformation setExif(ExifInterface exif) {
         mExif = exif;
@@ -61,11 +62,19 @@ public class ImageFileInformation {
         return mImageHeight;
     }
 
-    public void setImageSize(Size size) {
+    public void setMediaSize(Size size) {
         mImageSize = size;
     }
 
     public Size getImageSize() {
         return mImageSize;
+    }
+
+    public void setVideoDuration(int videoDuration) {
+        mVideoDuration = videoDuration;
+    }
+
+    public int getVideoDuration() {
+        return mVideoDuration;
     }
 }

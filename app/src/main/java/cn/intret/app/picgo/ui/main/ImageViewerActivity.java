@@ -91,8 +91,11 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
     @BindView(R.id.btn_delete) ImageView mBtnDelete;
     @BindView(R.id.btn_detail) ImageView mBtnDetail;
     @BindView(R.id.pager_container) ViewGroup mPagerContainer;
+
+    @BindView(R.id.detail_container) ViewGroup mDetailRootLayout;
     @BindView(R.id.blur_layout) ImageView mBlurLayout;
     @BindView(R.id.file_detail_container) ViewGroup mDetailContainer;
+    @BindView(R.id.mask_view) View mMaskView;
 
     private PagerAdapter mImageAdapter;
     private String mImageFilePath;
@@ -149,7 +152,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
     @OnClick(R.id.btn_detail)
     public void onClickDetailButton(View view) {
 
-        if (mDetailContainer.getVisibility() == View.VISIBLE) {
+        if (mDetailRootLayout.getVisibility() == View.VISIBLE) {
             hideImageDetailViews();
 
         } else {
@@ -171,8 +174,8 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
             mBlurLayout.setOnClickListener(v -> {
                 hideImageDetailViews();
             });
-            mBlurLayout.setVisibility(View.VISIBLE);
-            Observable.just(mDetailContainer)
+
+            Observable.just(mDetailRootLayout)
                     .delay(200, TimeUnit.MILLISECONDS)
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(viewGroup -> {
@@ -206,8 +209,8 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
     private void hideImageDetailViews() {
         mBlurLayout.setImageDrawable(null);
-        mDetailContainer.setVisibility(View.INVISIBLE);
-        mBlurLayout.setVisibility(View.INVISIBLE);
+        mDetailRootLayout.setVisibility(View.INVISIBLE);
+//        mBlurLayout.setVisibility(View.INVISIBLE);
     }
 
     File getShowingImageFile() {

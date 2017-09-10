@@ -9,6 +9,7 @@
     <color name="text_normal">#b1b1b1</color>
     <color name="text_selected">#4d4d4d</color>
     <color name="translucent">#00000000</color>
+    <color name="black_translucent">#88000000</color>
     <color name="white">#FFFFFF</color>
 
     <color name="ghost_white">#FFF8F8FF</color>

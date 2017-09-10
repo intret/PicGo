@@ -1,7 +1,6 @@
 package cn.intret.app.picgo.model;
 
 
-import android.graphics.BitmapFactory;
 import android.media.ExifInterface;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -18,7 +17,6 @@ import com.annimon.stream.function.Supplier;
 import com.t9search.model.PinyinSearchUnit;
 import com.t9search.util.T9Util;
 
-import org.apache.commons.io.FileSystemUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -49,8 +47,8 @@ import cn.intret.app.picgo.model.event.RescanFolderListMessage;
 import cn.intret.app.picgo.model.event.RescanFolderThumbnailListMessage;
 import cn.intret.app.picgo.model.event.RescanImageDirectoryMessage;
 import cn.intret.app.picgo.utils.DateTimeUtils;
-import cn.intret.app.picgo.utils.FileSizeUtils;
 import cn.intret.app.picgo.utils.ListUtils;
+import cn.intret.app.picgo.utils.MediaUtils;
 import cn.intret.app.picgo.utils.PathUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
 import io.reactivex.Observable;
@@ -1183,29 +1181,33 @@ public class SystemImageService extends BaseService {
     /**
      * @implNote https://developer.android.com/reference/android/media/ExifInterface.html
      */
-    public Observable<ImageFileInformation> loadImageInfo(File imageFile) {
+    public Observable<ImageFileInformation> loadImageInfo(File mediaFile) {
         return Observable.create(e -> {
-            if (imageFile == null) {
+            if (mediaFile == null) {
                 throw new IllegalArgumentException("ImageFile should not be null.");
             }
-            if (imageFile.isDirectory()) {
+            if (mediaFile.isDirectory()) {
                 throw new IllegalArgumentException("File should not be a directory.");
             }
 
             ImageFileInformation info = new ImageFileInformation();
 
-            Size imageSize = null;
-            if (PathUtils.isStaticImageFile(imageFile.getAbsolutePath())) {
-                imageSize = getImageSize(imageFile);
-                info.setImageSize(imageSize);
+            if (PathUtils.isStaticImageFile(mediaFile.getAbsolutePath())) {
+                Size imageSize = null;
+                imageSize = MediaUtils.getImageSize(mediaFile);
+                info.setMediaSize(imageSize);
+            } else if (PathUtils.isVideoFile(mediaFile.getAbsolutePath())) {
+                Size videoSize = MediaUtils.getVideoSize(mContext, mediaFile);
+                info.setMediaSize(videoSize);
+                info.setVideoDuration(MediaUtils.getVideoFileDuration(mContext, mediaFile));
             }
 
-            info.setLastModifed(imageFile.lastModified());
-            info.setFileSize(imageFile.length());
+            info.setLastModifed(mediaFile.lastModified());
+            info.setFileSize(mediaFile.length());
 
 
             // Exif
-            ExifInterface exifInterface = new ExifInterface(imageFile.getAbsolutePath());
+            ExifInterface exifInterface = new ExifInterface(mediaFile.getAbsolutePath());
             info.setExif(exifInterface);
 
             e.onNext(info);
@@ -1213,13 +1215,4 @@ public class SystemImageService extends BaseService {
         });
     }
 
-    private Size getImageSize(File imageFile) {
-
-        BitmapFactory.Options bitMapOption = new BitmapFactory.Options();
-        bitMapOption.inJustDecodeBounds = true;
-        BitmapFactory.decodeFile(imageFile.getAbsolutePath(), bitMapOption);
-        int imageWidth = bitMapOption.outWidth;
-        int imageHeight = bitMapOption.outHeight;
-        return new Size(imageWidth, imageHeight);
-    }
 }
