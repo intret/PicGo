@@ -62,7 +62,7 @@
         <!--文件类型图标-->
         <ImageView
             android:id="@+id/file_type"
-            style="@style/imag_list_file_type_icon"
+            style="@style/ImageListFileTypeIcon"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/margin_top_image_list_item_checkbox"

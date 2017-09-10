@@ -48,7 +48,7 @@
 
                 <RadioButton
                     android:id="@+id/btn_default"
-                    style="@style/btn_view_mode"
+                    style="@style/ViewModeButton"
                     android:checked="true"
                     android:drawableLeft="@drawable/selector_view_mode_default"
                     android:text="@string/mode_default"
@@ -56,14 +56,14 @@
 
                 <RadioButton
                     android:id="@+id/btn_week"
-                    style="@style/btn_view_mode"
+                    style="@style/ViewModeButton"
                     android:drawableLeft="@drawable/selector_view_mode_week"
                     android:text="@string/view_mode_week"
                     />
 
                 <RadioButton
                     android:id="@+id/btn_month"
-                    style="@style/btn_view_mode"
+                    style="@style/ViewModeButton"
                     android:drawableLeft="@drawable/selector_view_mode_month"
                     android:text="@string/view_mode_month"
                     />
@@ -103,7 +103,7 @@
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent"
                 style="@style/TextAppearance.AppCompat.Large"
-                android:src="@drawable/ic_ghost_scare"
+                android:src="@drawable/ic_little_ghost_scare"
                 />
 
             <!--选中文件操作工具栏-->

@@ -10,7 +10,6 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
-import android.support.v4.view.ViewCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -47,7 +46,6 @@ import cn.intret.app.picgo.model.SystemImageService;
 import cn.intret.app.picgo.ui.event.CancelExitTransitionMessage;
 import cn.intret.app.picgo.ui.event.ImageFragmentSelectionChangeMessage;
 import cn.intret.app.picgo.utils.PathUtils;
-import cn.intret.app.picgo.utils.SystemUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
 
 /**
@@ -74,6 +72,9 @@ public class ImageFragment extends Fragment {
 
     @BindView(R.id.image) PhotoView mImage;
     @BindView(R.id.file_type) ImageView mFileType;
+    @BindView(R.id.empty_view) View mEmptyView;
+    @BindView(R.id.empty_layout) View mEmptyLayout;
+    @BindView(R.id.image_container) ViewGroup mRootLayout;
 
     private String mImageTransitionName;
     private String mFileTypeTransitionName;
@@ -123,14 +124,11 @@ public class ImageFragment extends Fragment {
         //}
 
         mImage.setOnClickListener(v -> {
-            if (mPerformExitTransition) {
-                if (getActivity() != null) {
-                    Logger.d("退出查看图片：%s", mFilePath);
-                    ActivityCompat.finishAfterTransition(getActivity());
-                }
-            } else {
-                getActivity().finish();
-            }
+            handleClickEvent();
+        });
+
+        mRootLayout.setOnClickListener(v -> {
+            handleClickEvent();
         });
 
         mImage.setOnLongClickListener(v -> {
@@ -195,7 +193,7 @@ public class ImageFragment extends Fragment {
                 .apply(RequestOptions.skipMemoryCacheOf(false))
                 .apply(RequestOptions.fitCenterTransform())
                 .transition(DrawableTransitionOptions.withCrossFade())
-                .listener(new ImageLoadingObserver(mPerformEnterTransition));
+                .listener(new ImageRequestObserver(mPerformEnterTransition));
 
         request.into(mImage);
 
@@ -221,23 +219,42 @@ public class ImageFragment extends Fragment {
         return rootView;
     }
 
-    class ImageLoadingObserver implements RequestListener<Drawable> {
+    private void handleClickEvent() {
+        if (mPerformExitTransition) {
+            if (getActivity() != null) {
+                Logger.d("退出查看图片：%s", mFilePath);
+                ActivityCompat.finishAfterTransition(getActivity());
+            }
+        } else {
+            getActivity().finish();
+        }
+    }
+
+    class ImageRequestObserver implements RequestListener<Drawable> {
 
         boolean mPerformEnterTransition;
 
-        public ImageLoadingObserver(boolean performEnterTransition) {
+        public ImageRequestObserver(boolean performEnterTransition) {
             mPerformEnterTransition = performEnterTransition;
         }
 
         @Override
         public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
-            return false;
+            mEmptyLayout.setVisibility(View.VISIBLE);
+            Log.e(TAG, "onLoadFailed: 图片加载失败 : " + e);
+            starEnterAnimation();
+            return true;
         }
 
         @Override
         public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
-            Log.d(TAG, "onResourceReady() called with: resource = [" + resource + "], model = [" + model + "], target = [" + target + "], dataSource = [" + dataSource + "], isFirstResource = [" + isFirstResource + "]");
 
+            Log.d(TAG, "onResourceReady: 图片加载成功，启动进入动画");
+            starEnterAnimation();
+            return false;
+        }
+
+        private void starEnterAnimation() {
             if (mPerformEnterTransition) {
                 FragmentActivity activity = ImageFragment.this.getActivity();
                 if (activity != null) {
@@ -247,7 +264,6 @@ public class ImageFragment extends Fragment {
                 }
 //                startPostponedEnterTransition();
             }
-            return false;
         }
     }
 

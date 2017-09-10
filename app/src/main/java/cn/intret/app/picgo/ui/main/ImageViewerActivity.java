@@ -3,7 +3,6 @@ package cn.intret.app.picgo.ui.main;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -33,7 +32,6 @@ import com.orhanobut.logger.Logger;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
-import org.apache.commons.lang3.time.DateUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -59,14 +57,14 @@ import cn.intret.app.picgo.ui.adapter.ImageTransitionNameGenerator;
 import cn.intret.app.picgo.ui.event.CurrentImageChangeMessage;
 import cn.intret.app.picgo.utils.FileSizeUtils;
 import cn.intret.app.picgo.utils.ListUtils;
+import cn.intret.app.picgo.utils.MediaUtils;
 import cn.intret.app.picgo.utils.PathUtils;
+import cn.intret.app.picgo.utils.RxUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
-import cn.intret.app.picgo.utils.ViewUtil;
 import cn.intret.app.picgo.utils.ViewUtils;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.schedulers.Schedulers;
 import jp.wasabeef.blurry.Blurry;
 import pl.droidsonroids.gif.GifDrawable;
 
@@ -169,7 +167,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
             SystemImageService.getInstance()
                     .loadImageInfo(showingImageFile)
                     .compose(workAndShow())
-                    .subscribe(info -> updateFileDetailInformation(showingImageFile, info));
+                    .subscribe(info -> updateFileDetailView(showingImageFile, info));
 
             mBlurLayout.setOnClickListener(v -> {
                 hideImageDetailViews();
@@ -180,11 +178,11 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(viewGroup -> {
                         viewGroup.setVisibility(View.VISIBLE);
-                    }, throwable -> throwable.printStackTrace());
+                    }, RxUtils::unhandledThrowable);
         }
     }
 
-    private void updateFileDetailInformation(File showingImageFile, ImageFileInformation info) {
+    private void updateFileDetailView(File showingImageFile, ImageFileInformation info) {
         // Size
         ViewUtils.setText(mDetailContainer,
                 R.id.value_file_size,
@@ -202,9 +200,12 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
                             FastDateFormat.getDateInstance(FastDateFormat.FULL).getPattern()));
         }
 
+        String sizeString = getResources().getString(R.string.image_size_d_d,
+                info.getImageWidth(), info.getImageHeight());
+
         ViewUtils.setText(mDetailContainer,
                 R.id.value_resolution,
-                info.getImageSize() == null ? "-" : info.getImageSize().getWidth() + " × " + info.getImageSize().getHeight());
+                MediaUtils.isValidSize(info.getImageSize()) ? sizeString : "-");
     }
 
     private void hideImageDetailViews() {
@@ -423,9 +424,8 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
     @Override
     public void onBackPressed() {
-        if (ViewUtils.isShow(mDetailContainer)) {
-            ViewUtil.hideView(mDetailContainer);
-            mBlurLayout.setImageDrawable(null);
+        if (ViewUtils.isShow(mDetailRootLayout)) {
+            hideImageDetailViews();
             return;
         }
 

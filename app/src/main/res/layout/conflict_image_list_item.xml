@@ -19,7 +19,7 @@
             android:contentDescription="First Image"
             tools:src="@drawable/img_bowl"
             tools:ignore="HardcodedText"
-            style="@style/conflict_list_item_image"
+            style="@style/ConflictListItemImage"
             />
 
         <CheckBox
@@ -42,7 +42,7 @@
             android:layout_width="wrap_content"
             android:layout_height="100dp"
             android:contentDescription="Second Image"
-            style="@style/conflict_list_item_image"
+            style="@style/ConflictListItemImage"
             tools:src="@drawable/img_bowl"
             tools:ignore="HardcodedText"
             />

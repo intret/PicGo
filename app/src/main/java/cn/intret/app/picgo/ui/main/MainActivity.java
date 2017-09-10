@@ -488,7 +488,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                 .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
                 .compose(workAndShow())
                 .subscribe(adapter::diffUpdate,
-                        Throwable::printStackTrace);
+                        RxUtils::unhandledThrowable);
     }
 
     private void diffUpdateImageListAdapter(ImageListAdapter adapter, boolean fromCacheFirst) {
@@ -500,7 +500,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                 .map(this::imagesToListItems)
                 .compose(workAndShow())
                 .subscribe(adapter::diffUpdate,
-                        Throwable::printStackTrace);
+                        RxUtils::unhandledThrowable);
     }
 
     public String getTransitionName(String filename) {
@@ -700,7 +700,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                             currAdapter.diffUpdate(newAdapter);
                         }
 
-                    }, Throwable::printStackTrace);
+                    }, RxUtils::unhandledThrowable);
         });
     }
 
@@ -737,7 +737,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
             SystemImageService.getInstance()
                     .loadFolderList(true)
                     .compose(workAndShow())
-                    .doOnError(Throwable::printStackTrace)
+                    .doOnError(RxUtils::unhandledThrowable)
                     .subscribe(this::showFolderList);
         }
     }
@@ -1574,7 +1574,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                     }
                     mRecentHistory.add(0, directory);
 
-                }, Throwable::printStackTrace);
+                }, RxUtils::unhandledThrowable);
     }
 
     private void reloadImageList() {
@@ -1639,7 +1639,7 @@ public class MainActivity extends BaseAppCompatActivity implements ImageListAdap
                             showDirectoryImages(directory, true);
                         }
 
-                    }, Throwable::printStackTrace);
+                    }, RxUtils::unhandledThrowable);
 
 
             mIsImageListLoaded = true;

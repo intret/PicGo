@@ -45,12 +45,12 @@
 
         <ImageView
             android:id="@+id/btn_delete"
-            style="@style/image_viewer_toolbar_btn"
+            style="@style/ImageViewerToolbarButton"
             android:src="@drawable/ic_delete_white"/>
 
         <ImageView
             android:id="@+id/btn_share"
-            style="@style/image_viewer_toolbar_btn"
+            style="@style/ImageViewerToolbarButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_share_white_24px"
@@ -59,7 +59,7 @@
 
         <ImageView
             android:id="@+id/btn_detail"
-            style="@style/image_viewer_toolbar_btn"
+            style="@style/ImageViewerToolbarButton"
             android:src="@drawable/ic_info_white"
             />
 

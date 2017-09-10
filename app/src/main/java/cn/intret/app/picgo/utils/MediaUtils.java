@@ -49,4 +49,11 @@ public class MediaUtils {
         int imageHeight = bitMapOption.outHeight;
         return new Size(imageWidth, imageHeight);
     }
+
+    public static boolean isValidSize(Size imageSize) {
+        if (imageSize == null) {
+            return false;
+        }
+        return imageSize.getWidth() > 0 && imageSize.getHeight() > 0;
+    }
 }

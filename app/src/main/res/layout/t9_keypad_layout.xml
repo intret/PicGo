@@ -96,7 +96,7 @@
         <RelativeLayout
 
             android:id="@+id/num1"
-            style="@style/dialpad_item_layout"
+            style="@style/DialpadItemLayout"
             android:layout_column="0"
             android:layout_columnWeight="1"
             android:layout_row="0"
@@ -106,7 +106,7 @@
 
             <TextView
                 android:id="@+id/number1"
-                style="@style/dialpad_number_text"
+                style="@style/DialpadNumberText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
@@ -115,7 +115,7 @@
 
             <TextView
 
-                style="@style/dialpad_number_letter"
+                style="@style/DialpadNumberLetter"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@id/number1"
@@ -126,7 +126,7 @@
 
         <RelativeLayout
             android:id="@+id/num2"
-            style="@style/dialpad_item_layout"
+            style="@style/DialpadItemLayout"
             android:layout_column="1"
             android:layout_columnWeight="1"
             android:layout_row="0"
@@ -136,7 +136,7 @@
 
             <TextView
                 android:id="@+id/number2"
-                style="@style/dialpad_number_text"
+                style="@style/DialpadNumberText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
@@ -145,7 +145,7 @@
 
             <TextView
 
-                style="@style/dialpad_number_letter"
+                style="@style/DialpadNumberLetter"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@id/number2"
@@ -156,7 +156,7 @@
 
         <RelativeLayout
             android:id="@+id/num3"
-            style="@style/dialpad_item_layout"
+            style="@style/DialpadItemLayout"
             android:layout_column="2"
             android:layout_columnWeight="1"
 
@@ -167,7 +167,7 @@
 
             <TextView
                 android:id="@+id/number3"
-                style="@style/dialpad_number_text"
+                style="@style/DialpadNumberText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
@@ -175,7 +175,7 @@
                 tools:ignore="HardcodedText"/>
 
             <TextView
-                style="@style/dialpad_number_letter"
+                style="@style/DialpadNumberLetter"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@id/number3"
@@ -186,7 +186,7 @@
 
         <RelativeLayout
             android:id="@+id/num4"
-            style="@style/dialpad_item_layout"
+            style="@style/DialpadItemLayout"
             android:layout_column="0"
             android:layout_columnWeight="1"
             android:layout_row="1"
@@ -196,7 +196,7 @@
 
             <TextView
                 android:id="@+id/number4"
-                style="@style/dialpad_number_text"
+                style="@style/DialpadNumberText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
@@ -204,7 +204,7 @@
                 tools:ignore="HardcodedText"/>
 
             <TextView
-                style="@style/dialpad_number_letter"
+                style="@style/DialpadNumberLetter"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@id/number4"
@@ -215,7 +215,7 @@
 
         <RelativeLayout
             android:id="@+id/num5"
-            style="@style/dialpad_item_layout"
+            style="@style/DialpadItemLayout"
             android:layout_column="1"
             android:layout_columnWeight="1"
             android:layout_row="1"
@@ -225,7 +225,7 @@
 
             <TextView
                 android:id="@+id/number5"
-                style="@style/dialpad_number_text"
+                style="@style/DialpadNumberText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
@@ -233,7 +233,7 @@
                 tools:ignore="HardcodedText"/>
 
             <TextView
-                style="@style/dialpad_number_letter"
+                style="@style/DialpadNumberLetter"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@id/number5"
@@ -244,7 +244,7 @@
 
         <RelativeLayout
             android:id="@+id/num6"
-            style="@style/dialpad_item_layout"
+            style="@style/DialpadItemLayout"
             android:layout_column="2"
             android:layout_columnWeight="1"
             android:layout_row="1"
@@ -254,7 +254,7 @@
 
             <TextView
                 android:id="@+id/number6"
-                style="@style/dialpad_number_text"
+                style="@style/DialpadNumberText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
@@ -262,7 +262,7 @@
                 tools:ignore="HardcodedText"/>
 
             <TextView
-                style="@style/dialpad_number_letter"
+                style="@style/DialpadNumberLetter"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@id/number6"
@@ -273,7 +273,7 @@
 
         <RelativeLayout
             android:id="@+id/num7"
-            style="@style/dialpad_item_layout"
+            style="@style/DialpadItemLayout"
             android:layout_column="0"
             android:layout_columnWeight="1"
             android:layout_row="2"
@@ -283,7 +283,7 @@
 
             <TextView
                 android:id="@+id/number7"
-                style="@style/dialpad_number_text"
+                style="@style/DialpadNumberText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
@@ -291,7 +291,7 @@
                 tools:ignore="HardcodedText"/>
 
             <TextView
-                style="@style/dialpad_number_letter"
+                style="@style/DialpadNumberLetter"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@id/number7"
@@ -302,7 +302,7 @@
 
         <RelativeLayout
             android:id="@+id/num8"
-            style="@style/dialpad_item_layout"
+            style="@style/DialpadItemLayout"
             android:layout_column="1"
             android:layout_columnWeight="1"
             android:layout_row="2"
@@ -312,7 +312,7 @@
 
             <TextView
                 android:id="@+id/number8"
-                style="@style/dialpad_number_text"
+                style="@style/DialpadNumberText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
@@ -320,7 +320,7 @@
                 tools:ignore="HardcodedText"/>
 
             <TextView
-                style="@style/dialpad_number_letter"
+                style="@style/DialpadNumberLetter"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@id/number8"
@@ -331,7 +331,7 @@
 
         <RelativeLayout
             android:id="@+id/num9"
-            style="@style/dialpad_item_layout"
+            style="@style/DialpadItemLayout"
             android:layout_column="2"
             android:layout_columnWeight="1"
             android:layout_row="2"
@@ -341,7 +341,7 @@
 
             <TextView
                 android:id="@+id/number9"
-                style="@style/dialpad_number_text"
+                style="@style/DialpadNumberText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
@@ -349,7 +349,7 @@
                 tools:ignore="HardcodedText"/>
 
             <TextView
-                style="@style/dialpad_number_letter"
+                style="@style/DialpadNumberLetter"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_below="@id/number9"
@@ -360,7 +360,7 @@
 
         <RelativeLayout
             android:id="@+id/nums"
-            style="@style/dialpad_item_layout"
+            style="@style/DialpadItemLayout"
             android:layout_column="0"
             android:layout_columnWeight="1"
             android:layout_row="3"
@@ -370,7 +370,7 @@
 
             <TextView
                 android:id="@+id/star"
-                style="@style/dialpad_number_text"
+                style="@style/DialpadNumberText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerInParent="true"
@@ -381,7 +381,7 @@
 
         <RelativeLayout
             android:id="@+id/num0"
-            style="@style/dialpad_item_layout"
+            style="@style/DialpadItemLayout"
             android:layout_column="1"
             android:layout_columnWeight="1"
             android:layout_row="3"
@@ -391,7 +391,7 @@
 
             <TextView
                 android:id="@+id/number0"
-                style="@style/dialpad_number_text"
+                style="@style/DialpadNumberText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
@@ -410,7 +410,7 @@
 
         <RelativeLayout
             android:id="@+id/del"
-            style="@style/dialpad_item_layout"
+            style="@style/DialpadItemLayout"
             android:layout_column="2"
             android:layout_columnWeight="1"
             android:layout_row="3"
@@ -420,7 +420,7 @@
 
             <TextView
                 android:id="@+id/arrow"
-                style="@style/dialpad_number_text"
+                style="@style/DialpadNumberText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"

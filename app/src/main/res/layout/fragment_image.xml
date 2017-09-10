@@ -15,11 +15,38 @@
 
     <ImageView
         android:id="@+id/file_type"
-        style="@style/imag_list_file_type_icon"
+        style="@style/ImageListFileTypeIcon"
         android:layout_width="88dp"
         android:layout_height="88dp"
         android:layout_centerInParent="true"
         android:elevation="8dp"
         android:visibility="invisible"
         />
+
+    <LinearLayout
+        android:id="@+id/empty_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:orientation="vertical"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <ImageView
+            android:id="@+id/empty_view"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:src="@drawable/ic_little_cat"
+            android:tint="@color/grey"
+            tools:visibility="visible"
+            />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/load_failed"
+            android:textColor="@color/grey"
+            />
+    </LinearLayout>
 </RelativeLayout>

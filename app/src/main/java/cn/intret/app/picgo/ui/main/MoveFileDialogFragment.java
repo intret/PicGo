@@ -155,7 +155,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
 
                                 mListAdapter.diffUpdateConflict(detectFileExistenceResult.getExistedFiles());
 
-                            }, Throwable::printStackTrace);
+                            }, RxUtils::unhandledThrowable);
                 }, throwable -> {
                     ToastUtils.toastShort(MoveFileDialogFragment.this.getActivity(), R.string.load_folder_list_failed);
                 });
@@ -264,7 +264,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
 
                                     currAdapter.diffUpdate(newAdapter);
                                 }
-                            }, Throwable::printStackTrace);
+                            }, RxUtils::unhandledThrowable);
                 });
 
 //        showKeyboard(keypadContainer, (ImageView) contentView.findViewById(R.id.keyboard_switch_image_view));
