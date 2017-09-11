@@ -28,6 +28,7 @@ import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -74,7 +75,7 @@ public class SystemImageService extends BaseService {
      */
     public static final int DEFAULT_THUMBNAIL_COUNT = 3;
 
-    HashMap<String, List<Image>> mImageListMap = new LinkedHashMap<>();
+    HashMap<String, List<MediaFile>> mImageListMap = new LinkedHashMap<>();
     HashMap<String, List<ImageGroup>> mDayImageGroupsMap = new LinkedHashMap<>();
     HashMap<String, List<ImageGroup>> mWeekImageGroupsMap = new LinkedHashMap<>();
     HashMap<String, List<ImageGroup>> mMonthImageGroupsMap = new LinkedHashMap<>();
@@ -455,15 +456,15 @@ public class SystemImageService extends BaseService {
 
                                 ImageGroup section = new ImageGroup();
                                 List<File> files = entry.getValue();
-                                List<Image> itemList = Stream.of(files)
-                                        .map(file -> new Image()
+                                List<MediaFile> itemList = Stream.of(files)
+                                        .map(file -> new MediaFile()
                                                 .setFile(file)
                                                 .setDate(new Date(file.lastModified())))
                                         .toList();
-                                Image firstItem = ListUtils.firstOf(itemList);
-                                Image lastItem = ListUtils.lastOf(itemList);
+                                MediaFile firstItem = ListUtils.firstOf(itemList);
+                                MediaFile lastItem = ListUtils.lastOf(itemList);
 
-                                section.setImages(itemList);
+                                section.setMediaFiles(itemList);
                                 section.setStartDate(firstItem.getDate());
                                 section.setEndDate(lastItem.getDate());
 
@@ -507,7 +508,7 @@ public class SystemImageService extends BaseService {
 
         if (loadImageList) {
 
-            loadImageList(destDir, false)
+            loadMediaFileList(destDir, false, false)
                     .subscribe(images -> {
                         Log.d(TAG, "rescan directory : " + destDir);
 
@@ -596,10 +597,13 @@ public class SystemImageService extends BaseService {
      *
      * @param directory
      * @param fromCacheFirst
+     * @param loadMediaFileDetail
      * @return
      */
-    public Observable<List<Image>> loadImageList(File directory, boolean fromCacheFirst) {
-        return Observable.<List<Image>>create(
+    public Observable<List<MediaFile>> loadMediaFileList(File directory,
+                                                         boolean fromCacheFirst,
+                                                         boolean loadMediaFileDetail) {
+        return Observable.<List<MediaFile>>create(
                 e -> {
                     if (directory == null) {
                         e.onError(new IllegalArgumentException("Invalid argument 'directory' value '" + directory + "'"));
@@ -610,34 +614,64 @@ public class SystemImageService extends BaseService {
                         return;
                     }
 
-                    List<Image> images;
+                    List<MediaFile> mediaFiles;
                     if (fromCacheFirst) {
-                        images = mImageListMap.get(directory.getAbsolutePath());
-                        if (images != null) {
-                            e.onNext(images);
+                        mediaFiles = mImageListMap.get(directory.getAbsolutePath());
+                        if (mediaFiles != null) {
+                            e.onNext(mediaFiles);
                             e.onComplete();
                             return;
                         }
                     }
 
                     List<File> imageFiles = SystemImageService.getInstance().listImageFiles(directory);
-                    Log.d(TAG, "loadImageList: " + imageFiles.size() + " images in " + directory);
-                    List<Image> sortedImages = Stream.of(imageFiles)
-                            .map(file -> new Image().setFile(file).setDate(new Date(file.lastModified())))
-                            .sorted((o1, o2) -> o2.getDate().compareTo(o1.getDate()))
-                            .toList();
 
-                    e.onNext(sortedImages);
+                    Comparator<MediaFile> mediaFileDateDescComparator =
+                            (MediaFile o1, MediaFile o2) -> o2.getDate().compareTo(o1.getDate());
+
+                    List<MediaFile> sortedMediaFiles;
+                    if (loadMediaFileDetail) {
+                        // Load video/image resolution, video duration, file disk usage,
+                        sortedMediaFiles = Stream.of(imageFiles)
+                                .map(file -> {
+
+                                    // Resolution
+                                    MediaFile mediaFile = new MediaFile();
+                                    if (PathUtils.isVideoFile(file.getAbsolutePath())) {
+                                        mediaFile.setVideoDuration(
+                                                MediaUtils.getVideoFileDuration(mContext, file));
+                                    } else if (PathUtils.isStaticImageFile(file.getAbsolutePath())) {
+                                        mediaFile.setMediaResolution(MediaUtils.getImageResolution(file));
+                                    }
+
+                                    // File length
+                                    mediaFile.setFile(file);
+                                    mediaFile.setFileSize(file.length());
+
+                                    mediaFile.setDate(new Date(file.lastModified()));
+                                    return mediaFile;
+                                })
+                                .sorted(mediaFileDateDescComparator)
+                                .toList();
+                    } else {
+
+                        sortedMediaFiles = Stream.of(imageFiles)
+                                .map(file -> new MediaFile().setFile(file).setDate(new Date(file.lastModified())))
+                                .sorted(mediaFileDateDescComparator)
+                                .toList();
+                    }
+
+                    e.onNext(sortedMediaFiles);
                     e.onComplete();
                 })
                 .doOnNext(images -> cacheImageList(directory.getAbsolutePath(), images));
     }
 
-    private void cacheImageList(String dirPath, List<Image> images) {
+    private void cacheImageList(String dirPath, List<MediaFile> mediaFiles) {
 
-        if (dirPath != null && images != null) {
-            Log.d(TAG, "cacheImageList() called with: dirPath = [" + dirPath + "], images = [" + images.size() + "]");
-            mImageListMap.put(dirPath, images);
+        if (dirPath != null && mediaFiles != null) {
+            Log.d(TAG, "cacheImageList() called with: dirPath = [" + dirPath + "], images = [" + mediaFiles.size() + "]");
+            mImageListMap.put(dirPath, mediaFiles);
         }
     }
 
@@ -844,11 +878,11 @@ public class SystemImageService extends BaseService {
             if (file.delete()) {
 
                 String parent = file.getParent();
-                List<Image> images = mImageListMap.get(parent);
-                if (images != null) {
-                    int i = org.apache.commons.collections4.ListUtils.indexOf(images, image -> SystemUtils.isSameFile(image.getFile(), file));
+                List<MediaFile> mediaFiles = mImageListMap.get(parent);
+                if (mediaFiles != null) {
+                    int i = org.apache.commons.collections4.ListUtils.indexOf(mediaFiles, image -> SystemUtils.isSameFile(image.getFile(), file));
                     if (i != -1) {
-                        images.remove(i);
+                        mediaFiles.remove(i);
                         Log.d(TAG, "removeFile: " + file + " at " + i);
                     }
                 }
@@ -958,6 +992,14 @@ public class SystemImageService extends BaseService {
         });
     }
 
+    /**
+     * 移动文件到指定的目录，在源目录和目标目录上都会产生 {@link RescanImageDirectoryMessage} 通知。
+     * @param destDir
+     * @param sourceFiles
+     * @param detectConflict
+     * @param deleteIfTargetExists
+     * @return
+     */
     public Observable<MoveFileResult> moveFilesToDirectory(File destDir, List<File> sourceFiles,
                                                            boolean detectConflict, boolean deleteIfTargetExists) {
         return Observable.create(e -> {
@@ -969,7 +1011,8 @@ public class SystemImageService extends BaseService {
                     "/" + sourceFiles.size() + "个文件到" + destDir);
 
             // Rescan source dirs
-            Stream.of(sourceFiles).groupBy(File::getParent)
+            Stream.of(sourceFiles)
+                    .groupBy(File::getParent)
                     .forEach(entry -> rescanImageDirectory(new File(entry.getKey()), false));
 
             // Rescan target dir
@@ -1194,10 +1237,10 @@ public class SystemImageService extends BaseService {
 
             if (PathUtils.isStaticImageFile(mediaFile.getAbsolutePath())) {
                 Size imageSize = null;
-                imageSize = MediaUtils.getImageSize(mediaFile);
+                imageSize = MediaUtils.getImageResolution(mediaFile);
                 info.setMediaSize(imageSize);
             } else if (PathUtils.isVideoFile(mediaFile.getAbsolutePath())) {
-                Size videoSize = MediaUtils.getVideoSize(mContext, mediaFile);
+                Size videoSize = MediaUtils.getVideoResolution(mContext, mediaFile);
                 info.setMediaSize(videoSize);
                 info.setVideoDuration(MediaUtils.getVideoFileDuration(mContext, mediaFile));
             }

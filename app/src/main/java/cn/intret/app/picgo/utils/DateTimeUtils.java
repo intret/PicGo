@@ -1,8 +1,11 @@
 package cn.intret.app.picgo.utils;
 
+import android.annotation.SuppressLint;
 import android.content.res.Resources;
 
+import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.joda.time.DateTime;
+import org.joda.time.Duration;
 import org.joda.time.Period;
 import org.joda.time.PeriodType;
 
@@ -136,5 +139,20 @@ public class DateTimeUtils {
         } else {
             return SimpleDateFormat.getDateInstance().format(new Date(date));
         }
+    }
+
+    public static String formatDuration(Duration duration) {
+        long seconds = duration.getStandardSeconds();
+        long absSeconds = Math.abs(seconds);
+        @SuppressLint("DefaultLocale") String positive = String.format(
+                "%d:%02d:%02d",
+                absSeconds / 3600,
+                (absSeconds % 3600) / 60,
+                absSeconds % 60);
+        return seconds < 0 ? "-" + positive : positive;
+    }
+
+    public static String format(long millis) {
+        return DurationFormatUtils.formatDuration(millis, "**H:mm:ss**", true);
     }
 }

@@ -27,7 +27,7 @@ public class MediaUtils {
         return mp.getDuration();
     }
 
-    public static Size getVideoSize(Context context, File videoFile) {
+    public static Size getVideoResolution(Context context, File videoFile) {
         if (videoFile == null) {
             return new Size(0, 0);
         }
@@ -40,7 +40,7 @@ public class MediaUtils {
         return new Size(width, height);
     }
 
-    public static Size getImageSize(File imageFile) {
+    public static Size getImageResolution(File imageFile) {
 
         BitmapFactory.Options bitMapOption = new BitmapFactory.Options();
         bitMapOption.inJustDecodeBounds = true;

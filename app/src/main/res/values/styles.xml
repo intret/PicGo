@@ -119,4 +119,11 @@
         <item name="android:layout_marginBottom">8dp</item>
     </style>
 
+    <style name="ImageListImage">
+        <item name="android:foreground">@drawable/ripple2</item>
+        <item name="android:background">@null</item>
+        <item name="android:contentDescription">@string/image_item</item>
+        <item name="android:scaleType">centerCrop</item>
+    </style>
+
 </resources>

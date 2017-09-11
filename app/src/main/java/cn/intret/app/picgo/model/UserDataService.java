@@ -132,9 +132,6 @@ public class UserDataService extends BaseService {
                 boolean remove = cn.intret.app.picgo.utils.ListUtils.removeListElement(
                         recentRecords,
                         record -> record.getFilePath() != null && record.getFilePath().equals(dir.getAbsolutePath()));
-                if (remove) {
-                    Log.d(TAG, "addOpenFolderRecentRecord: remove element in list : " + dir.getAbsolutePath());
-                }
                 recentRecords.add(0, new RecentRecord().setFilePath(dir.getAbsolutePath()));
 
                 return Stream.of(recentRecords).limit(mMaxRecentHistorySize).toList();
@@ -183,7 +180,7 @@ public class UserDataService extends BaseService {
         List<RecentRecord> newList = updateObjectAction.onAction(recentRecords);
 
         String newJson = recentHistoryListToJson(newList);
-        Log.d(TAG, "addOpenFolderRecentRecord: update [" + PREF_KEY_FOLDER_ACCESS_RECENT_HISTORY + "] with value : " + newJson);
+//        Log.d(TAG, "updateOpenFolderRecentPreference: update [" + PREF_KEY_FOLDER_ACCESS_RECENT_HISTORY + "] with value : " + newJson);
         prefRecent.set(newJson);
         return newList;
     }

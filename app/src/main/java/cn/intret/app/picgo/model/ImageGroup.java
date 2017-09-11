@@ -11,7 +11,7 @@ public class ImageGroup {
 
     Date mStartDate;
     Date mEndDate;
-    List<Image> mImages;
+    List<MediaFile> mMediaFiles;
 
     public Date getStartDate() {
         return mStartDate;
@@ -31,12 +31,12 @@ public class ImageGroup {
         return this;
     }
 
-    public List<Image> getImages() {
-        return mImages;
+    public List<MediaFile> getMediaFiles() {
+        return mMediaFiles;
     }
 
-    public ImageGroup setImages(List<Image> images) {
-        mImages = images;
+    public ImageGroup setMediaFiles(List<MediaFile> mediaFiles) {
+        mMediaFiles = mediaFiles;
         return this;
     }
 

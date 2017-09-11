@@ -50,6 +50,7 @@ import butterknife.ButterKnife;
 import butterknife.OnClick;
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.model.ImageFileInformation;
+import cn.intret.app.picgo.model.MediaFile;
 import cn.intret.app.picgo.model.event.RemoveFileMessage;
 import cn.intret.app.picgo.model.SystemImageService;
 import cn.intret.app.picgo.ui.adapter.ImageListAdapter;
@@ -473,7 +474,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
         if (mDirPath != null && mItemPosition != -1) {
 
             SystemImageService.getInstance()
-                    .loadImageList(new File(mDirPath), true)
+                    .loadMediaFileList(new File(mDirPath), true, false)
                     .compose(workAndShow())
                     .map(this::imageListToImageListAdapter)
                     .subscribe(adapter -> {
@@ -486,7 +487,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
             Observable.just(mImageFilePath)
                     .map(File::new)
-                    .map(file -> new cn.intret.app.picgo.model.Image().setFile(file).setDate(new Date(file.lastModified())))
+                    .map(file -> new MediaFile().setFile(file).setDate(new Date(file.lastModified())))
                     .map(ListUtils::objectToLinkedList)
                     .map(this::imageListToImageListAdapter)
                     .subscribe(adapter -> {
@@ -546,20 +547,20 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
     }
 
     @NonNull
-    private ImageFragmentStatePagerAdapter imageListToImageListAdapter(List<cn.intret.app.picgo.model.Image> images) {
+    private ImageFragmentStatePagerAdapter imageListToImageListAdapter(List<MediaFile> mediaFiles) {
         ImageFragmentStatePagerAdapter adapter = new ImageFragmentStatePagerAdapter(getSupportFragmentManager());
-        adapter.setImages(imagesToImages(images));
+        adapter.setImages(imagesToImages(mediaFiles));
         return adapter;
     }
 
-    private List<ImageListAdapter.Item> imagesToItems(List<cn.intret.app.picgo.model.Image> images) {
-        return Stream.of(images)
+    private List<ImageListAdapter.Item> imagesToItems(List<MediaFile> mediaFiles) {
+        return Stream.of(mediaFiles)
                 .map(image -> new ImageListAdapter.Item().setFile(image.getFile()))
                 .toList();
     }
 
-    private List<Image> imagesToImages(List<cn.intret.app.picgo.model.Image> images) {
-        return Stream.of(images)
+    private List<Image> imagesToImages(List<MediaFile> mediaFiles) {
+        return Stream.of(mediaFiles)
                 .map(image -> new Image().setFile(image.getFile()))
                 .toList();
     }

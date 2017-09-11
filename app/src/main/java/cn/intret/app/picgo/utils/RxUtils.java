@@ -12,10 +12,8 @@ public class RxUtils {
     }
 
     public static void unhandledThrowable(Throwable throwable) {
-        if (BuildConfig.DEBUG) {
-            if (throwable != null) {
-                throwable.printStackTrace();
-            }
+        if (throwable != null) {
+            throwable.printStackTrace();
         }
     }
 }
