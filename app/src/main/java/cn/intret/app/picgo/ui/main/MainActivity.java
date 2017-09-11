@@ -879,19 +879,16 @@ public class MainActivity extends BaseAppCompatActivity {
 
             viewModePref.set(UserDataService.VIEW_MODE_GRID_VIEW);
 
-            itemGridView.setChecked(true).setEnabled(false);
-            itemListView.setChecked(false).setEnabled(true);
+            itemGridView.setChecked(true);
+
         } else {
 
             switch (mode) {
                 case GRID_VIEW:
-                    itemGridView.setChecked(true).setEnabled(false);
-                    itemListView.setChecked(false).setEnabled(true);
-
+                    itemGridView.setChecked(true);
                     break;
                 case LIST_VIEW:
-                    itemGridView.setChecked(false).setEnabled(true);
-                    itemListView.setChecked(true).setEnabled(false);
+                    itemListView.setChecked(true);
                     break;
             }
         }

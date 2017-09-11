@@ -4,7 +4,6 @@ package cn.intret.app.picgo.ui.adapter;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
 
@@ -14,12 +13,8 @@ import com.annimon.stream.Stream;
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.chad.library.adapter.base.BaseViewHolder;
 
-import org.apache.commons.lang3.Range;
-
 import java.util.LinkedList;
 import java.util.List;
-
-import cn.intret.app.picgo.R;
 
 public abstract class BaseSelectableAdapter< T extends ItemSelectable, VH extends BaseViewHolder>
         extends BaseQuickAdapter<T, VH> implements IDragSelectAdapter, BaseQuickAdapter.OnItemClickListener, BaseQuickAdapter.OnItemLongClickListener {

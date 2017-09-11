@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.util.DiffUtil;
+import android.support.v7.view.menu.MenuView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.SpannableString;
@@ -407,14 +408,31 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                 if (item.getFile().equals(dir)) {
 
                     item.setCount(count);
-                    int absolutePosition = getAbsolutePosition(si, ii);
-                    if (mRecyclerView != null) {
-                        RecyclerView.ViewHolder vh = mRecyclerView.findViewHolderForAdapterPosition(absolutePosition);
-                        if (vh != null && vh instanceof ItemViewHolder) {
-                            ((ItemViewHolder) vh).setSelectedCount(item.getSelectedCount());
-                        }
+                    ItemViewHolder vh = findItemViewHolder(si, ii);
+                    if (vh != null) {
+                        vh.count.setText(String.valueOf(count));
                     }
                     return;
+                }
+            }
+        }
+    }
+
+    public void updateSelectedCount(Map<File, Integer> fileSelectedCountMap) {
+        if (fileSelectedCountMap == null) {
+            return;
+        }
+
+        for (int i = 0, mSectionsSize = mSections.size(); i < mSectionsSize; i++) {
+            Section section = mSections.get(i);
+            List<Item> items = section.getItems();
+            for (int i1 = 0, itemsSize = items.size(); i1 < itemsSize; i1++) {
+                Item item = items.get(i1);
+                Integer count = fileSelectedCountMap.get(item.getFile());
+                if (count != null) {
+                    item.setSelectedCount(count);
+
+
                 }
             }
         }
@@ -433,17 +451,26 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                 if (item.getFile().equals(dir)) {
 
                     item.setSelectedCount(selectedCount);
-                    int absolutePosition = getAbsolutePosition(si, ii);
-                    if (mRecyclerView != null) {
-                        RecyclerView.ViewHolder vh = mRecyclerView.findViewHolderForAdapterPosition(absolutePosition);
-                        if (vh != null && vh instanceof ItemViewHolder) {
-                            ((ItemViewHolder) vh).setSelectedCount(item.getSelectedCount());
-                        }
+                    ItemViewHolder itemViewHolder = findItemViewHolder(si, ii);
+                    if (itemViewHolder != null) {
+                        itemViewHolder.setSelectedCount(selectedCount);
                     }
                     return;
                 }
             }
         }
+    }
+
+    private ItemViewHolder findItemViewHolder(int sectionIndex, int relativePosition) {
+
+        int absolutePosition = getAbsolutePosition(sectionIndex, relativePosition);
+        if (mRecyclerView != null) {
+            RecyclerView.ViewHolder vh = mRecyclerView.findViewHolderForAdapterPosition(absolutePosition);
+            if (vh != null && vh instanceof ItemViewHolder) {
+                return ((ItemViewHolder) vh);
+            }
+        }
+        return null;
     }
 
     public void updateSelectedCount(ItemCoord relativePosition) {

@@ -3,7 +3,9 @@
       xmlns:android="http://schemas.android.com/apk/res/android"
     >
 
-    <group android:menuCategory="container">
+    <group android:menuCategory="container"
+        android:checkableBehavior="single"
+        >
         <item
             android:id="@+id/item_grid_view"
             android:title="@string/grid_view"

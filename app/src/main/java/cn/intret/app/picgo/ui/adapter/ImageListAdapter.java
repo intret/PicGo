@@ -25,7 +25,7 @@ import cn.intret.app.picgo.utils.SystemUtils;
 /**
  * Waterfall Image List Adapter class for {@link RecyclerView}
  */
-public class ImageListAdapter extends BaseImageAdapter<ImageListAdapter.Item,ImageListAdapter.ViewHolder> {
+public class ImageListAdapter extends BaseImageAdapter<ImageListAdapter.Item, ImageListAdapter.ViewHolder> {
 
     public static final String TAG = ImageListAdapter.class.getSimpleName();
 
@@ -174,7 +174,7 @@ public class ImageListAdapter extends BaseImageAdapter<ImageListAdapter.Item,Ima
         String absolutePath = item.getFile().getAbsolutePath();
         ImageView imageView = viewHolder.getView(R.id.image);
         imageView.setTransitionName(ImageTransitionNameGenerator
-                        .generateTransitionName(absolutePath));
+                .generateTransitionName(absolutePath));
 
         Glide.with(viewHolder.itemView.getContext())
                 .asDrawable()
