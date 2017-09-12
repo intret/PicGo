@@ -174,12 +174,12 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         mMoveFileSourceDir = file;
     }
 
-    public void setUpdateConflictFiles(@NonNull Map<File, List<File>> existedFiles) {
+    public void updateConflictFiles(@NonNull Map<File, List<File>> existedFiles) {
 
         mShowConflict = true;
         mConflictFiles = existedFiles;
 
-        Log.d(TAG, "setUpdateConflictFiles() called with: existedFiles = [" + existedFiles + "]");
+        Log.d(TAG, "updateConflictFiles() called with: existedFiles = [" + existedFiles + "]");
 
         for (int si = 0, mSectionsSize = mSections.size(); si < mSectionsSize; si++) {
             Section section = mSections.get(si);
@@ -194,11 +194,9 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                     if (mRecyclerView != null) {
                         RecyclerView.ViewHolder vh = mRecyclerView.findViewHolderForAdapterPosition(getAbsolutePosition(si, ii));
                         if (vh != null && vh instanceof ItemViewHolder) {
-                            Log.d(TAG, "setUpdateConflictFiles: update conflict file count");
+                            Log.d(TAG, "updateConflictFiles: update conflict file count");
 
-                            ((ItemViewHolder) vh).badge.setBadgeNumber(conflictFiles.size());
-                            int colorWarn = vh.itemView.getContext().getResources().getColor(R.color.warnning);
-                            ((ItemViewHolder) vh).badge.setBadgeBackgroundColor(colorWarn);
+                            bindViewHolderBadge((ItemViewHolder) vh, item);
                         }
                     }
                 }
@@ -216,7 +214,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         int newItemCount = newAdapter.getItemCount();
 
         if (mShowConflict) {
-            newAdapter.setUpdateConflictFiles(getConflictFiles());
+            newAdapter.updateConflictFiles(getConflictFiles());
         }
 
         Log.d(TAG, "diffUpdate: 计算差异 old " + oldItemCount + " new " + newItemCount);
@@ -1061,6 +1059,18 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         Log.d(TAG, "onBindViewHolder() called with: sectionIndex = [" + sectionIndex + "], relativePosition = [" + relativePosition + "], item = [" + item + "]");
 
         // Badge
+        bindViewHolderBadge(vh, item);
+
+        // File total file count
+        vh.count.setText(String.valueOf(item.getCount()));
+
+//        vh.setSelectedCountText(item.getSelectedCount(), item.getCount());
+
+        // Thumbnail image list
+        updateThumbList(vh, item, false);
+    }
+
+    private void bindViewHolderBadge(ItemViewHolder vh, Item item) {
         if (item.isSelectionSourceDir()) {
             vh.showSourceDirBadge();
         } else {
@@ -1071,14 +1081,6 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                 vh.setSelectedCount(item.getSelectedCount());
             }
         }
-
-        // File total file count
-        vh.count.setText(String.valueOf(item.getCount()));
-
-//        vh.setSelectedCountText(item.getSelectedCount(), item.getCount());
-
-        // Thumbnail image list
-        updateThumbList(vh, item, false);
     }
 
     private void updateThumbList(ItemViewHolder vh, Item item, boolean forceUpdate) {

@@ -1100,7 +1100,7 @@ public class MainActivity extends BaseAppCompatActivity {
                 (view, position) -> onFolderListItemClick(position),
                 (view, position) -> onFolderListItemLongClick(position)
         );
-//        mFolderList.addOnItemTouchListener(itemTouchListener);
+        mFolderList.addOnItemTouchListener(itemTouchListener);
 
         // show firstOf folder's images in activity content field.
 
@@ -1327,8 +1327,12 @@ public class MainActivity extends BaseAppCompatActivity {
                     SectionedFolderListAdapter.Item item = adapter.getItem(coord);
 
                     Log.d(TAG, "onItemClick: 显示 " + item.getFile());
-//                        mDrawerLayout.closeDrawers();
+
+//                    mDrawerLayout.closeDrawers();
+
+                    adapter.selectItem(item.getFile());
                     showDirectoryImages(item.getFile(), false);
+
                 });
     }
 

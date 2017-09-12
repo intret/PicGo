@@ -155,7 +155,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
                             .subscribe(detectFileExistenceResult -> {
                                 Log.w(TAG, "onStart: 文件冲突 " + detectFileExistenceResult );
 
-                                mListAdapter.setUpdateConflictFiles(detectFileExistenceResult.getExistedFiles());
+                                mListAdapter.updateConflictFiles(detectFileExistenceResult.getExistedFiles());
 
                             }, RxUtils::unhandledThrowable);
                 }, throwable -> {
