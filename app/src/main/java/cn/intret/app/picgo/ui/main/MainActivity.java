@@ -3,6 +3,7 @@ package cn.intret.app.picgo.ui.main;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.MainThread;
 import android.support.annotation.NonNull;
@@ -52,6 +53,7 @@ import com.annimon.stream.function.Function;
 import com.annimon.stream.function.Supplier;
 import com.f2prateek.rx.preferences2.Preference;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -2028,11 +2030,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
             @Override
             public void onItemClicked(DetailImageAdapter.Item item, View view, int position) {
-                try {
-                    startImageViewerActivity(mCurrentDetailImageAdapter.getDirectory(), view, position, item.getFile());
-                } catch (Exception e) {
-                    Log.e(TAG, "image list item click exception : " + e.getMessage());
-                }
+                onClickItem(view, position, item.getFile());
             }
 
             @Override
@@ -2104,6 +2102,22 @@ public class MainActivity extends BaseAppCompatActivity {
         int firstVisibleItem = adapter.getFirstVisibleItem();
         if (firstVisibleItem != RecyclerView.NO_POSITION) {
             mImageList.scrollToPosition(firstVisibleItem);
+        }
+    }
+
+    private void onClickItem(View view, int position, File file) {
+        try {
+            String absolutePath = file.getAbsolutePath();
+            if (PathUtils.isVideoFile(absolutePath)) {
+                Uri videoUri = Uri.parse(absolutePath);
+                Intent intent = new Intent(Intent.ACTION_VIEW, videoUri);
+                intent.setDataAndType(videoUri, "video/" + FilenameUtils.getExtension(absolutePath));
+                startActivity(intent);
+            } else {
+                startImageViewerActivity(mCurrentDetailImageAdapter.getDirectory(), view, position, file);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "image list item click exception : " + e.getMessage());
         }
     }
 
@@ -2218,19 +2232,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
             @Override
             public void onItemClicked(ImageListAdapter.Item item, View view, int position) {
-                //startImageViewerActivity(item, mCurrentImageAdapter.getDirectory(), view, 0);
-
-                //startPhotoActivity(this, item.getFile(), view);
-//        Intent intent = ImageViewerActivity.newIntentViewFile(this, item.getFile());
-//        startActivity(intent);
-
-                // handle event
-                try {
-                    Log.d(TAG, "Clicked item at position " + position + " " + item.getFile() + " ");
-                    startImageViewerActivity(mCurrentImageAdapter.getDirectory(), view, position, item.getFile());
-                } catch (Exception e) {
-                    Log.e(TAG, "image list item click exception : " + e.getMessage());
-                }
+                onClickItem(view, position, item.getFile());
             }
 
             @Override

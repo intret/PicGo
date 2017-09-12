@@ -101,5 +101,6 @@
     <string name="image_size_d_d">%1$d × %2$d</string>
     <string name="grid_view">网格视图</string>
     <string name="list_view">列表视图</string>
+    <string name="source_folder">源目录</string>
 
 </resources>

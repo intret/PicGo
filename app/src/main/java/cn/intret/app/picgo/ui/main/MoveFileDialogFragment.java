@@ -41,6 +41,7 @@ import cn.intret.app.picgo.ui.adapter.FolderListAdapterUtils;
 import cn.intret.app.picgo.ui.adapter.SectionedFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedListItemClickDispatcher;
 import cn.intret.app.picgo.ui.adapter.SectionedListItemDispatchListener;
+import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.utils.RxUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
 import cn.intret.app.picgo.utils.ViewUtil;
@@ -135,6 +136,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
         SystemImageService.getInstance()
                 .loadFolderList(true)
                 .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
+                .map(this::setAdapterMoveFileSourceDir)
                 .doOnNext(adapter -> mListAdapter = adapter)
                 .subscribe(adapter -> {
 
@@ -153,7 +155,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
                             .subscribe(detectFileExistenceResult -> {
                                 Log.w(TAG, "onStart: 文件冲突 " + detectFileExistenceResult );
 
-                                mListAdapter.diffUpdateConflict(detectFileExistenceResult.getExistedFiles());
+                                mListAdapter.setUpdateConflictFiles(detectFileExistenceResult.getExistedFiles());
 
                             }, RxUtils::unhandledThrowable);
                 }, throwable -> {
@@ -161,6 +163,13 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
                 });
 
 
+    }
+
+    private SectionedFolderListAdapter setAdapterMoveFileSourceDir(SectionedFolderListAdapter adapter) {
+        if (!ListUtils.isEmpty(mSelectedFiles)) {
+            adapter.setMoveFileSourceDir(mSelectedFiles.get(0).getParentFile());
+        }
+        return adapter;
     }
 
     @Override
@@ -256,6 +265,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
                     SystemImageService.getInstance()
                             .loadFolderList(true, inputString)
                             .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
+                            .map(this::setAdapterMoveFileSourceDir)
                             .compose(RxUtils.workAndShow())
                             .subscribe(newAdapter -> {
 
