@@ -152,7 +152,6 @@ public class SystemImageService extends BaseService {
         return loadFolderList(fromCacheFirst)
                 .map(model -> {
                     if (StringUtils.isBlank(t9NumberInput)) {
-                        Log.e(TAG, "loadFolderList: T9 input is blank, don't filter the folder model.");
                         return model;
                     }
 

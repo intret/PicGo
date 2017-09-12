@@ -31,6 +31,15 @@
         <item name="android:windowIsTranslucent">true</item>
     </style>
 
+    <!--自己定义PopupMenu上的RadioButton的样式-->
+    <style name="PopupMenuStyle" parent="AppTheme">
+        <item name="android:radioButtonStyle">@style/MenuRadioButtonStyle</item>
+    </style>
+
+    <style name="MenuRadioButtonStyle" parent="@android:style/Widget.CompoundButton.RadioButton">
+        <item name="android:button">@drawable/ic_radio_selector</item>
+    </style>
+
     <style name="ViewModeButton">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
