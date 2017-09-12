@@ -194,7 +194,7 @@ public class ImageListAdapter extends BaseImageAdapter<ImageListAdapter.Item, Im
         if (videoFile || gifFile) {
 
             if (videoFile) {
-                viewHolder.setImageResource(R.id.file_type, R.drawable.ic_videocam);
+                viewHolder.setImageResource(R.id.file_type, R.drawable.ic_play_circle_filled_white_48px);
                 viewHolder.setVisible(R.id.file_type, true);
             }
             if (gifFile) {
