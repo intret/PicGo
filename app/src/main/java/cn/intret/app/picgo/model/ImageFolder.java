@@ -32,11 +32,11 @@ public class ImageFolder implements Cloneable {
      * T9 键盘过滤信息
      */
     PinyinSearchUnit mPinyinSearchUnit;
-    private StringBuffer mMatchKeywords;        //Used to save the type of Match Keywords.(name or phoneNumber)
+    private StringBuffer mMatchKeywords = new StringBuffer();        //Used to save the type of Match Keywords.(name or phoneNumber)
     private int mMatchStartIndex;                //the match start  position of mMatchKeywords in original string(name or phoneNumber).
     private int mMatchLength;                    //the match length of mMatchKeywords in original string(name or phoneNumber).
 
-    ImageFolder() {
+    public ImageFolder() {
 
     }
 
@@ -110,8 +110,10 @@ public class ImageFolder implements Cloneable {
     }
 
     public void setMatchKeywords(String matchKeywords) {
-        mMatchKeywords.delete(0, mMatchKeywords.length());
-        mMatchKeywords.append(matchKeywords);
+        if (mMatchKeywords != null) {
+            mMatchKeywords.delete(0, mMatchKeywords.length());
+            mMatchKeywords.append(matchKeywords);
+        }
     }
 
     public void clearMatchKeywords() {
@@ -139,7 +141,7 @@ public class ImageFolder implements Cloneable {
     @Override
     public Object clone() throws CloneNotSupportedException {
         ImageFolder clone = (ImageFolder) super.clone();
-        clone.mMatchKeywords =  new StringBuffer(this.mMatchKeywords.toString()) ;
+        clone.mMatchKeywords = new StringBuffer(this.mMatchKeywords.toString());
         clone.setPinyinSearchUnit((PinyinSearchUnit) mPinyinSearchUnit.clone());
         clone.setFile(new File(mFile.getAbsolutePath()));
         clone.setName(mName);

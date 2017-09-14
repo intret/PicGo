@@ -9,6 +9,10 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.chad.library.adapter.base.BaseMultiItemQuickAdapter;
+import com.chad.library.adapter.base.BaseViewHolder;
+import com.chad.library.adapter.base.entity.MultiItemEntity;
+
 import org.apache.commons.collections4.ListUtils;
 
 import java.io.File;
@@ -24,66 +28,10 @@ import cn.intret.app.picgo.model.FolderModel;
 /**
  * 抽屉菜单列表
  */
-public class FolderListAdapter extends RecyclerView.Adapter<FolderListAdapter.ViewHolder> implements View.OnClickListener {
+public class FolderListAdapter
+        extends BaseMultiItemQuickAdapter<FolderListAdapter.Item, FolderListAdapter.ViewHolder> {
 
-    List<Item> mItems = new LinkedList<>();
-
-    public List<Item> getItems() {
-        return mItems;
-    }
-
-
-    public void diffUpdateItems(SectionedFolderListAdapter adapter) {
-        List<SectionedFolderListAdapter.Section> sections = adapter.getSections();
-
-        DiffUtil.calculateDiff(new DiffUtil.Callback() {
-            @Override
-            public int getOldListSize() {
-                return mItems.size();
-            }
-
-            @Override
-            public int getNewListSize() {
-                return sections.size();
-            }
-
-            @Override
-            public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-                Item item = mItems.get(oldItemPosition);
-                return false;
-            }
-
-            @Override
-            public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-                return false;
-            }
-        });
-    }
-
-    public interface OnItemEventListener {
-        void onItemClick(Item item);
-    }
-
-    OnItemEventListener mOnItemEventListener;
-
-    public FolderListAdapter setOnItemEventListener(OnItemEventListener onItemEventListener) {
-        mOnItemEventListener = onItemEventListener;
-        return this;
-    }
-
-    @Override
-    public void onClick(View v) {
-        Object tag = v.getTag(R.id.item);
-        if (tag != null) {
-            Item item = (Item) tag;
-
-            if (mOnItemEventListener != null) {
-                mOnItemEventListener.onItemClick(item);
-            }
-        }
-    }
-
-    public static class Item {
+    public static class Item implements MultiItemEntity {
         String name;
         long count = 0;
         boolean isSelected = false;
@@ -146,6 +94,7 @@ public class FolderListAdapter extends RecyclerView.Adapter<FolderListAdapter.Vi
         }
 
         List<File> mThumbList;
+
         public List<File> getThumbList() {
             return mThumbList;
         }
@@ -154,9 +103,61 @@ public class FolderListAdapter extends RecyclerView.Adapter<FolderListAdapter.Vi
             mThumbList = thumbList;
             return this;
         }
+
+        @Override
+        public int getItemType() {
+            return 0;
+        }
     }
 
+    List<Item> mItems = new LinkedList<>();
+
+    public List<Item> getItems() {
+        return mItems;
+    }
+
+
+    public void diffUpdateItems(SectionedFolderListAdapter adapter) {
+        List<SectionedFolderListAdapter.Section> sections = adapter.getSections();
+
+        DiffUtil.calculateDiff(new DiffUtil.Callback() {
+            @Override
+            public int getOldListSize() {
+                return mItems.size();
+            }
+
+            @Override
+            public int getNewListSize() {
+                return sections.size();
+            }
+
+            @Override
+            public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+                Item item = mItems.get(oldItemPosition);
+                return false;
+            }
+
+            @Override
+            public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+                return false;
+            }
+        });
+    }
+
+    public interface OnItemEventListener {
+        void onItemClick(Item item);
+    }
+
+    OnItemEventListener mOnItemEventListener;
+
+    public FolderListAdapter setOnItemEventListener(OnItemEventListener onItemEventListener) {
+        mOnItemEventListener = onItemEventListener;
+        return this;
+    }
+
+
     public FolderListAdapter(List<Item> items) {
+        super(items);
         if (items != null) {
             mItems = items;
         } else {
@@ -193,7 +194,8 @@ public class FolderListAdapter extends RecyclerView.Adapter<FolderListAdapter.Vi
         }
 
 
-        super.onViewRecycled(holder);    }
+        super.onViewRecycled(holder);
+    }
 
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
@@ -206,8 +208,6 @@ public class FolderListAdapter extends RecyclerView.Adapter<FolderListAdapter.Vi
         Item item = mItems.get(position);
         holder.itemView.setTag(R.id.item, item);
 
-        holder.itemView.setOnClickListener(this);
-
         SparseArray<HorizontalImageListAdapter.Item> items = new SparseArray<>();
         item.getThumbList();
 
@@ -216,11 +216,13 @@ public class FolderListAdapter extends RecyclerView.Adapter<FolderListAdapter.Vi
     }
 
     @Override
-    public int getItemCount() {
-        return mItems.size();
+    protected void convert(ViewHolder holder, Item item) {
+
+        holder.setText(R.id.name, item.getName());
+        holder.setText(R.id.count, String.valueOf(item.getCount()));
     }
 
-    class ViewHolder extends RecyclerView.ViewHolder {
+    class ViewHolder extends BaseViewHolder {
 
         @BindView(R.id.check) ImageView check;
         @BindView(R.id.name) TextView name;

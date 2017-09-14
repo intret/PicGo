@@ -50,6 +50,7 @@ import cn.intret.app.picgo.model.event.RescanImageDirectoryMessage;
 import cn.intret.app.picgo.utils.DateTimeUtils;
 import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.utils.MediaUtils;
+import cn.intret.app.picgo.utils.ObjectGuarder;
 import cn.intret.app.picgo.utils.PathUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
 import io.reactivex.Observable;
@@ -75,11 +76,14 @@ public class SystemImageService extends BaseService {
      */
     public static final int DEFAULT_THUMBNAIL_COUNT = 3;
 
+    ObjectGuarder<HashMap<String, Boolean>> mCacheMediaInfoFlag = new ObjectGuarder<>(new LinkedHashMap<>());
+
     HashMap<String, List<MediaFile>> mImageListMap = new LinkedHashMap<>();
     HashMap<String, List<ImageGroup>> mDayImageGroupsMap = new LinkedHashMap<>();
     HashMap<String, List<ImageGroup>> mWeekImageGroupsMap = new LinkedHashMap<>();
     HashMap<String, List<ImageGroup>> mMonthImageGroupsMap = new LinkedHashMap<>();
 
+    List<String> mHiddenFolder = new LinkedList<>();
 
     public static SystemImageService getInstance() {
         return ourInstance;
@@ -87,9 +91,11 @@ public class SystemImageService extends BaseService {
 
     private SystemImageService() {
         super();
+        mHiddenFolder.add("污");
     }
 
     FolderModel mFolderModel;
+
     ReadWriteLock mFolderModelRWLock = new ReentrantReadWriteLock();
 
     /*
@@ -294,6 +300,10 @@ public class SystemImageService extends BaseService {
 
         for (int i = 0, s = mediaFolders.size(); i < s; i++) {
             File folder = mediaFolders.get(i);
+            if (mHiddenFolder.contains(folder.getName())) {
+                Log.d(TAG, "addParentFolderInfo: ignore folder " + folder);
+                continue;
+            }
             subFolders.add(createImageFolder(folder));
         }
 
@@ -602,10 +612,10 @@ public class SystemImageService extends BaseService {
     public Observable<List<MediaFile>> loadMediaFileList(File directory,
                                                          boolean fromCacheFirst,
                                                          boolean loadMediaFileDetail) {
-        return Observable.<List<MediaFile>>create(
+        return Observable.create(
                 e -> {
                     if (directory == null) {
-                        e.onError(new IllegalArgumentException("Invalid argument 'directory' value '" + directory + "'"));
+                        e.onError(new IllegalArgumentException("Argument 'directory' should not be null"));
                         return;
                     }
                     if (!directory.exists()) {
@@ -613,8 +623,20 @@ public class SystemImageService extends BaseService {
                         return;
                     }
 
+
+                    boolean needToLoadMediaInfo = true;
+                    if (!loadMediaFileDetail) {
+                        needToLoadMediaInfo = false;
+                    } else {
+                        mCacheMediaInfoFlag.readLock();
+                        if (mCacheMediaInfoFlag.getObject().containsKey(directory.getAbsolutePath())) {
+                            needToLoadMediaInfo = !mCacheMediaInfoFlag.getObject().get(directory.getAbsolutePath());
+                        }
+                        mCacheMediaInfoFlag.readUnlock();
+                    }
+
                     List<MediaFile> mediaFiles;
-                    if (fromCacheFirst) {
+                    if (fromCacheFirst && !needToLoadMediaInfo) {
                         mediaFiles = mImageListMap.get(directory.getAbsolutePath());
                         if (mediaFiles != null) {
                             e.onNext(mediaFiles);
@@ -660,17 +682,22 @@ public class SystemImageService extends BaseService {
                                 .toList();
                     }
 
+                    cacheImageList(directory.getAbsolutePath(), sortedMediaFiles, loadMediaFileDetail);
+
                     e.onNext(sortedMediaFiles);
                     e.onComplete();
-                })
-                .doOnNext(images -> cacheImageList(directory.getAbsolutePath(), images));
+                });
     }
 
-    private void cacheImageList(String dirPath, List<MediaFile> mediaFiles) {
+    private void cacheImageList(String dirPath, List<MediaFile> mediaFiles, boolean loadMediaFileDetail) {
 
         if (dirPath != null && mediaFiles != null) {
             Log.d(TAG, "cacheImageList() called with: dirPath = [" + dirPath + "], images = [" + mediaFiles.size() + "]");
             mImageListMap.put(dirPath, mediaFiles);
+
+            mCacheMediaInfoFlag.writeConsume(map -> {
+                map.put(dirPath, loadMediaFileDetail);
+            });
         }
     }
 
@@ -894,6 +921,7 @@ public class SystemImageService extends BaseService {
         });
     }
 
+
     public Observable<Boolean> createFolder(File dir) {
 
         return Observable.create(e -> {
@@ -993,6 +1021,7 @@ public class SystemImageService extends BaseService {
 
     /**
      * 移动文件到指定的目录，在源目录和目标目录上都会产生 {@link RescanImageDirectoryMessage} 通知。
+     *
      * @param destDir
      * @param sourceFiles
      * @param detectConflict

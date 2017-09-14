@@ -5,4 +5,5 @@
     <item name="today" type="id">今天</item>
     <item name="file_path" type="id"/>
     <item name="section" type="id"/>
+    <item name="badge" type="id"/>
 </resources>

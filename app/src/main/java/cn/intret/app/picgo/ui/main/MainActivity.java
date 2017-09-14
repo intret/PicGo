@@ -16,7 +16,6 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.util.DiffUtil;
-import android.support.v7.view.ContextThemeWrapper;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.PopupMenu;
@@ -51,6 +50,8 @@ import com.annimon.stream.Stream;
 import com.annimon.stream.function.BiConsumer;
 import com.annimon.stream.function.Function;
 import com.annimon.stream.function.Supplier;
+import com.chad.library.adapter.base.BaseQuickAdapter;
+import com.chad.library.adapter.base.entity.MultiItemEntity;
 import com.f2prateek.rx.preferences2.Preference;
 
 import org.apache.commons.io.FilenameUtils;
@@ -92,12 +93,15 @@ import cn.intret.app.picgo.model.event.RescanFolderThumbnailListMessage;
 import cn.intret.app.picgo.model.event.RescanImageDirectoryMessage;
 import cn.intret.app.picgo.ui.adapter.BaseImageAdapter;
 import cn.intret.app.picgo.ui.adapter.DetailImageAdapter;
+import cn.intret.app.picgo.ui.adapter.ExpandableFolderAdapter;
 import cn.intret.app.picgo.ui.adapter.FlatFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.FolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.FolderListAdapterUtils;
 import cn.intret.app.picgo.ui.adapter.ImageListAdapter;
 import cn.intret.app.picgo.ui.adapter.ImageTransitionNameGenerator;
 import cn.intret.app.picgo.ui.adapter.BaseSelectableAdapter;
+import cn.intret.app.picgo.ui.adapter.FolderItem;
+import cn.intret.app.picgo.ui.adapter.FolderSection;
 import cn.intret.app.picgo.ui.adapter.SectionFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedImageListAdapter;
@@ -127,6 +131,8 @@ public class MainActivity extends BaseAppCompatActivity {
     public static final Logger logger = LoggerFactory.getLogger(MainActivity.class);
 
     private static final String TAG = "MainActivity";
+    public static final int MOVE_FILE_DIALOG_THUMBNEIL_COUNT = 3;
+    public static final int DEFAULT_IMAGE_LIST_COLLUMN_COUNT = 4;
 
     @BindView(R.id.img_list) SuperRecyclerView mImageList;
     @BindView(R.id.empty_view) View mEmptyView;
@@ -205,6 +211,7 @@ public class MainActivity extends BaseAppCompatActivity {
     List<File> mRecentHistory = new LinkedList<>();
     private DetailImageAdapter mCurrentDetailImageAdapter;
     private LinearLayoutManager mLinearLayoutManager;
+    private ExpandableFolderAdapter mExpandableFolderAdapter;
 
 
     @Override
@@ -218,7 +225,6 @@ public class MainActivity extends BaseAppCompatActivity {
         initDrawer();
         initListViewHeader();
         initListViewToolbar();
-
 
         initTransition();
 
@@ -536,7 +542,7 @@ public class MainActivity extends BaseAppCompatActivity {
                 .loadMediaFileList(dir, fromCacheFirst, true)
                 .map(this::imagesToDetailListItems)
                 .map(items -> {
-                    return new DetailImageAdapter(R.layout.detail_image_list_item, items);
+                    return new DetailImageAdapter(R.layout.item_image_detail, items);
                 })
                 .compose(workAndShow())
                 .subscribe(newAdapter -> {
@@ -837,28 +843,39 @@ public class MainActivity extends BaseAppCompatActivity {
         setSupportActionBar(mToolbar);
 
         mToolbar.setNavigationOnClickListener(v -> finish());
+        mToolbar.setOnMenuItemClickListener(this::onMainMenuClick);
+    }
 
-        mToolbar.setOnMenuItemClickListener(item -> {
-
-            switch (item.getItemId()) {
-                case R.id.app_bar_recent: {
-                    showRecentHistoryMenu();
-                }
-                break;
-                case R.id.app_bar_search:
-                    ToastUtils.toastShort(MainActivity.this, "search");
-                    break;
-                case R.id.app_bar_setting: {
-                    MainActivity.this.startActivity(new Intent(MainActivity.this, SettingActivity.class));
-                }
-                break;
-                case R.id.app_bar_view_mode:
-                    showViewModeMenu();
-                    break;
+    private boolean onMainMenuClick(MenuItem menuItem) {
+        switch (menuItem.getItemId()) {
+            case R.id.app_bar_recent: {
+                showRecentHistoryMenu();
             }
+            break;
+            case R.id.app_bar_search:
+                ToastUtils.toastShort(MainActivity.this, R.string.unimplemented);
+                break;
+            case R.id.app_bar_setting: {
+                MainActivity.this.startActivity(new Intent(MainActivity.this, SettingActivity.class));
+            }
+            break;
+            case R.id.app_bar_view_mode:
+                showViewModeMenu();
+                break;
+            case R.id.show_hidden_folder: {
 
-            return true;
-        });
+                // Save option
+                Preference<Boolean> showHiddenFolderPref = UserDataService.getInstance()
+                        .getPreferences().getBoolean(UserDataService.PREF_KEY_SHOW_HIDDEN_FOLDER, false);
+
+                showHiddenFolderPref.set(menuItem.isCheckable());
+
+                // TODO update folder list
+            }
+                break;
+        }
+
+        return true;
     }
 
     private void showViewModeMenu() {
@@ -994,9 +1011,14 @@ public class MainActivity extends BaseAppCompatActivity {
                     .compose(RxUtils.workAndShow())
                     .subscribe(newAdapter -> {
 
-                        SectionedFolderListAdapter currAdapter = (SectionedFolderListAdapter) mFolderList.getAdapter();
-                        if (currAdapter != null) {
-                            currAdapter.diffUpdate(newAdapter);
+                        RecyclerView.Adapter adapter = mFolderList.getAdapter();
+                        if (adapter instanceof SectionedFolderListAdapter) {
+                            SectionedFolderListAdapter currAdapter = (SectionedFolderListAdapter) adapter;
+                            if (currAdapter != null) {
+                                currAdapter.diffUpdate(newAdapter);
+                            }
+                        } else {
+                            Log.w(TAG, "initDrawer:  没处理 dialpad 输入变更更新" );
                         }
 
                     }, RxUtils::unhandledThrowable);
@@ -1039,6 +1061,66 @@ public class MainActivity extends BaseAppCompatActivity {
                     .doOnError(RxUtils::unhandledThrowable)
                     .subscribe(this::showFolderList);
         }
+    }
+
+    private void showExpandableFolderList(FolderModel model) {
+
+        List<MultiItemEntity> data = new LinkedList<>();
+        List<FolderModel.ContainerFolder> containerFolders = model.getContainerFolders();
+        for (int i = 0, containerFoldersSize = containerFolders.size(); i < containerFoldersSize; i++) {
+            FolderModel.ContainerFolder containerFolder = containerFolders.get(i);
+
+            FolderSection folderSection = new FolderSection()
+                    .setTitle(containerFolder.getName())
+                    .setFile(containerFolder.getFile());
+
+            List<ImageFolder> folders = containerFolder.getFolders();
+            for (int i1 = 0, foldersSize = folders.size(); i1 < foldersSize; i1++) {
+                ImageFolder folder = folders.get(i1);
+
+                FolderItem folderItem = new FolderItem();
+                folderItem.setFile(folder.getFile());
+                folderItem.setCount(folder.getCount());
+                folderItem.setName(folder.getName());
+                folderItem.setTitle(folder.getName());
+                folderItem.setThumbList(folder.getThumbList());
+                folderItem.setMatchKeywords(folder.getMatchKeywords() == null ? null : folder.getMatchKeywords().toString());
+                folderItem.setMatchLength(folder.getMatchLength());
+                folderItem.setMatchStartIndex(folder.getMatchStartIndex());
+                folderItem.setMediaFiles(folder.getMediaFiles());
+                folderItem.setPinyinSearchUnit(folder.getPinyinSearchUnit());
+
+                folderSection.addSubItem(folderItem);
+            }
+
+            data.add(folderSection);
+        }
+
+        mExpandableFolderAdapter = new ExpandableFolderAdapter(data);
+        mExpandableFolderAdapter.setOnItemClickListener(new BaseQuickAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(BaseQuickAdapter baseQuickAdapter, View view, int i) {
+                Log.d(TAG, "onItemClick() called with: baseQuickAdapter = [" + baseQuickAdapter + "], view = [" + view + "], i = [" + i + "]");
+            }
+        });
+        mExpandableFolderAdapter.setOnInteractionListener(new ExpandableFolderAdapter.OnInteractionListener() {
+            @Override
+            public void onItemClick(FolderItem item) {
+                showDirectoryImages(item.getFile(), false);
+            }
+        });
+        final GridLayoutManager manager = new GridLayoutManager(this, 1);
+        manager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
+            @Override
+            public int getSpanSize(int position) {
+                return mExpandableFolderAdapter.getItemViewType(position) == ExpandableFolderAdapter.TYPE_LEVEL_1 ? 1 : manager.getSpanCount();
+            }
+        });
+
+        mFolderList.setAdapter(mExpandableFolderAdapter);
+        // important! setLayoutManager should be called after setAdapter
+        mFolderList.setLayoutManager(manager);
+        mExpandableFolderAdapter.expandAll();
     }
 
     /*
@@ -1098,7 +1180,9 @@ public class MainActivity extends BaseAppCompatActivity {
         RecyclerItemTouchListener itemTouchListener = new RecyclerItemTouchListener(this,
                 mFolderList,
                 (view, position) -> onFolderListItemClick(position),
-                (view, position) -> onFolderListItemLongClick(position)
+                (view, position) -> {
+                    //onFolderListItemLongClick(position);
+                }
         );
         mFolderList.addOnItemTouchListener(itemTouchListener);
 
@@ -1159,6 +1243,11 @@ public class MainActivity extends BaseAppCompatActivity {
                 }
                 break;
                 case R.id.folder_detail:
+                    ToastUtils.toastShort(MainActivity.this, R.string.unimplemented);
+                    break;
+                case R.id.show_hidden_folder: {
+
+                }
                     break;
             }
             return false;
@@ -1167,7 +1256,8 @@ public class MainActivity extends BaseAppCompatActivity {
     }
 
     private void onFolderListItemLongClick(int position) {
-        new SectionedListItemClickDispatcher(mFolderAdapter)
+
+        new SectionedListItemClickDispatcher<>(mFolderAdapter)
                 .dispatch(position, new SectionedListItemDispatchListener() {
                     @Override
                     public void onHeader(SectionedRecyclerViewAdapter adapter, ItemCoord coord) {
@@ -1181,8 +1271,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
                     @Override
                     public void onItem(SectionedRecyclerViewAdapter adapter, ItemCoord coord) {
-                        SectionedFolderListAdapter.Item item = mFolderAdapter.getItem(coord);
-                        showFolderItemContextMenuDialog(item);
+                        showFolderItemContextMenuDialog(mFolderAdapter.getItem(coord));
                         //showFolderMoveToHereDialog(item.getFile());
                     }
                 });
@@ -1196,6 +1285,7 @@ public class MainActivity extends BaseAppCompatActivity {
         menuItems.add(getString(R.string.move_folder_s, item.getFile().getName()));
         menuItems.add(getString(R.string.remove_folder_s, item.getFile().getName()));
 
+        menuItems.add(getString(R.string.hide_folder));
 
         // TODO adapter
         switch (mViewMode) {
@@ -1375,7 +1465,7 @@ public class MainActivity extends BaseAppCompatActivity {
                                     .setCount(entry.getValue().getSelectedCount())
                                     .setThumbList(
                                             Stream.of(entry.getValue()
-                                                    .getSelectedItemUntil(3))
+                                                    .getSelectedItemUntil(MOVE_FILE_DIALOG_THUMBNEIL_COUNT))
                                                     .map(ImageListAdapter.Item::getFile)
                                                     .toList()
                                     )).toList();
@@ -1393,7 +1483,7 @@ public class MainActivity extends BaseAppCompatActivity {
                                     .setCount(entry.getValue().getSelectedCount())
                                     .setThumbList(
                                             Stream.of(entry.getValue()
-                                                    .getSelectedItemUntil(3))
+                                                    .getSelectedItemUntil(MOVE_FILE_DIALOG_THUMBNEIL_COUNT))
                                                     .map(DetailImageAdapter.Item::getFile)
                                                     .toList()
                                     )).toList();
@@ -1536,7 +1626,6 @@ public class MainActivity extends BaseAppCompatActivity {
     @Deprecated
     private void showFolders(List<ImageFolder> imageFolders) {
 
-
         List<FolderListAdapter.Item> items = Stream.of(imageFolders)
                 .map(this::folderInfoToFolderListAdapterItem)
                 .toList();
@@ -1624,21 +1713,20 @@ public class MainActivity extends BaseAppCompatActivity {
             }
             break;
             case LIST_VIEW: {
-                showListDetailImageList(directory);
+                showListDetailImageList(directory, true, true);
             }
             break;
             case UNKNOWN:
                 break;
         }
-
     }
 
-    private void showListDetailImageList(File directory) {
+    private void showListDetailImageList(File directory, boolean fromCacheFirst, boolean loadMediaFileDetail) {
         DetailImageAdapter adapter = mDetailImageListAdapters.get(directory.getAbsolutePath());
         if (adapter == null) {
 
             SystemImageService.getInstance()
-                    .loadMediaFileList(directory, true, true)
+                    .loadMediaFileList(directory, fromCacheFirst, loadMediaFileDetail)
                     .map(mediaFiles -> Stream.of(mediaFiles).map(this::mediaFileToDetailItem).toList())
                     .map(items -> createDetailImageAdapter(directory, items))
                     // cache adapter
@@ -1664,7 +1752,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
     @NonNull
     private DetailImageAdapter createDetailImageAdapter(File directory, List<DetailImageAdapter.Item> items) {
-        DetailImageAdapter listAdapter = new DetailImageAdapter(R.layout.detail_image_list_item, items);
+        DetailImageAdapter listAdapter = new DetailImageAdapter(R.layout.item_image_detail, items);
         listAdapter.setDirectory(directory);
 
         return listAdapter;
@@ -2158,7 +2246,7 @@ public class MainActivity extends BaseAppCompatActivity {
             }
 
         } else {
-            mSpanCount = 3; // columns
+            mSpanCount = DEFAULT_IMAGE_LIST_COLLUMN_COUNT; // columns
 
             // EmptyView
             mImageList.setEmptyView(mEmptyView);

@@ -36,7 +36,7 @@
         android:lines="1"
         android:maxLines="2"
         android:textAppearance="@android:style/TextAppearance.Material.Medium"
-        android:textStyle="bold"
+        android:textStyle="normal"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintLeft_toRightOf="@+id/image"
         app:layout_constraintRight_toRightOf="parent"

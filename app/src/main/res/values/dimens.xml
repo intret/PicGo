@@ -11,8 +11,6 @@
     <dimen name="folder_list_item_thumbnail_item_width">120dp</dimen>
     <dimen name="folder_list_item_thumbnail_item_height">40dp</dimen>
     <dimen name="fab_margin">16dp</dimen>
-
-
     <dimen name="dialpad_row_height">32dp</dimen>
     <dimen name="dialpad_icon_height">24dp</dimen>
     <dimen name="dialpad_icon_width">24dp</dimen>
@@ -32,4 +30,5 @@
     <dimen name="margin_bottom">4dp</dimen>
     <dimen name="bottom_dialog_title_text_size">16sp</dimen>
     <dimen name="dialog_standard_content_margin">16dp</dimen>
+    <dimen name="folder_list_item_height">44dp</dimen>
 </resources>

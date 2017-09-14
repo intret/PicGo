@@ -76,16 +76,16 @@
                 android:layout_width="0dp"
                 android:layout_height="0dp"
                 android:clipToPadding="false"
-                android:scrollbars="vertical"
                 android:padding="4dp"
                 android:scrollbarStyle="outsideOverlay"
+                android:scrollbars="vertical"
+                app:dsrv_autoScrollEnabled="true"
+                app:dsrv_autoScrollHotspotHeight="56dp"
                 app:layout_constraintBottom_toTopOf="@+id/floatingToolbar"
                 app:layout_constraintHorizontal_bias="0.0"
                 app:layout_constraintLeft_toLeftOf="parent"
                 app:layout_constraintRight_toRightOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/view_mode"
-                app:dsrv_autoScrollEnabled="true"
-                app:dsrv_autoScrollHotspotHeight="56dp"
                 tools:layout_constraintBottom_creator="1"
                 tools:layout_constraintLeft_creator="1"
                 tools:layout_constraintRight_creator="1"
@@ -96,21 +96,21 @@
 
             <ImageView
                 android:id="@+id/empty_view"
+                style="@style/TextAppearance.AppCompat.Large"
                 android:layout_width="60dp"
                 android:layout_height="60dp"
+                android:src="@drawable/ic_little_ghost_scare"
+                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintLeft_toLeftOf="parent"
                 app:layout_constraintRight_toRightOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent"
-                style="@style/TextAppearance.AppCompat.Large"
-                android:src="@drawable/ic_little_ghost_scare"
                 />
 
             <!--选中文件操作工具栏-->
             <android.support.v7.widget.Toolbar
                 android:id="@+id/floatingToolbar"
-                android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
                 android:layout_gravity="bottom"
                 android:background="@android:color/white"
                 android:visibility="gone"
@@ -119,6 +119,8 @@
                 app:layout_constraintLeft_toLeftOf="parent"
                 app:layout_constraintRight_toRightOf="parent"
                 />
+
+            <include layout="@layout/image_toolbar"/>
         </android.support.constraint.ConstraintLayout>
 
     </android.support.design.widget.CoordinatorLayout>

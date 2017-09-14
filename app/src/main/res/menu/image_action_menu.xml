@@ -3,20 +3,26 @@
       xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:orderInCategory="0"
+        android:id="@+id/action_select_all"
+        android:title="@string/select_all"
+        app:showAsAction="withText"
+        />
+    <item
         android:id="@+id/action_copy"
         android:icon="@drawable/ic_content_copy_black_24px"
         android:title="@string/copy"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="ifRoom"/>
 
     <item
         android:id="@+id/action_move"
         android:icon="@drawable/ic_move_to_folder"
         android:title="@string/move"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="ifRoom"/>
 
     <item
         android:id="@+id/action_remove"
         android:icon="@drawable/ic_delete_forever_black_24px"
         android:title="@string/delete"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="ifRoom"/>
 </menu>

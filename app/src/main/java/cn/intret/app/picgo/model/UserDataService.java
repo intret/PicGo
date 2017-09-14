@@ -33,6 +33,7 @@ public class UserDataService extends BaseService {
     public static final java.lang.String PREF_KEY_IMAGE_VIEW_MODE = "image_view_mode";
     public static final String VIEW_MODE_LIST_VIEW = "list_view";
     public static final String VIEW_MODE_GRID_VIEW = "grid_view";
+    public static final java.lang.String PREF_KEY_SHOW_HIDDEN_FOLDER = "show_hidden_folder";
     private final int mMaxRecentHistorySize = 10;
     RxSharedPreferences mPreferences;
 

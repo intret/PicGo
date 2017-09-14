@@ -9,4 +9,11 @@
     <item
         android:id="@+id/folder_detail"
         android:title="@string/folder_detail"/>
+
+    <group>
+        <item android:id="@+id/show_hidden_folder"
+              android:checkable="true"
+              android:title="@string/show_hidden_folder"
+            />
+    </group>
 </menu>

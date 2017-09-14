@@ -17,4 +17,5 @@
     <color name="transparent">#00FFFFFF</color>
     <color name="grey21_transparent">#D0363636</color>
     <color name="warnning">#DC8900</color>
+    <color name="bg_list_item_section">#dFdFdF</color>
 </resources>
