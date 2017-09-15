@@ -53,7 +53,7 @@ import cn.intret.app.picgo.model.ImageFileInformation;
 import cn.intret.app.picgo.model.MediaFile;
 import cn.intret.app.picgo.model.event.RemoveFileMessage;
 import cn.intret.app.picgo.model.SystemImageService;
-import cn.intret.app.picgo.ui.adapter.ImageListAdapter;
+import cn.intret.app.picgo.ui.adapter.DefaultImageListAdapter;
 import cn.intret.app.picgo.ui.adapter.ImageTransitionNameGenerator;
 import cn.intret.app.picgo.ui.event.CurrentImageChangeMessage;
 import cn.intret.app.picgo.utils.FileSizeUtils;
@@ -553,9 +553,9 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
         return adapter;
     }
 
-    private List<ImageListAdapter.Item> imagesToItems(List<MediaFile> mediaFiles) {
+    private List<DefaultImageListAdapter.Item> imagesToItems(List<MediaFile> mediaFiles) {
         return Stream.of(mediaFiles)
-                .map(image -> new ImageListAdapter.Item().setFile(image.getFile()))
+                .map(image -> new DefaultImageListAdapter.Item().setFile(image.getFile()))
                 .toList();
     }
 

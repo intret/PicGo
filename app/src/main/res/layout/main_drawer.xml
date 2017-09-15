@@ -107,6 +107,7 @@
                 />
 
             <!--选中文件操作工具栏-->
+
             <android.support.v7.widget.Toolbar
                 android:id="@+id/floatingToolbar"
                 android:layout_width="0dp"
@@ -120,7 +121,9 @@
                 app:layout_constraintRight_toRightOf="parent"
                 />
 
-            <include layout="@layout/image_toolbar"/>
+            <include
+                android:id="@+id/image_tool_bar"
+                layout="@layout/image_toolbar"/>
         </android.support.constraint.ConstraintLayout>
 
     </android.support.design.widget.CoordinatorLayout>

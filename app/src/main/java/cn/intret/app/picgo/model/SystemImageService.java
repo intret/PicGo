@@ -1063,7 +1063,9 @@ public class SystemImageService extends BaseService {
 
             MoveFileDetectResult moveFileDetectResult = new MoveFileDetectResult()
                     .setCanMoveFiles(canMoveFiles)
-                    .setConflictFiles(conflictFiles);
+                    .setConflictFiles(conflictFiles)
+                    .setTargetDir(destDir)
+                    ;
 
             e.onNext(moveFileDetectResult);
             e.onComplete();

@@ -7,8 +7,19 @@ import java.util.List;
 
 
 public class MoveFileDetectResult {
+
+    private File mTargetDir;
     private List<Pair<File, File>> mCanMoveFiles;
     private List<Pair<File, File>> mConflictFiles;
+
+    public File getTargetDir() {
+        return mTargetDir;
+    }
+
+    public MoveFileDetectResult setTargetDir(File targetDir) {
+        mTargetDir = targetDir;
+        return this;
+    }
 
     public MoveFileDetectResult setCanMoveFiles(List<Pair<File, File>> canMoveFiles) {
         mCanMoveFiles = canMoveFiles;

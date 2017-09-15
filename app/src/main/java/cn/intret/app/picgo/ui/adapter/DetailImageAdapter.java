@@ -105,6 +105,32 @@ public class DetailImageAdapter
         vh.setChecked(R.id.checkBox, item.isSelected());
     }
 
+    public void selectAll() {
+        for (int i = 0, mDataSize = mData.size(); i < mDataSize; i++) {
+            Item item = mData.get(i);
+            item.setSelected(true);
+        }
+
+        notifyDataSetChanged();
+
+        if (mOnInteractionListener != null) {
+            mOnInteractionListener.onSelectedCountChange(this, mData.size());
+        }
+    }
+
+    public void unselectAll() {
+        for (int i = 0, mDataSize = mData.size(); i < mDataSize; i++) {
+            Item item = mData.get(i);
+            item.setSelected(false);
+        }
+
+        notifyDataSetChanged();
+
+        if (mOnInteractionListener != null) {
+            mOnInteractionListener.onSelectedCountChange(this, 0);
+        }
+    }
+
     public static class Item extends MediaFile implements ItemSelectable {
         public Item() {
         }

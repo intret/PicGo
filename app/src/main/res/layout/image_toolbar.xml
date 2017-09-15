@@ -3,80 +3,82 @@
 
 <android.support.constraint.ConstraintLayout
 
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/good_toolbar"
-    android:layout_width="match_parent"
-    android:layout_height="@android:dimen/app_icon_size"
+    android:layout_width="0dp"
+    android:layout_height="?android:attr/actionBarSize"
     android:background="@android:color/white"
-    android:foregroundGravity="bottom"
-    android:visibility="gone"
+    android:paddingTop="8dp"
     app:layout_constraintBottom_toBottomOf="parent"
     app:layout_constraintLeft_toLeftOf="parent"
     app:layout_constraintRight_toRightOf="parent"
-    tools:layout_editor_absoluteX="8dp"
-    tools:layout_editor_absoluteY="81dp"
+    android:visibility="gone"
     tools:visibility="visible"
     >
 
-    <!--选择所有-->
-    <LinearLayout
-        android:id="@+id/tool_select_all_layout"
-        android:layout_width="100dp"
-        android:layout_height="0dp"
-        android:minWidth="44dp"
-        android:orientation="vertical"
-        android:gravity="center"
-        app:layout_constraintBottom_toBottomOf="parent"
+    <!--粘贴-->
+    <TextView
+        android:id="@+id/btn_paste"
+        style="@style/ToolbarText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:drawableTop="@drawable/ic_content_paste_black_24px"
+        android:text="@string/paste"
+        app:layout_constraintHorizontal_chainStyle="packed"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintRight_toLeftOf="@+id/btn_select_all"
+        />
 
-        <TextView
-            android:id="@+id/btn_select_all"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="@string/select_all"
-            style="@style/TextAppearance.AppCompat.Small"
-            android:textColor="@android:color/black"
-            />
-    </LinearLayout>
+
+    <!--选择所有-->
+    <TextView
+        android:id="@+id/btn_select_all"
+        style="@style/ToolbarText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:drawableTop="@drawable/ic_filter_all_black_24px"
+        android:text="@string/select_all"
+        app:layout_constraintLeft_toRightOf="@id/btn_paste"
+        app:layout_constraintRight_toLeftOf="@+id/btn_move"
+        />
 
     <!--移动到-->
-    <LinearLayout
-        android:id="@+id/tool_move_to_layout"
+    <TextView
+        android:id="@+id/btn_move"
+        style="@style/ToolbarText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center"
-        app:layout_constraintLeft_toRightOf="@id/tool_select_all_layout"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        >
-        <ImageView
-            android:id="@+id/tool_move_to"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/ic_move_to_folder"
-            />
+        android:drawableTop="@drawable/ic_folder_black_24px"
+        android:text="@string/move"
+        app:layout_constraintLeft_toRightOf="@id/btn_select_all"
+        app:layout_constraintRight_toLeftOf="@+id/btn_copy"
+        />
 
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/delete_layout"
-        app:layout_constraintLeft_toRightOf="@id/tool_move_to_layout"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
+    <!--复制-->
+    <TextView
+        android:id="@+id/btn_copy"
+        style="@style/ToolbarText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
-        <ImageView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+        android:drawableTop="@drawable/ic_content_copy_black_24px"
+        android:text="@string/copy"
+        app:layout_constraintLeft_toRightOf="@id/btn_move"
+        app:layout_constraintRight_toLeftOf="@+id/btn_delete"
+        />
 
-            />
-    </LinearLayout>
+    <!--删除-->
+    <TextView
+        android:id="@+id/btn_delete"
+        style="@style/ToolbarText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:drawableTop="@drawable/ic_delete_black_24px"
+        android:text="@string/delete"
+        app:layout_constraintLeft_toRightOf="@id/btn_copy"
+        app:layout_constraintRight_toRightOf="parent"
+        />
 
 </android.support.constraint.ConstraintLayout>
         

@@ -25,21 +25,19 @@ import cn.intret.app.picgo.utils.SystemUtils;
 /**
  * Waterfall Image List Adapter class for {@link RecyclerView}
  */
-public class ImageListAdapter extends BaseImageAdapter<ImageListAdapter.Item, ImageListAdapter.ViewHolder> {
+public class DefaultImageListAdapter extends BaseImageAdapter<DefaultImageListAdapter.Item, DefaultImageListAdapter.ViewHolder> {
 
-    public static final String TAG = ImageListAdapter.class.getSimpleName();
+    public static final String TAG = DefaultImageListAdapter.class.getSimpleName();
 
-    private int mSpanCount = 2;
-
-    public ImageListAdapter(@LayoutRes int layoutResId, @Nullable List data) {
+    public DefaultImageListAdapter(@LayoutRes int layoutResId, @Nullable List data) {
         super(layoutResId, data);
     }
 
-    public ImageListAdapter(@Nullable List data) {
+    public DefaultImageListAdapter(@Nullable List data) {
         super(data);
     }
 
-    public ImageListAdapter(@LayoutRes int layoutResId) {
+    public DefaultImageListAdapter(@LayoutRes int layoutResId) {
         super(layoutResId);
     }
 
@@ -106,6 +104,32 @@ public class ImageListAdapter extends BaseImageAdapter<ImageListAdapter.Item, Im
         }
     }
 
+    public void selectAll() {
+        for (int i = 0, mDataSize = mData.size(); i < mDataSize; i++) {
+            Item item = mData.get(i);
+            item.setSelected(true);
+        }
+
+        notifyDataSetChanged();
+
+        if (mOnInteractionListener != null) {
+            mOnInteractionListener.onSelectedCountChange(this, mData.size());
+        }
+    }
+
+    public void unselectAll() {
+        for (int i = 0, mDataSize = mData.size(); i < mDataSize; i++) {
+            Item item = mData.get(i);
+            item.setSelected(false);
+        }
+
+        notifyDataSetChanged();
+
+        if (mOnInteractionListener != null) {
+            mOnInteractionListener.onSelectedCountChange(this, 0);
+        }
+    }
+
     /*
      * Internal class
      */
@@ -147,11 +171,6 @@ public class ImageListAdapter extends BaseImageAdapter<ImageListAdapter.Item, Im
         public void setHeight(int height) {
             mHeight = height;
         }
-    }
-
-    public ImageListAdapter setSpanCount(int spanCount) {
-        mSpanCount = spanCount;
-        return this;
     }
 
     @Override
