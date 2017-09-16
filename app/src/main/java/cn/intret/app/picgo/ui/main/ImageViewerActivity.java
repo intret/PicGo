@@ -184,15 +184,17 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
     }
 
     private void updateFileDetailView(File showingImageFile, ImageFileInformation info) {
-        // Size
+        // 文件大小
         ViewUtils.setText(mDetailContainer,
                 R.id.value_file_size,
                 FileSizeUtils.formatFileSize(info.getFileLength(), false));
 
+        // 路径
         ViewUtils.setText(mDetailContainer,
                 R.id.value_file_path,
                 showingImageFile.getAbsolutePath());
 
+        // 日期
         if (info.getExif() != null) {
             ViewUtils.setText(
                     mDetailContainer,
@@ -201,8 +203,9 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
                             FastDateFormat.getDateInstance(FastDateFormat.FULL).getPattern()));
         }
 
+        // 分辨率
         String sizeString = getResources().getString(R.string.image_size_d_d,
-                info.getImageWidth(), info.getImageHeight());
+                info.getMediaResolution().getWidth(), info.getMediaResolution().getHeight());
 
         ViewUtils.setText(mDetailContainer,
                 R.id.value_resolution,
@@ -546,7 +549,8 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
         }
     }
 
-    private void showImageBriefInfo(int position) {
+    private void
+    showImageBriefInfo(int position) {
         Image image = mPagerAdapter.getImage(position);
         mBrief.setText(image.getFile().getAbsolutePath());
     }
