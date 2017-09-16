@@ -7,6 +7,20 @@
     android:layout_height="match_parent"
     tools:context="cn.intret.app.picgo.ui.main.ImageViewerActivity">
 
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:fitsSystemWindows="true"
+        android:theme="@style/ThemeOverlay.AppCompat.ActionBar"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        >
+
+    </android.support.v7.widget.Toolbar>
+
+    <!--Pager-->
     <FrameLayout
         android:id="@+id/pager_container"
         android:layout_width="0dp"
@@ -22,58 +36,96 @@
             android:id="@+id/viewpager"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_weight="1"
             android:background="@android:color/black"
             >
         </cn.intret.app.picgo.view.HackyViewPager>
 
     </FrameLayout>
 
-    <LinearLayout
+    <!--工具按钮-->
+    <android.support.constraint.ConstraintLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:layout_weight="0"
         android:background="@drawable/bg_tool_bar_gradient"
-        android:gravity="right"
-        android:orientation="horizontal"
-        android:padding="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         >
 
-        <ImageView
-            android:id="@+id/btn_delete"
-            style="@style/ImageViewerToolbarButton"
-            android:src="@drawable/ic_delete_white"/>
-
-        <ImageView
-            android:id="@+id/btn_share"
-            style="@style/ImageViewerToolbarButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/ic_share_white_24px"
-
-            />
-
-        <ImageView
-            android:id="@+id/btn_detail"
-            style="@style/ImageViewerToolbarButton"
-            android:src="@drawable/ic_info_white"
-            />
-
+        <!--brief-->
         <TextView
             android:id="@+id/brief"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/dialog_standard_content_margin"
+            android:background="@color/translucent"
+            android:lines="1"
+            android:textColor="@android:color/white"
+
+            android:visibility="visible"
+            app:layout_constraintBottom_toTopOf="@+id/resolution"
+            app:layout_constraintHorizontal_chainStyle="packed"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="1/23"/>
+
+        <!--resolution-->
+        <TextView
+            android:id="@+id/resolution"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+
+            android:layout_marginLeft="@dimen/dialog_standard_content_margin"
             android:background="@color/translucent"
             android:textColor="@android:color/white"
-            android:visibility="gone"
+            android:visibility="visible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/brief"
             tools:text="128x111"
             />
-    </LinearLayout>
 
+        <!--工具按钮-->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_gravity="bottom"
+            android:background="@drawable/bg_tool_bar_gradient"
+            android:gravity="right"
+            android:orientation="horizontal"
+            android:paddingRight="16dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            tools:ignore="RtlSymmetry">
+
+            <ImageView
+                android:id="@+id/btn_delete"
+                style="@style/ImageViewerToolbarButton"
+                android:contentDescription="Delete Button"
+                android:src="@drawable/ic_delete_white"/>
+
+            <ImageView
+                android:id="@+id/btn_share"
+                style="@style/ImageViewerToolbarButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="Share Button"
+                android:src="@drawable/ic_share_white_24px"
+
+                />
+
+            <ImageView
+                android:id="@+id/btn_detail"
+                style="@style/ImageViewerToolbarButton"
+                android:contentDescription="Detail Button"
+                android:src="@drawable/ic_info_white"
+                />
+        </LinearLayout>
+    </android.support.constraint.ConstraintLayout>
+
+    <!--详细信息-->
     <RelativeLayout
         android:id="@+id/detail_container"
         android:layout_width="0dp"
@@ -87,16 +139,19 @@
         app:layout_constraintVertical_bias="0.0"
         tools:visibility="visible">
 
+        <!--模糊图层-->
         <ImageView
             android:id="@+id/blur_layout"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:contentDescription="Blur Layout"
             android:foreground="@color/translucent"
             android:visibility="visible"
             tools:visibility="visible"
             >
         </ImageView>
 
+        <!--遮罩图层-->
         <View
             android:id="@+id/mask_view"
             android:layout_width="match_parent"
@@ -106,14 +161,15 @@
             >
         </View>
 
+        <!--详细信息-->
         <LinearLayout
             android:id="@+id/file_detail_container"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_centerInParent="true"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
             android:visibility="visible"
-            tools:visibility="visible"
-            >
+            tools:visibility="visible">
 
             <GridLayout
                 android:id="@+id/grid_layout"
@@ -124,7 +180,7 @@
                 android:layout_marginRight="@dimen/dialog_standard_content_margin"
                 android:columnCount="5"
                 android:rowCount="5"
-                >
+                tools:ignore="UselessParent">
 
                 <!-- 文件路径 -->
                 <TextView
@@ -144,10 +200,10 @@
                     style="@style/ImageDetailTextBase.Value.Cell"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:maxLines="3"
                     android:layout_column="2"
                     android:layout_columnSpan="3"
                     android:layout_row="0"
+                    android:maxLines="3"
                     tools:text="@string/tools_file_path"/>
 
                 <!-- 分辨率 -->
@@ -219,7 +275,6 @@
 
             </GridLayout>
         </LinearLayout>
-
 
     </RelativeLayout>
 

@@ -15,9 +15,12 @@ import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.app.SharedElementCallback;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.transition.Transition;
 import android.util.Log;
+import android.util.Size;
 import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
@@ -51,8 +54,8 @@ import butterknife.OnClick;
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.model.ImageFileInformation;
 import cn.intret.app.picgo.model.MediaFile;
-import cn.intret.app.picgo.model.event.RemoveFileMessage;
 import cn.intret.app.picgo.model.SystemImageService;
+import cn.intret.app.picgo.model.event.RemoveFileMessage;
 import cn.intret.app.picgo.ui.adapter.DefaultImageListAdapter;
 import cn.intret.app.picgo.ui.adapter.ImageTransitionNameGenerator;
 import cn.intret.app.picgo.ui.event.CurrentImageChangeMessage;
@@ -85,8 +88,10 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
     public static final String TRANSITION_NAME_IMAGE = "viewer:image";
     public static final String TRANSITION_PREFIX_FILETYPE = "filetype";
 
+    @BindView(R.id.toolbar) Toolbar mToolbar;
     @BindView(R.id.viewpager) ViewPager mViewPager;
     @BindView(R.id.brief) TextView mBrief;
+    @BindView(R.id.resolution) TextView mResolution;
     @BindView(R.id.btn_delete) ImageView mBtnDelete;
     @BindView(R.id.btn_detail) ImageView mBtnDetail;
     @BindView(R.id.pager_container) ViewGroup mPagerContainer;
@@ -121,15 +126,24 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
         extractIntentData();
 
-        loadImageFile();
-
-        initImageTransition();
         initToolbar();
+        loadImageFile();
+        initImageTransition();
     }
 
     private void initToolbar() {
 //        DrawableCompat.setTint(mBtnDelete.getDrawable(), ContextCompat.getColor(this, R.color.white));
 //        DrawableCompat.setTint(mBtnDetail.getDrawable(), ContextCompat.getColor(this, R.color.white));
+
+        setSupportActionBar(mToolbar);
+
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setDisplayShowHomeEnabled(true);
+            actionBar.setDisplayHomeAsUpEnabled(true);
+            actionBar.setDisplayShowTitleEnabled(true);
+            actionBar.setTitle("ddd");
+        }
     }
 
     @OnClick(R.id.btn_delete)
@@ -500,7 +514,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
                     .map(this::imageListToImageListAdapter)
                     .subscribe(adapter -> {
                         showImageAdapter(adapter, 0);
-                    })
+                    }, RxUtils::unhandledThrowable)
             ;
         }
 
@@ -526,7 +540,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
                 mCurrentItem = position;
 
                 Image image = adapter.getImage(position);
-                showImageBriefInfo(position);
+                showImageBrief(position);
 
                 EventBus.getDefault().post(new CurrentImageChangeMessage().setPosition(position));
             }
@@ -541,18 +555,34 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
             mCurrentItem = position;
             mViewPager.setCurrentItem(position);
 
-            showImageBriefInfo(position);
+            showImageBrief(position);
         } else {
             mCurrentItem = 0;
             mViewPager.setCurrentItem(0);
-            showImageBriefInfo(0);
+            showImageBrief(0);
         }
     }
 
-    private void
-    showImageBriefInfo(int position) {
+    private void showImageBrief(int position) {
         Image image = mPagerAdapter.getImage(position);
-        mBrief.setText(image.getFile().getAbsolutePath());
+        int total = mPagerAdapter.getCount();
+
+        mBrief.setText(getString(R.string.percent_d_d, position, total));
+
+        SystemImageService.getInstance()
+                .loadImageInfo(image.getFile())
+                .compose(workAndShow())
+                .subscribe(imageFileInformation -> {
+                    Size mediaResolution = imageFileInformation.getMediaResolution();
+                    if (MediaUtils.isValidSize(mediaResolution)) {
+                        mResolution.setText(getString(R.string.image_size_d_d, mediaResolution.getWidth(), mediaResolution.getHeight()));
+                    } else {
+                        mResolution.setText("-");
+                    }
+
+                }, throwable -> {
+                    mResolution.setText("-");
+                });
     }
 
     @NonNull
