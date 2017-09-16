@@ -487,7 +487,12 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
             Observable.just(mImageFilePath)
                     .map(File::new)
-                    .map(file -> new MediaFile().setFile(file).setDate(new Date(file.lastModified())))
+                    .map(file -> {
+                        MediaFile mediaFile = new MediaFile();
+                        mediaFile.setFile(file);
+                        mediaFile.setDate(new Date(file.lastModified()));
+                        return mediaFile;
+                    })
                     .map(ListUtils::objectToLinkedList)
                     .map(this::imageListToImageListAdapter)
                     .subscribe(adapter -> {
@@ -555,7 +560,11 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
     private List<DefaultImageListAdapter.Item> imagesToItems(List<MediaFile> mediaFiles) {
         return Stream.of(mediaFiles)
-                .map(image -> new DefaultImageListAdapter.Item().setFile(image.getFile()))
+                .map(image -> {
+                    DefaultImageListAdapter.Item item = new DefaultImageListAdapter.Item();
+                    item.setFile(image.getFile());
+                    return item;
+                })
                 .toList();
     }
 

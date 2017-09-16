@@ -60,9 +60,8 @@ public class MediaFile {
         return mFile;
     }
 
-    public MediaFile setFile(File file) {
+    public void setFile(File file) {
         mFile = file;
-        return this;
     }
 
     public Date getDate() {

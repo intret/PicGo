@@ -131,7 +131,7 @@ public class DetailImageAdapter
         }
     }
 
-    public static class Item extends MediaFile implements ItemSelectable {
+    public static class Item extends MediaFile implements BaseFileItem {
         public Item() {
         }
 

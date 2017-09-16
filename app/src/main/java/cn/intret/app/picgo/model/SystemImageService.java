@@ -14,6 +14,7 @@ import com.annimon.stream.function.BiConsumer;
 import com.annimon.stream.function.Consumer;
 import com.annimon.stream.function.Function;
 import com.annimon.stream.function.Supplier;
+import com.f2prateek.rx.preferences2.Preference;
 import com.t9search.model.PinyinSearchUnit;
 import com.t9search.util.T9Util;
 
@@ -52,6 +53,7 @@ import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.utils.MediaUtils;
 import cn.intret.app.picgo.utils.ObjectGuarder;
 import cn.intret.app.picgo.utils.PathUtils;
+import cn.intret.app.picgo.utils.RxUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
 import io.reactivex.Observable;
 import io.reactivex.schedulers.Schedulers;
@@ -85,6 +87,8 @@ public class SystemImageService extends BaseService {
 
     ObjectGuarder<List<File>> mHiddenFolders = new ObjectGuarder<>(new LinkedList<File>());
     List<String> mHiddenFolder = new LinkedList<>();
+    private Preference<Boolean> mShowHiddenFolderPref;
+    private boolean mShowHiddenFile = false;
 
     public static SystemImageService getInstance() {
         return ourInstance;
@@ -98,6 +102,28 @@ public class SystemImageService extends BaseService {
 
     private void loadHiddenFileList() {
 
+        Observable.<Preference<Boolean>>create(
+                e -> {
+                    Preference<Boolean> showHiddenFolder = UserDataService.getInstance()
+                            .getPreferences()
+                            .getBoolean(UserDataService.PREF_KEY_SHOW_HIDDEN_FOLDER, false);
+
+                    e.onNext(showHiddenFolder);
+                    e.onComplete();
+                })
+                .subscribeOn(Schedulers.io())
+                .subscribe(
+                        preference -> {
+                            mShowHiddenFolderPref = preference;
+                            mShowHiddenFolderPref.asObservable().subscribe(showHiddenFile -> {
+                                Log.d(TAG, "loadHiddenFileList: show hidden file preference changed : " + showHiddenFile);
+                                mShowHiddenFile = showHiddenFile;
+
+                                Log.w(TAG, "loadHiddenFileList: todo reload folder list");
+                            });
+                        }
+                        , RxUtils::unhandledThrowable);
+
         UserDataService.getInstance()
                 .getHiddenFolder()
                 .subscribeOn(Schedulers.io())
@@ -108,6 +134,7 @@ public class SystemImageService extends BaseService {
                         fileList.addAll(files);
                     });
                 });
+
     }
 
     FolderModel mFolderModel;
@@ -240,12 +267,12 @@ public class SystemImageService extends BaseService {
                     // SDCard/DCIM directory images
                     File dcimDir = SystemUtils.getDCIMDir();
                     List<File> dcimSubFolders = getSortedSubDirectories(dcimDir);
-                    addParentFolderInfo(folderModel, dcimDir, dcimSubFolders);
+                    addContainerFolder(folderModel, dcimDir, dcimSubFolders);
 
                     // SDCard/Picture directory images
                     File picturesDir = SystemUtils.getPicturesDir();
                     List<File> pictureSubFolders = getSortedSubDirectories(picturesDir);
-                    addParentFolderInfo(folderModel, picturesDir, pictureSubFolders);
+                    addContainerFolder(folderModel, picturesDir, pictureSubFolders);
 
                     FolderModel cloneModel;
                     try {
@@ -309,20 +336,24 @@ public class SystemImageService extends BaseService {
         return thumbFileList;
     }
 
-    private void addParentFolderInfo(FolderModel model, File dir, List<File> mediaFolders) {
+    private void addContainerFolder(FolderModel model, File dir, List<File> mediaFolders) {
         FolderModel.ContainerFolder containerFolder = new FolderModel.ContainerFolder();
         List<ImageFolder> subFolders = new LinkedList<>();
 
         for (int i = 0, s = mediaFolders.size(); i < s; i++) {
             File folder = mediaFolders.get(i);
 
-            mHiddenFolders.readConsume(fileList -> {
-                if (!fileList.contains(folder)) {
-                    subFolders.add(createImageFolder(folder));
-                } else {
-                    Log.d(TAG, "addParentFolderInfo: ignore folder " + folder);
-                }
-            });
+            if (!mShowHiddenFile) {
+                mHiddenFolders.readConsume(fileList -> {
+                    if (!fileList.contains(folder)) {
+                        subFolders.add(createImageFolder(folder));
+                    } else {
+                        Log.d(TAG, "addContainerFolder: ignore folder [" + folder + "]");
+                    }
+                });
+            } else {
+                subFolders.add(createImageFolder(folder));
+            }
         }
 
         containerFolder.setFile(dir);
@@ -484,9 +515,12 @@ public class SystemImageService extends BaseService {
                                 ImageGroup section = new ImageGroup();
                                 List<File> files = entry.getValue();
                                 List<MediaFile> itemList = Stream.of(files)
-                                        .map(file -> new MediaFile()
-                                                .setFile(file)
-                                                .setDate(new Date(file.lastModified())))
+                                        .map(file -> {
+                                            MediaFile mediaFile = new MediaFile();
+                                            mediaFile.setFile(file);
+                                            mediaFile.setDate(new Date(file.lastModified()));
+                                            return mediaFile;
+                                        })
                                         .toList();
                                 MediaFile firstItem = ListUtils.firstOf(itemList);
                                 MediaFile lastItem = ListUtils.lastOf(itemList);
@@ -520,12 +554,12 @@ public class SystemImageService extends BaseService {
      * 产生 {@link RescanImageDirectoryMessage}
      *
      * @param destDir
-     * @param onlyCached
+     * @param onlyRescanDirInCache
      */
-    private void rescanImageDirectory(File destDir, boolean onlyCached) {
+    private void rescanImageDirectory(File destDir, boolean onlyRescanDirInCache) {
 
         boolean loadImageList = false;
-        if (onlyCached) {
+        if (onlyRescanDirInCache) {
             if (mImageListMap.containsKey(destDir.getAbsolutePath())) {
                 loadImageList = true;
             }
@@ -563,14 +597,14 @@ public class SystemImageService extends BaseService {
                 });
     }
 
-    private void rescanFolderDirectory(File file) {
+    private void rescanFolderList() {
         loadFolderList(false)
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.io())
                 .subscribe(model -> {
                     mBus.post(new RescanFolderListMessage());
                 }, throwable -> {
-                    Log.d(TAG, "rescanFolderDirectory: " + throwable);
+                    Log.d(TAG, "rescanFolderList: " + throwable);
                 });
     }
 
@@ -619,12 +653,12 @@ public class SystemImageService extends BaseService {
     }
 
     /**
-     * TODO add fromCache param
-     * TODO add override method for diff-ing cached list to newly one, trigger changing action
+     *
      *
      * @param directory
      * @param fromCacheFirst
-     * @param loadMediaFileDetail
+     * @param loadMediaFileDetail true, to load image/video resolution, file length,
+     *                            video duration (if the file is a video file).
      * @return
      */
     public Observable<List<MediaFile>> loadMediaFileList(File directory,
@@ -695,7 +729,12 @@ public class SystemImageService extends BaseService {
                     } else {
 
                         sortedMediaFiles = Stream.of(imageFiles)
-                                .map(file -> new MediaFile().setFile(file).setDate(new Date(file.lastModified())))
+                                .map(file -> {
+                                    MediaFile mediaFile = new MediaFile();
+                                    mediaFile.setFile(file);
+                                    mediaFile.setDate(new Date(file.lastModified()));
+                                    return mediaFile;
+                                })
                                 .sorted(mediaFileDateDescComparator)
                                 .toList();
                     }
@@ -772,14 +811,15 @@ public class SystemImageService extends BaseService {
     /**
      * 删除文件，并把在一个目录中的文件扫描一次目录，缓存，然后通知目录发送变化
      *
-     * @param files
-     * @return 已经删除的文件个数，删除失败的文件列表
+     * @param files 指定要删除的文件列表
+     * @return 返回已经删除的文件个数和删除失败的文件列表
      */
     public Observable<Pair<Integer, List<File>>> removeFiles(Collection<File> files) {
         return Observable.create(e -> {
 
             final int[] totalRemoved = {0};
             List<File> removeFailedFiles = new LinkedList<File>();
+
             // 文件分组来删除：按照目录来分组，每个目录执行一次批量删除，并重新扫描发送目录扫描通知
             Stream.of(files)
                     .groupBy(File::getParent)
@@ -807,13 +847,13 @@ public class SystemImageService extends BaseService {
                                     });
                             totalRemoved[0] += removeSuccessFiles.size();
 
-                            // 扫描目录
+                            // 扫描对应的图片目录
                             rescanImageDirectory(new File(dir), false);
 
-                            rescanFolderDirectory(new File(dir));
+                            // 扫描文件夹列表
+                            rescanFolderList();
                         }
                     });
-
 
             Pair<Integer, List<File>> result = new Pair<>(totalRemoved[0], removeFailedFiles);
             e.onNext(result);

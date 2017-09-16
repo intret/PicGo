@@ -72,7 +72,7 @@ public abstract class BaseSelectableAdapter< T extends ItemSelectable, VH extend
                     mOnInteractionListener.onItemCheckedChanged(item);
                 }
 
-                int selectedCount = getSelectedCount();
+                int selectedCount = getSelectedItemCount();
                 if (selectedCount == 0) {
                     mIsSelectionMode = false;
                     if (mOnInteractionListener != null) {
@@ -231,7 +231,7 @@ public abstract class BaseSelectableAdapter< T extends ItemSelectable, VH extend
         T item = mData.get(index);
         item.setSelected(selected);
 
-        int selectedCount = getSelectedCount();
+        int selectedCount = getSelectedItemCount();
         if (selectedCount == 1) {
 
             mIsSelectionMode = true;
@@ -251,7 +251,7 @@ public abstract class BaseSelectableAdapter< T extends ItemSelectable, VH extend
         setItemViewSelected(index, item);
     }
 
-    public int getSelectedCount() {
+    public int getSelectedItemCount() {
         int selectedCount = 0;
         for (T data : mData) {
             if (data.isSelected()) {

@@ -868,7 +868,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                         } else {
                             updateViewHolder(si, ii, item, (vh, it) -> {
                                 bindViewHolderBadge(vh, item);
-//                                vh.setSelectedCount(item.getSelectedCount());
+//                                vh.setSelectedCount(item.getSelectedItemCount());
                             });
                         }
                     }
@@ -879,7 +879,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
                         updateViewHolder(si, ii, item, (vh, it) -> {
                             bindViewHolderBadge(vh, item);
-                            //vh.showSourceDirBadge(item.getSelectedCount());
+                            //vh.showSourceDirBadge(item.getSelectedItemCount());
                         });
                     }
                 }
@@ -1206,7 +1206,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         // File total file count
         vh.count.setText(String.valueOf(item.getCount()));
 
-//        vh.setSelectedCountText(item.getSelectedCount(), item.getCount());
+//        vh.setSelectedCountText(item.getSelectedItemCount(), item.getCount());
 
         // Thumbnail image list
         updateThumbList(vh, item, false);

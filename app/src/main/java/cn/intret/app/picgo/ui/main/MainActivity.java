@@ -14,7 +14,6 @@ import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.app.SharedElementCallback;
 import android.support.v4.util.Pair;
 import android.support.v4.widget.DrawerLayout;
-import android.support.v4.widget.SimpleCursorAdapter;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.util.DiffUtil;
@@ -37,10 +36,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.PopupWindow;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -65,8 +62,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -134,8 +129,6 @@ import cn.intret.app.picgo.widget.SuperRecyclerView;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
-
-import static cn.intret.app.picgo.model.ViewMode.GRID_VIEW;
 
 public class MainActivity extends BaseAppCompatActivity {
 
@@ -214,7 +207,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
     private GroupMode mGroupMode = GroupMode.DEFAULT;
 
-    private ViewMode mViewMode = GRID_VIEW;
+    private ViewMode mViewMode = ViewMode.GRID_VIEW;
 
     /*
      * Data loading status
@@ -329,7 +322,7 @@ public class MainActivity extends BaseAppCompatActivity {
             UserDataService.getInstance()
                     .getPreferences()
                     .getString(UserDataService.PREF_KEY_IMAGE_VIEW_MODE)
-                    .set(GRID_VIEW.toString());
+                    .set(ViewMode.GRID_VIEW.toString());
         } else {
 
             MenuItem item = menu.findItem(R.id.app_bar_view_mode);
@@ -460,7 +453,7 @@ public class MainActivity extends BaseAppCompatActivity {
         if (destDir != null) {
             DefaultImageListAdapter adapter = mImageListAdapters.get(destDir.getAbsolutePath());
             if (adapter != null) {
-                int selectedCount = adapter.getSelectedCount();
+                int selectedCount = adapter.getSelectedItemCount();
                 int itemCount = adapter.getItemCount();
                 mFolderAdapter.updateSelectedCount(message.getDestDir(), selectedCount);
                 mFolderAdapter.updateItemCount(message.getDestDir(), itemCount);
@@ -475,7 +468,7 @@ public class MainActivity extends BaseAppCompatActivity {
                         String dir = objectListEntry.getKey();
                         DefaultImageListAdapter adapter = mImageListAdapters.get(dir);
                         if (adapter != null) {
-                            int selectedCount = adapter.getSelectedCount();
+                            int selectedCount = adapter.getSelectedItemCount();
                             int itemCount = adapter.getItemCount();
                             mFolderAdapter.updateSelectedCount(message.getDestDir(), selectedCount);
                             mFolderAdapter.updateItemCount(message.getDestDir(), itemCount);
@@ -487,7 +480,6 @@ public class MainActivity extends BaseAppCompatActivity {
                 message.getDestDir(),
                 message.getResult().getConflictFiles());
     }
-
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(CurrentImageChangeMessage message) {
@@ -506,7 +498,7 @@ public class MainActivity extends BaseAppCompatActivity {
             DefaultImageListAdapter adapter = mImageListAdapters.get(dir);
             if (adapter != null) {
                 Log.d(TAG, "onEvent: RemoveFileMessage ");
-                diffUpdateImageListAdapter(adapter, true);
+                diffUpdateDefaultImageListAdapter(adapter, true);
             }
 
             updateFolderListItemThumbnailList(file.getParentFile());
@@ -533,7 +525,7 @@ public class MainActivity extends BaseAppCompatActivity {
             case GRID_VIEW: {
                 DefaultImageListAdapter adapter = mImageListAdapters.get(dir.getAbsolutePath());
                 if (adapter != null) {
-                    diffUpdateImageListAdapter(adapter, true);
+                    diffUpdateDefaultImageListAdapter(adapter, true);
                 }
             }
             break;
@@ -550,58 +542,6 @@ public class MainActivity extends BaseAppCompatActivity {
 
         // 更新抽屉中的缩略图列表
         updateFolderListItemThumbnailList(dir);
-    }
-
-    private void diffUpdateDetailImageAdapter(@NonNull DetailImageAdapter adapter, boolean fromCacheFirst) {
-
-        File dir = adapter.getDirectory();
-        SystemImageService.getInstance()
-                .loadMediaFileList(dir, fromCacheFirst, true)
-                .map(this::imagesToDetailListItems)
-                .map(items -> {
-                    return new DetailImageAdapter(R.layout.item_image_detail, items);
-                })
-                .compose(workAndShow())
-                .subscribe(newAdapter -> {
-                            //diffUpdateAdapter(adapter, newAdapter);
-                            showDetailImageListAdapter(newAdapter);
-                        },
-                        RxUtils::unhandledThrowable);
-
-
-    }
-
-    private void diffUpdateAdapter(@NonNull DetailImageAdapter oldAdapter, final DetailImageAdapter newAdapter) {
-
-        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtil.Callback() {
-            @Override
-            public int getOldListSize() {
-                return oldAdapter.getItemCount();
-            }
-
-            @Override
-            public int getNewListSize() {
-                return newAdapter.getItemCount();
-            }
-
-            @Override
-            public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-                DetailImageAdapter.Item oldItem = oldAdapter.getItem(oldItemPosition);
-                DetailImageAdapter.Item newItem = newAdapter.getItem(newItemPosition);
-                return !(oldItem == null || newItem == null) && oldItem.getFile().equals(newItem.getFile());
-            }
-
-            @Override
-            public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-                DetailImageAdapter.Item oldItem = oldAdapter.getItem(oldItemPosition);
-                DetailImageAdapter.Item newItem = newAdapter.getItem(newItemPosition);
-
-                // no partial update
-                return true;
-            }
-        });
-
-        diffResult.dispatchUpdatesTo(oldAdapter);
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -643,13 +583,13 @@ public class MainActivity extends BaseAppCompatActivity {
                         case GRID_VIEW:
                             if (mCurrentImageAdapter != null) {
                                 return new Pair<Integer, Integer>(
-                                        mCurrentImageAdapter.getSelectedCount(), mCurrentDetailImageAdapter.getSelectedCount());
+                                        mCurrentImageAdapter.getSelectedItemCount(), mCurrentDetailImageAdapter.getSelectedItemCount());
                             }
                             break;
                         case LIST_VIEW:
                             if (mCurrentDetailImageAdapter != null) {
                                 return new Pair<Integer, Integer>(
-                                        mCurrentDetailImageAdapter.getSelectedCount(), mCurrentDetailImageAdapter.getItemCount()
+                                        mCurrentDetailImageAdapter.getSelectedItemCount(), mCurrentDetailImageAdapter.getItemCount()
                                 );
                             }
                             break;
@@ -715,7 +655,7 @@ public class MainActivity extends BaseAppCompatActivity {
                         RxUtils::unhandledThrowable);
     }
 
-    private void diffUpdateImageListAdapter(DefaultImageListAdapter adapter, boolean fromCacheFirst) {
+    private void diffUpdateDefaultImageListAdapter(DefaultImageListAdapter adapter, boolean fromCacheFirst) {
         Log.d(TAG, String.format("差量更新图片列表 dir=%s fromCacheFirst=%s", adapter.getDirectory(), fromCacheFirst));
 
         File dir = adapter.getDirectory();
@@ -725,6 +665,68 @@ public class MainActivity extends BaseAppCompatActivity {
                 .compose(workAndShow())
                 .subscribe(adapter::diffUpdate,
                         RxUtils::unhandledThrowable);
+    }
+
+    private void diffUpdateDetailImageAdapter(@NonNull DetailImageAdapter adapter, boolean fromCacheFirst) {
+
+        File dir = adapter.getDirectory();
+        SystemImageService.getInstance()
+                .loadMediaFileList(dir, fromCacheFirst, true)
+                .map(this::imagesToDetailListItems)
+                .map(items -> {
+                    DetailImageAdapter detailImageAdapter = new DetailImageAdapter(R.layout.item_image_detail, items);
+                    transferAdapterStatus(adapter, detailImageAdapter);
+
+                    // todo detailImageAdapter.setFirstVisibleItem()
+
+                    return detailImageAdapter;
+                })
+                .compose(workAndShow())
+                .subscribe(newAdapter -> {
+                            //diffUpdateAdapter(adapter, newAdapter);
+                            showDetailImageListAdapter(newAdapter);
+                        },
+                        RxUtils::unhandledThrowable);
+    }
+
+    private void transferAdapterStatus(DetailImageAdapter fromAdapter, DetailImageAdapter toAdapter) {
+        toAdapter.setDirectory(fromAdapter.getDirectory());
+        toAdapter.setFirstVisibleItem(fromAdapter.getFirstVisibleItem());
+    }
+
+    private void diffUpdateAdapter(@NonNull DetailImageAdapter oldAdapter, final DetailImageAdapter newAdapter) {
+
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+            @Override
+            public int getOldListSize() {
+                return oldAdapter.getItemCount();
+            }
+
+            @Override
+            public int getNewListSize() {
+                return newAdapter.getItemCount();
+            }
+
+            @Override
+            public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+                DetailImageAdapter.Item oldItem = oldAdapter.getItem(oldItemPosition);
+                DetailImageAdapter.Item newItem = newAdapter.getItem(newItemPosition);
+
+                // 两个 item 的文件相同
+                return !(oldItem == null || newItem == null) && oldItem.getFile().equals(newItem.getFile());
+            }
+
+            @Override
+            public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+                DetailImageAdapter.Item oldItem = oldAdapter.getItem(oldItemPosition);
+                DetailImageAdapter.Item newItem = newAdapter.getItem(newItemPosition);
+
+                // no partial update
+                return false;
+            }
+        });
+
+        diffResult.dispatchUpdatesTo(oldAdapter);
     }
 
     public String getTransitionName(String filename) {
@@ -882,7 +884,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
                 // Save option
                 Preference<Boolean> showHiddenFolderPref = UserDataService.getInstance()
-                        .getPreferences().getBoolean(UserDataService.PREF_KEY_SHOW_HIDDEN_FOLDER, false);
+                        .getPreferences().getBoolean(UserDataService.PREF_KEY_SHOW_HIDDEN_FOLDER, true);
 
                 showHiddenFolderPref.set(menuItem.isCheckable());
 
@@ -934,27 +936,29 @@ public class MainActivity extends BaseAppCompatActivity {
                 case R.id.item_grid_view: {
                     Log.d(TAG, "showViewModeMenu: 切换显示网格视图");
                     setToolbarViewModeIcon(R.drawable.ic_grid_on_black_24px);
-                    viewModePref.set(GRID_VIEW.toString());
-
-                    mViewMode = GRID_VIEW;
                     if (mCurrentFolder != null) {
-                        showDirectoryImages(mCurrentFolder, false);
+                        showDirectoryImages(mCurrentFolder, false, mViewMode, ViewMode.GRID_VIEW);
                     } else {
                         Log.w(TAG, "showViewModeMenu: mCurrentFolder is null");
                     }
+
+                    viewModePref.set(ViewMode.GRID_VIEW.toString());
+                    mViewMode = ViewMode.GRID_VIEW;
                 }
                 break;
                 case R.id.item_list_view: {
                     Log.d(TAG, "showViewModeMenu: 切换显示列表视图");
                     setToolbarViewModeIcon(R.drawable.ic_list_black_24px);
-                    viewModePref.set(ViewMode.LIST_VIEW.toString());
 
-                    mViewMode = ViewMode.LIST_VIEW;
                     if (mCurrentFolder != null) {
-                        showDirectoryImages(mCurrentFolder, false);
+                        showDirectoryImages(mCurrentFolder, false, mViewMode, ViewMode.LIST_VIEW);
                     } else {
                         Log.w(TAG, "showViewModeMenu: mCurrentFolder is null");
                     }
+
+                    viewModePref.set(ViewMode.LIST_VIEW.toString());
+
+                    mViewMode = ViewMode.LIST_VIEW;
                 }
                 break;
             }
@@ -1747,7 +1751,7 @@ public class MainActivity extends BaseAppCompatActivity {
                                 .map(entry -> {
                                     DefaultImageListAdapter value = entry.getValue();
                                     return this.getString(R.string.main_drawer_menu_item_move__item__to__folder,
-                                            value.getDirectory().getName(), value.getSelectedCount());
+                                            value.getDirectory().getName(), value.getSelectedItemCount());
                                 })
                                 .toList();
 
@@ -1765,7 +1769,7 @@ public class MainActivity extends BaseAppCompatActivity {
                     items = Stream.of(selectionModeAdapters)
                             .map(entry -> new FlatFolderListAdapter.Item()
                                     .setDirectory(entry.getValue().getDirectory())
-                                    .setCount(entry.getValue().getSelectedCount())
+                                    .setCount(entry.getValue().getSelectedItemCount())
                                     .setThumbList(
                                             Stream.of(entry.getValue()
                                                     .getSelectedItemUntil(MOVE_FILE_DIALOG_THUMBNEIL_COUNT))
@@ -1783,7 +1787,7 @@ public class MainActivity extends BaseAppCompatActivity {
                     items = Stream.of(inSelectionMdoeAdapters)
                             .map(entry -> new FlatFolderListAdapter.Item()
                                     .setDirectory(entry.getValue().getDirectory())
-                                    .setCount(entry.getValue().getSelectedCount())
+                                    .setCount(entry.getValue().getSelectedItemCount())
                                     .setThumbList(
                                             Stream.of(entry.getValue()
                                                     .getSelectedItemUntil(MOVE_FILE_DIALOG_THUMBNEIL_COUNT))
@@ -1842,13 +1846,13 @@ public class MainActivity extends BaseAppCompatActivity {
                         case GRID_VIEW: {
                             mFolderAdapter.updateSelectedCount(
                                     mCurrentImageAdapter.getDirectory(),
-                                    mCurrentImageAdapter.getSelectedCount());
+                                    mCurrentImageAdapter.getSelectedItemCount());
                         }
                         break;
                         case LIST_VIEW: {
                             mFolderAdapter.updateSelectedCount(
                                     mCurrentDetailImageAdapter.getDirectory(),
-                                    mCurrentDetailImageAdapter.getSelectedCount());
+                                    mCurrentDetailImageAdapter.getSelectedItemCount());
                         }
                         break;
                         case UNKNOWN:
@@ -1992,8 +1996,49 @@ public class MainActivity extends BaseAppCompatActivity {
     /*
      * Image list
      */
+
+
     @MainThread
     private void showDirectoryImages(File directory, boolean updateFolderList) {
+        showDirectoryImages(directory, updateFolderList, mViewMode, mViewMode);
+    }
+
+    @MainThread
+    private void showDirectoryImages(File directory, boolean updateFolderList, ViewMode fromViewMode, ViewMode toViewMode) {
+
+        if (directory == null) {
+            Log.w(TAG, "show empty folder");
+            return;
+        }
+
+        switch (fromViewMode) {
+
+            case GRID_VIEW:
+                if (toViewMode == ViewMode.GRID_VIEW) {
+
+                    if (mCurrentImageAdapter != null) {
+                        if (mCurrentImageAdapter.getDirectory().equals(directory)) {
+                            Log.w(TAG, "showDirectoryImages: 目录已经显示在 " + toViewMode + " 模式下");
+                            return;
+                        }
+                    }
+                }
+                break;
+            case LIST_VIEW:
+                if (toViewMode == ViewMode.LIST_VIEW) {
+
+                    if (mCurrentDetailImageAdapter != null) {
+                        if (mCurrentDetailImageAdapter.getDirectory().equals(directory)) {
+                            Log.w(TAG, "showDirectoryImages: 目录已经显示在 " + toViewMode + " 模式下");
+                            return;
+                        }
+                    }
+                }
+                break;
+            case UNKNOWN:
+                break;
+        }
+
         mCurrentFolder = directory;
 
         // Update folder list select status
@@ -2004,12 +2049,12 @@ public class MainActivity extends BaseAppCompatActivity {
         // Action bar title
         updateActionBarTitle(directory.getName());
 
-        switch (mViewMode) {
+        switch (toViewMode) {
 
             case GRID_VIEW: {
                 // Image list based on view mode
                 if (mGroupMode == GroupMode.DEFAULT) {
-                    showImageList(directory);
+                    showGridDefaultImageList(directory);
                 } else {
                     showGridSectionedImageList(directory, mGroupMode);
                 }
@@ -2293,15 +2338,15 @@ public class MainActivity extends BaseAppCompatActivity {
                 ));
     }
 
-    private void showImageList(File directory) {
+    private void showGridDefaultImageList(File directory) {
         DefaultImageListAdapter listAdapter = mImageListAdapters.get(directory.getAbsolutePath());
         if (listAdapter != null) {
-            com.orhanobut.logger.Logger.d("showImageList 切换显示目录 " + directory);
+            com.orhanobut.logger.Logger.d("showGridDefaultImageList 切换显示目录 " + directory);
             showGridImageListAdapter(listAdapter);
 
         } else {
 
-            com.orhanobut.logger.Logger.d("showImageList 加载并显示目录 " + directory);
+            com.orhanobut.logger.Logger.d("showGridDefaultImageList 加载并显示目录 " + directory);
 
             SystemImageService.getInstance()
                     .loadMediaFileList(directory, true, false)
@@ -2331,13 +2376,25 @@ public class MainActivity extends BaseAppCompatActivity {
     }
 
     private List<DefaultImageListAdapter.Item> imagesToListItems(List<MediaFile> mediaFiles) {
-        return Stream.of(mediaFiles).map(image -> new DefaultImageListAdapter.Item().setFile(image.getFile())).toList();
+        return Stream.of(mediaFiles)
+                .map(image -> {
+                    DefaultImageListAdapter.Item item = new DefaultImageListAdapter.Item();
+                    item.setFile(image.getFile());
+                    return item;
+                })
+                .toList();
     }
 
     private List<DetailImageAdapter.Item> imagesToDetailListItems(List<MediaFile> mediaFiles) {
         return Stream.of(mediaFiles).map(image -> {
             DetailImageAdapter.Item item = new DetailImageAdapter.Item();
             item.setFile(image.getFile());
+            item.setMediaResolution(image.getMediaResolution());
+
+            item.setVideoDuration(image.getVideoDuration());
+            item.setFileSize(image.getFileSize());
+            image.setDate(image.getDate());
+
             return item;
         }).toList();
     }
@@ -2349,7 +2406,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
         // Update action bar title for new shown adapter
         updateActionBarTitle(adapter.getDirectory().getName());
-        updateActionBarTitleCount(adapter.getSelectedCount(), adapter.getDirectory(), adapter.getItemCount());
+        updateActionBarTitleCount(adapter.getSelectedItemCount(), adapter.getDirectory(), adapter.getItemCount());
 
         // Setup adapter
 //        adapter.setOnInteractionListener(this);
@@ -2409,10 +2466,10 @@ public class MainActivity extends BaseAppCompatActivity {
 
         // Update action bar title for new shown adapter
         updateActionBarTitle(adapter.getDirectory().getName());
-        updateActionBarTitleCount(adapter.getSelectedCount(), adapter.getDirectory(), adapter.getItemCount());
+        updateActionBarTitleCount(adapter.getSelectedItemCount(), adapter.getDirectory(), adapter.getItemCount());
 
         // Setup adapter
-        adapter.setOnInteractionListener(new DetailImageAdapter.OnInteractionListener<
+        BaseSelectableAdapter.OnInteractionListener<BaseSelectableAdapter, DetailImageAdapter.Item> onInteractionListener = new DetailImageAdapter.OnInteractionListener<
                 BaseSelectableAdapter,
                 DetailImageAdapter.Item>() {
             @Override
@@ -2452,7 +2509,7 @@ public class MainActivity extends BaseAppCompatActivity {
 //            mFloatingToolbar.dismissPopupMenus();
                 }
 
-                updateActionBarTitleCount(isSelectionMode ? baseAdapter.getSelectedCount() : 0, adapter.getDirectory(), baseAdapter.getItemCount());
+                updateActionBarTitleCount(isSelectionMode ? baseAdapter.getSelectedItemCount() : 0, adapter.getDirectory(), baseAdapter.getItemCount());
             }
 
             @Override
@@ -2467,7 +2524,13 @@ public class MainActivity extends BaseAppCompatActivity {
                 DetailImageAdapter adapter = (DetailImageAdapter) baseAdapter;
                 updateActionBarTitleCount(selectedCount, adapter.getDirectory(), baseAdapter.getItemCount());
             }
-        });
+        };
+
+        adapter.setOnInteractionListener(onInteractionListener);
+
+
+        // 当前显示的图片位置
+        // TODO 更严谨的计算显示位置
         if (mCurrentDetailImageAdapter != null) {
             RecyclerView.LayoutManager layoutManager = mImageList.getLayoutManager();
             int i;
@@ -2481,7 +2544,7 @@ public class MainActivity extends BaseAppCompatActivity {
         }
         mCurrentDetailImageAdapter = adapter;
 
-        // Sync data with folder list
+        // Folder List : Sync data with folder list
         if (mFolderAdapter != null) {
             mFolderAdapter.setMoveFileSourceDir(adapter.getDirectory());
         }
@@ -2619,7 +2682,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
         if (mIsImageListLoaded) {
 
-            if (mViewMode == GRID_VIEW) {
+            if (mViewMode == ViewMode.GRID_VIEW) {
 
                 if (mCurrentImageAdapter != null) {
 
@@ -2627,7 +2690,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
                     File directory = mCurrentImageAdapter.getDirectory();
                     if (directory != null) {
-                        diffUpdateImageListAdapter(mCurrentImageAdapter, false);
+                        diffUpdateDefaultImageListAdapter(mCurrentImageAdapter, false);
                     }
                 }
             }
@@ -2731,12 +2794,12 @@ public class MainActivity extends BaseAppCompatActivity {
 //            mFloatingToolbar.dismissPopupMenus();
                 }
 
-                updateActionBarTitleCount(isSelectionMode ? adapter.getSelectedCount() : 0, a.getDirectory(), adapter.getItemCount());
+                updateActionBarTitleCount(isSelectionMode ? adapter.getSelectedItemCount() : 0, a.getDirectory(), adapter.getItemCount());
             }
 
             @Override
             public void onSelectedItemLongClick(View view, int position, DefaultImageListAdapter.Item item) {
-                int selectedCount = mCurrentImageAdapter.getSelectedCount();
+                int selectedCount = mCurrentImageAdapter.getSelectedItemCount();
 
                 LinkedList<String> menuItems = new LinkedList<>();
                 menuItems.add(getString(R.string.copy_d_files_to, selectedCount));
@@ -2807,7 +2870,10 @@ public class MainActivity extends BaseAppCompatActivity {
             List<File> images = SystemImageService.getInstance().listImageFiles(directory);
 
             for (File file : images) {
-                items.add(new DefaultImageListAdapter.Item().setFile(file));
+
+                DefaultImageListAdapter.Item item = new DefaultImageListAdapter.Item();
+                item.setFile(file);
+                items.add(item);
             }
 
             e.onNext(items);
@@ -2912,11 +2978,27 @@ public class MainActivity extends BaseAppCompatActivity {
         return title;
     }
 
-    private void showRemoveFileDialog() {
-        int sectionCount = mCurrentImageAdapter.getSelectedCount();
+    BaseImageAdapter getCurrentAdapter() {
+        switch (mViewMode) {
 
-        String countStr = String.valueOf(sectionCount);
-        SpannableStringBuilder countSB = SpannableStringBuilder.valueOf(String.valueOf(sectionCount));
+            case GRID_VIEW:
+                return mCurrentImageAdapter;
+            case LIST_VIEW:
+                return mCurrentDetailImageAdapter;
+            case UNKNOWN:
+                break;
+        }
+        Log.w(TAG, "getCurrentAdapter: Fix this");
+        return mCurrentImageAdapter;
+    }
+
+    private void showRemoveFileDialog() {
+        BaseImageAdapter currImageAdapter = getCurrentAdapter();
+
+        int selectCount = currImageAdapter.getSelectedItemCount();
+
+        String countStr = String.valueOf(selectCount);
+        SpannableStringBuilder countSB = SpannableStringBuilder.valueOf(String.valueOf(selectCount));
         int color = getResources().getColor(R.color.colorAccent);
         ForegroundColorSpan foregroundColorSpan = new ForegroundColorSpan(color);
         countSB.setSpan(foregroundColorSpan, 0, countStr.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -2924,17 +3006,15 @@ public class MainActivity extends BaseAppCompatActivity {
         new MaterialDialog.Builder(this)
                 .title(R.string.remove_files)
                 .content(getString(R.string.confirm_to_remove_files_in_folder_s,
-                        mCurrentImageAdapter.getDirectory().getName(), sectionCount))
+                        currImageAdapter.getDirectory().getName(), selectCount))
                 .positiveText(R.string.confirm)
                 .onPositive((dialog, which) -> {
 
-                    List<DefaultImageListAdapter.Item> selectedItems = mCurrentImageAdapter.getSelectedItems();
-                    List<File> files = Stream.of(selectedItems)
-                            .map(DefaultImageListAdapter.Item::getFile)
-                            .toList();
+
+                    List<File> selectedFiles = currImageAdapter.getSelectedFiles();
 
                     SystemImageService.getInstance()
-                            .removeFiles(files)
+                            .removeFiles(selectedFiles)
                             .compose(workAndShow())
                             .subscribe(integerListPair -> {
                                 Integer total = integerListPair.first;

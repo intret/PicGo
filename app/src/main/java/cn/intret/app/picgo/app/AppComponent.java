@@ -120,8 +120,8 @@ public class AppComponent extends Application {
             if (isMainProcess()) {
                 CoreModule.getInstance().init(getApplicationContext());
 
-                SystemImageService.getInstance();
                 UserDataService.getInstance();
+                SystemImageService.getInstance();
 
 //                initCore();
                 initLibraries();

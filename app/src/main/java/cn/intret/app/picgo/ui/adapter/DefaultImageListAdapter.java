@@ -5,6 +5,7 @@ import android.support.annotation.LayoutRes;
 import android.support.annotation.MainThread;
 import android.support.annotation.Nullable;
 import android.support.v7.util.DiffUtil;
+import android.support.v7.widget.LinearLayoutCompat;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
@@ -98,7 +99,7 @@ public class DefaultImageListAdapter extends BaseImageAdapter<DefaultImageListAd
         diffResult.dispatchUpdatesTo(this);
 
         // TODO x
-        if (getSelectedCount() == 0 && mIsSelectionMode && mOnInteractionListener != null) {
+        if (getSelectedItemCount() == 0 && mIsSelectionMode && mOnInteractionListener != null) {
             mIsSelectionMode = false;
             mOnInteractionListener.onSelectionModeChange(this, mIsSelectionMode);
         }
@@ -134,7 +135,7 @@ public class DefaultImageListAdapter extends BaseImageAdapter<DefaultImageListAd
      * Internal class
      */
 
-    public static class Item implements ItemSelectable {
+    public static class Item implements BaseFileItem {
         @Override
         public String toString() {
             return "Item{" + this.hashCode() +
@@ -147,19 +148,22 @@ public class DefaultImageListAdapter extends BaseImageAdapter<DefaultImageListAd
         boolean mSelected = false;
         private int mHeight = -1;
 
+        @Override
         public File getFile() {
             return mFile;
         }
 
-        public Item setFile(File file) {
+        @Override
+        public void setFile(File file) {
             mFile = file;
-            return this;
         }
 
+        @Override
         public boolean isSelected() {
             return mSelected;
         }
 
+        @Override
         public void setSelected(boolean selected) {
             mSelected = selected;
         }
