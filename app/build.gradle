@@ -174,7 +174,7 @@ dependencies {
     compile 'org.apache.commons:commons-collections4:4.1'
     compile 'org.apache.commons:commons-lang3:3.6'
     compile 'org.greenrobot:eventbus:3.0.0'
-    compile 'pl.droidsonroids.gif:android-gif-drawable:1.2.7'
+    compile 'pl.droidsonroids.gif:android-gif-drawable:1.2.8'
     compile 'q.rorbin:badgeview:1.1.2'
     annotationProcessor 'com.jakewharton:butterknife-compiler:8.7.0'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.0.0-RC1'

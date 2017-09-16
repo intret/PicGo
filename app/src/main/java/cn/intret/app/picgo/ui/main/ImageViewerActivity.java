@@ -86,7 +86,6 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
     private static final String EXTRA_PARAM_FILE_PATH = "viewer:param:filepath";
     public static final String TRANSITION_NAME_IMAGE = "viewer:image";
-    public static final String TRANSITION_PREFIX_FILETYPE = "filetype";
 
     @BindView(R.id.toolbar) Toolbar mToolbar;
     @BindView(R.id.viewpager) ViewPager mViewPager;
@@ -351,7 +350,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
                     String absolutePath = item.getFile().getAbsolutePath();
                     String transitionName = ImageTransitionNameGenerator.generateTransitionName(absolutePath);
-                    String fileTypeTransitionName = ImageTransitionNameGenerator.generateTransitionName(TRANSITION_PREFIX_FILETYPE, absolutePath);
+                    String fileTypeTransitionName = ImageTransitionNameGenerator.generateTransitionName(ImageTransitionNameGenerator.TRANSITION_PREFIX_FILETYPE, absolutePath);
 
                     names.clear();
                     names.add(transitionName);
@@ -406,7 +405,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
                     Image item = mPagerAdapter.getImage(currentItem);
                     sharedElements.clear();
                     String transitionName = ImageTransitionNameGenerator.generateTransitionName(item.getFile().getAbsolutePath());
-                    String fileTypeTransitionName = ImageTransitionNameGenerator.generateTransitionName(TRANSITION_PREFIX_FILETYPE, item.getFile().getAbsolutePath());
+                    String fileTypeTransitionName = ImageTransitionNameGenerator.generateTransitionName(ImageTransitionNameGenerator.TRANSITION_PREFIX_FILETYPE, item.getFile().getAbsolutePath());
 
                     sharedElements.put(transitionName, ((ImageFragment) mPagerAdapter.getItem(currentItem)).getImage());
                     sharedElements.put(fileTypeTransitionName, ((ImageFragment) mPagerAdapter.getItem(currentItem)).getFileType());
@@ -970,7 +969,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
             String absolutePath = image.getFile().getAbsolutePath();
             String transitionName = ImageTransitionNameGenerator.generateTransitionName(absolutePath);
-            String fileTypeTransitionName = ImageTransitionNameGenerator.generateTransitionName(TRANSITION_PREFIX_FILETYPE, absolutePath);
+            String fileTypeTransitionName = ImageTransitionNameGenerator.generateTransitionName(ImageTransitionNameGenerator.TRANSITION_PREFIX_FILETYPE, absolutePath);
 
             boolean performEnterTransition = position == mAnimatedItemPosition;
             if (performEnterTransition) {

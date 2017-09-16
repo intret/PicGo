@@ -38,6 +38,7 @@ import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.File;
+import java.io.IOException;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -47,6 +48,8 @@ import cn.intret.app.picgo.ui.event.CancelExitTransitionMessage;
 import cn.intret.app.picgo.ui.event.ImageFragmentSelectionChangeMessage;
 import cn.intret.app.picgo.utils.PathUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
+import pl.droidsonroids.gif.GifDrawable;
+import pl.droidsonroids.gif.GifImageView;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -71,6 +74,7 @@ public class ImageFragment extends Fragment {
     private boolean mIsLoaded = false;
 
     @BindView(R.id.image) PhotoView mImage;
+    @BindView(R.id.gif_image) GifImageView mGifImageView;
     @BindView(R.id.file_type) ImageView mFileType;
     @BindView(R.id.empty_view) View mEmptyView;
     @BindView(R.id.empty_layout) View mEmptyLayout;
@@ -188,18 +192,41 @@ public class ImageFragment extends Fragment {
         mImage.setScaleType(ImageView.ScaleType.FIT_CENTER);
 
 
-        RequestBuilder<Drawable> request = Glide.with(this)
-                .asDrawable()
-                .load(mFilePath)
-                .apply(RequestOptions.skipMemoryCacheOf(false))
-                .apply(RequestOptions.fitCenterTransform())
-                .transition(DrawableTransitionOptions.withCrossFade());
-        if (PathUtils.isStaticImageFile(mFilePath) || PathUtils.isVideoFile(mFilePath)) {
-                    request.listener(new ImageRequestObserver(mPerformEnterTransition));
-            request.into(mImage);
+        if (PathUtils.isGifFile(mFilePath)) {
+            try {
+
+                GifDrawable gifDrawable = new GifDrawable(mFilePath);
+                mGifImageView.setImageDrawable(gifDrawable);
+                mGifImageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+
+                gifDrawable.start();
+
+                scheduleStartPostponedTransition(mGifImageView);
+
+                // Hide static image view
+
+                mImage.setVisibility(View.GONE);
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
         } else {
-            scheduleStartPostponedTransition(mImage);
-            request.into(mImage);
+
+            RequestBuilder<Drawable> request = Glide.with(this)
+                    .asDrawable()
+                    .load(mFilePath)
+                    .apply(RequestOptions.skipMemoryCacheOf(false))
+                    .apply(RequestOptions.fitCenterTransform())
+                    .transition(DrawableTransitionOptions.withCrossFade());
+
+            if (PathUtils.isStaticImageFile(mFilePath) || PathUtils.isVideoFile(mFilePath)) {
+                request.listener(new ImageRequestObserver(mPerformEnterTransition));
+                request.into(mImage);
+            } else {
+                scheduleStartPostponedTransition(mImage);
+                request.into(mImage);
+            }
         }
 
         // 文件类型图标
@@ -211,12 +238,13 @@ public class ImageFragment extends Fragment {
                 ToastUtils.toastShort(this.getContext(), R.string.unimplemented);
             });
         } else if (PathUtils.isGifFile(mFilePath)) {
+//            mGifImageView.setImageURI();
 
-            mFileType.setVisibility(View.VISIBLE);
-            mFileType.setImageResource(R.drawable.ic_gif_black_48px);
-            mFileType.setOnClickListener(v -> {
-                ToastUtils.toastShort(this.getContext(), R.string.unimplemented);
-            });
+//            mFileType.setVisibility(View.VISIBLE);
+//            mFileType.setImageResource(R.drawable.ic_gif_black_48px);
+//            mFileType.setOnClickListener(v -> {
+//                ToastUtils.toastShort(this.getContext(), R.string.unimplemented);
+//            });
         } else {
             mFileType.setVisibility(View.GONE);
         }
@@ -394,7 +422,11 @@ public class ImageFragment extends Fragment {
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private void setTransitionNamesLollipop() {
-        mImage.setTransitionName(mImageTransitionName);
+        if (PathUtils.isGifFile(mFilePath)) {
+            mGifImageView.setTransitionName(mImageTransitionName);
+        } else {
+            mImage.setTransitionName(mImageTransitionName);
+        }
         mFileType.setTransitionName(mFileTypeTransitionName);
     }
 

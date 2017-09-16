@@ -380,7 +380,7 @@ public class MainActivity extends BaseAppCompatActivity {
                             String filePath = file.getAbsolutePath();
                             String transitionName = ImageTransitionNameGenerator.generateTransitionName(filePath);
                             String fileTypeTransitionName = ImageTransitionNameGenerator.generateTransitionName(
-                                    ImageViewerActivity.TRANSITION_PREFIX_FILETYPE, filePath);
+                                    ImageTransitionNameGenerator.TRANSITION_PREFIX_FILETYPE, filePath);
 
                             boolean addFileTypeTransitionName = PathUtils.isVideoFile(filePath);
 
