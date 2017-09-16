@@ -221,7 +221,7 @@ public class DefaultImageListAdapter extends BaseImageAdapter<DefaultImageListAd
                 viewHolder.setVisible(R.id.file_type, true);
             }
             if (gifFile) {
-                viewHolder.setImageResource(R.id.file_type, R.drawable.ic_gif_black_48px);
+                viewHolder.setImageResource(R.id.file_type, R.drawable.ic_gif_black_24px);
                 viewHolder.setVisible(R.id.file_type, true);
             }
         } else {
