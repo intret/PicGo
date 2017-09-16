@@ -50,6 +50,7 @@ import cn.intret.app.picgo.utils.PathUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageView;
+import uk.co.senab.photoview.PhotoViewAttacher;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -84,6 +85,7 @@ public class ImageFragment extends Fragment {
     private String mFileTypeTransitionName;
     private boolean mPerformEnterTransition = false;
     private boolean mPerformExitTransition = true;
+    private boolean mAlreadyPerformAnimation = false;
 
     public PhotoView getImage() {
         return mImage;
@@ -136,29 +138,7 @@ public class ImageFragment extends Fragment {
         });
 
         mImage.setOnLongClickListener(v -> {
-            new MaterialDialog.Builder(this.getContext())
-                    .items(R.array.image_viewer_context_menu_items)
-                    .itemsCallback((dialog, itemView, position, text) -> {
-                        switch (position) {
-                            case 0: // delete files
-                                SystemImageService.getInstance()
-                                        .removeFile(new File(mFilePath))
-                                        .subscribe(aBoolean -> {
-                                                if (aBoolean) {
-
-                                                }
-                                            }, throwable -> {
-
-                                            }
-                                );
-                                break;
-                            case 1: // rename
-                                break;
-                            case 2: // move
-                                break;
-                        }
-                    })
-                    .show();
+            showImageDialog();
             return true;
         });
 
@@ -196,16 +176,11 @@ public class ImageFragment extends Fragment {
             try {
 
                 GifDrawable gifDrawable = new GifDrawable(mFilePath);
-                mGifImageView.setImageDrawable(gifDrawable);
-                mGifImageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                mImage.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                mImage.setImageDrawable(gifDrawable);
 
+                scheduleStartPostponedTransition(mImage);
                 gifDrawable.start();
-
-                scheduleStartPostponedTransition(mGifImageView);
-
-                // Hide static image view
-
-                mImage.setVisibility(View.GONE);
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -250,6 +225,32 @@ public class ImageFragment extends Fragment {
         }
 
         return rootView;
+    }
+
+    private void showImageDialog() {
+        new MaterialDialog.Builder(this.getContext())
+                .items(R.array.image_viewer_context_menu_items)
+                .itemsCallback((dialog, itemView, position, text) -> {
+                    switch (position) {
+                        case 0: // delete files
+                            SystemImageService.getInstance()
+                                    .removeFile(new File(mFilePath))
+                                    .subscribe(aBoolean -> {
+                                            if (aBoolean) {
+
+                                            }
+                                        }, throwable -> {
+
+                                        }
+                            );
+                            break;
+                        case 1: // rename
+                            break;
+                        case 2: // move
+                            break;
+                    }
+                })
+                .show();
     }
 
     private void handleClickEvent() {
@@ -402,28 +403,60 @@ public class ImageFragment extends Fragment {
 //            }
 //        });
 
-        sharedElement.getViewTreeObserver().addOnPreDrawListener(
-                new ViewTreeObserver.OnPreDrawListener() {
-                    @Override
-                    public boolean onPreDraw() {
-                        sharedElement.getViewTreeObserver().removeOnPreDrawListener(this);
+//        ViewTreeObserver.OnPreDrawListener listener = new ViewTreeObserver.OnPreDrawListener() {
+//            @Override
+//            public boolean onPreDraw() {
+//                sharedElement.getViewTreeObserver().removeOnPreDrawListener(this);
+//
+//                FragmentActivity activity = ImageFragment.this.getActivity();
+//                if (activity != null) {
+//                    Log.d(TAG, "onPreDraw: perform enter transition for " + mImageTransitionName + " " + mFilePath);
+//                    ActivityCompat.startPostponedEnterTransition(activity);
+//                } else {
+//                    Log.e(TAG, "Cannot perform enter transition for fragment because no attached activity.");
+//                }
+//                return true;
+//            }
+//        };
+        sharedElement.getViewTreeObserver().addOnPreDrawListener(new OnPreDrawObserver(sharedElement));
+    }
 
-                        FragmentActivity activity = ImageFragment.this.getActivity();
-                        if (activity != null) {
-                            Log.d(TAG, "onPreDraw: perform enter transition for " + mImageTransitionName + " " + mFilePath);
-                            ActivityCompat.startPostponedEnterTransition(activity);
-                        } else {
-                            Log.e(TAG, "Cannot perform enter transition for fragment because no attached activity.");
-                        }
-                        return true;
-                    }
-                });
+    class OnPreDrawObserver implements ViewTreeObserver.OnPreDrawListener {
+
+        View mView;
+        OnPreDrawObserver(View view) {
+            mView = view;
+        }
+
+        @Override
+        public boolean onPreDraw() {
+
+            if (mAlreadyPerformAnimation) {
+                return true;
+            }
+
+            mAlreadyPerformAnimation = true;
+
+            ViewTreeObserver viewTreeObserver = mView.getViewTreeObserver();
+            if (viewTreeObserver.isAlive()) {
+                viewTreeObserver.removeOnPreDrawListener(OnPreDrawObserver.this);
+
+                FragmentActivity activity = ImageFragment.this.getActivity();
+                if (activity != null) {
+                    Log.d(TAG, "onPreDraw: perform enter transition for " + mImageTransitionName + " " + mFilePath);
+                    ActivityCompat.startPostponedEnterTransition(activity);
+                } else {
+                    Log.w(TAG, "Cannot perform enter transition for fragment because no attached activity.");
+                }
+            }
+            return true;
+        }
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private void setTransitionNamesLollipop() {
         if (PathUtils.isGifFile(mFilePath)) {
-            mGifImageView.setTransitionName(mImageTransitionName);
+            mImage.setTransitionName(mImageTransitionName);
         } else {
             mImage.setTransitionName(mImageTransitionName);
         }
