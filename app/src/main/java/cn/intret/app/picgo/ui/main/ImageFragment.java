@@ -50,7 +50,6 @@ import cn.intret.app.picgo.utils.PathUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageView;
-import uk.co.senab.photoview.PhotoViewAttacher;
 
 /**
  * A simple {@link Fragment} subclass.
