@@ -108,5 +108,7 @@
     <string name="show_hidden_folder">显示隐藏目录</string>
     <string name="hide_folder">隐藏文件夹</string>
     <string name="paste">粘贴</string>
+    <string name="request_failed">请求失败</string>
+    <string name="operation_failed">操作失败</string>
 
 </resources>

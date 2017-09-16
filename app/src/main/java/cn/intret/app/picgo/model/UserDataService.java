@@ -17,6 +17,8 @@ import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.File;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import cn.intret.app.picgo.model.event.RecentOpenFolderListChangeMessage;
@@ -34,7 +36,11 @@ public class UserDataService extends BaseService {
     public static final String VIEW_MODE_LIST_VIEW = "list_view";
     public static final String VIEW_MODE_GRID_VIEW = "grid_view";
     public static final java.lang.String PREF_KEY_SHOW_HIDDEN_FOLDER = "show_hidden_folder";
+    public static final String PREF_KEY_HIDDEN_FOLDER_LIST_JSON = "hidden_folder_list_json";
+    public static final String TAG = "UserDataService";
+
     private final int mMaxRecentHistorySize = 10;
+
     RxSharedPreferences mPreferences;
 
     EventBus mEventBus = EventBus.getDefault();
@@ -49,13 +55,17 @@ public class UserDataService extends BaseService {
         return mMoveFileDialogFirstVisibleItemPosition;
     }
 
+    /*
+     * UI preferences
+     */
     public UserDataService setMoveFileDialogFirstVisibleItemPosition(int moveFileDialogFirstVisibleItemPosition) {
         mMoveFileDialogFirstVisibleItemPosition = moveFileDialogFirstVisibleItemPosition;
         return this;
     }
 
-    public static final String TAG = "UserDataService";
-
+    /*
+     * Singleton
+     */
     private static final UserDataService ourInstance = new UserDataService();
 
     public static UserDataService getInstance() {
@@ -72,7 +82,11 @@ public class UserDataService extends BaseService {
         validateRecentFolderList();
     }
 
-    public  <R> R getStringPreference(String key, MapAction1<R, String> mapAction) {
+    /*
+     * Helper
+     */
+
+    public <R> R getStringPreference(String key, MapAction1<R, String> mapAction) {
         String val = mPreferences.getString(key).get();
         if (mapAction != null) {
             return mapAction.onMap(val);
@@ -80,6 +94,35 @@ public class UserDataService extends BaseService {
         return null;
     }
 
+    @NonNull
+    private Preference<String> getJsonStringPreference(String prefKey) {
+        return mPreferences.getString(prefKey, "[]");
+    }
+
+    private void updatePreference(String preferenceKey, Action1 modifyAction) {
+        Preference<String> prefRecent = getJsonStringPreference(preferenceKey);
+
+    }
+
+
+    /*
+     * EventBus message
+     */
+
+    @Subscribe(threadMode = ThreadMode.BACKGROUND)
+    public void onEvent(RenameDirectoryMessage message) {
+
+        Log.d(TAG, "onEvent() called with: message = [" + message + "]");
+
+        renameOpenFolderRecentRecord(message.getOldDirectory(), message.getNewDirectory())
+                .subscribe(ok -> {
+                    Log.d(TAG, "onEvent: rename recent record success : " + message.getOldDirectory());
+                });
+    }
+
+    /*
+     * Recent folder list
+     */
     private void validateRecentFolderList() {
         loadRecentOpenFolders(false)
                 .subscribeOn(Schedulers.io())
@@ -98,23 +141,11 @@ public class UserDataService extends BaseService {
                 });
     }
 
-    @Subscribe(threadMode = ThreadMode.BACKGROUND)
-    public void onEvent(RenameDirectoryMessage message) {
-
-        Log.d(TAG, "onEvent() called with: message = [" + message + "]");
-
-        renameOpenFolderRecentRecord(message.getOldDirectory(), message.getNewDirectory())
-        .subscribe(ok -> {
-            Log.d(TAG, "onEvent: rename recent record success : " + message.getOldDirectory());
-        });
-
-    }
     private List<RecentRecord> jsonToHistoryList(String json) {
         // https://stackoverflow.com/questions/5554217/google-gson-deserialize-listclass-object-generic-type
         Type listType = new TypeToken<List<RecentRecord>>() {
         }.getType();
-        List<RecentRecord> recentRecords = new Gson().fromJson(json, listType);
-        return recentRecords;
+        return new Gson().fromJson(json, listType);
     }
 
     private String recentHistoryListToJson(List<RecentRecord> recentRecords) {
@@ -128,7 +159,7 @@ public class UserDataService extends BaseService {
                 throw new IllegalArgumentException("Argument 'dir' is null.");
             }
 
-            List<RecentRecord> saveRecentList = updateOpenFolderRecentPreference(dir, recentRecords -> {
+            List<RecentRecord> saveRecentList = updateOpenFolderRecentPreference(recentRecords -> {
 
                 boolean remove = cn.intret.app.picgo.utils.ListUtils.removeListElement(
                         recentRecords,
@@ -145,34 +176,7 @@ public class UserDataService extends BaseService {
         });
     }
 
-    public Observable<Boolean> renameOpenFolderRecentRecord(File dir, File newDir) {
-
-        return Observable.create(e -> {
-            if (dir == null) {
-                throw new IllegalArgumentException("Argument 'dir' is null.");
-            }
-
-            List<RecentRecord> saveRecentList = updateOpenFolderRecentPreference(dir, recentRecords -> {
-
-                for (RecentRecord recentRecord : recentRecords) {
-                    if (recentRecord.getFilePath() != null) {
-                        if (recentRecord.getFilePath().equals(dir.getAbsolutePath())) {
-                            Log.d(TAG, "renameOpenFolderRecentRecord: update [" + recentRecord.getFilePath() + "] to [" + dir.getAbsolutePath() + "]");
-                            recentRecord.setFilePath(newDir.getAbsolutePath());
-                        }
-                    }
-                }
-               return recentRecords;
-            });
-
-            mEventBus.post(new RecentOpenFolderListChangeMessage().setRecentRecord(saveRecentList));
-
-            e.onNext(true);
-            e.onComplete();
-        });
-    }
-
-    private List<RecentRecord> updateOpenFolderRecentPreference(File dir, Action1<List<RecentRecord>> updateObjectAction) {
+    private List<RecentRecord> updateOpenFolderRecentPreference(Action1<List<RecentRecord>> updateObjectAction) {
         Preference<String> prefRecent = getJsonStringPreference(PREF_KEY_FOLDER_ACCESS_RECENT_HISTORY);
 
         String json = prefRecent.get();
@@ -184,6 +188,33 @@ public class UserDataService extends BaseService {
 //        Log.d(TAG, "updateOpenFolderRecentPreference: update [" + PREF_KEY_FOLDER_ACCESS_RECENT_HISTORY + "] with value : " + newJson);
         prefRecent.set(newJson);
         return newList;
+    }
+
+    public Observable<Boolean> renameOpenFolderRecentRecord(File dir, File newDir) {
+
+        return Observable.create(e -> {
+            if (dir == null) {
+                throw new IllegalArgumentException("Argument 'dir' is null.");
+            }
+
+            List<RecentRecord> saveRecentList = updateOpenFolderRecentPreference(recentRecords -> {
+
+                for (RecentRecord recentRecord : recentRecords) {
+                    if (recentRecord.getFilePath() != null) {
+                        if (recentRecord.getFilePath().equals(dir.getAbsolutePath())) {
+                            Log.d(TAG, "renameOpenFolderRecentRecord: update [" + recentRecord.getFilePath() + "] to [" + dir.getAbsolutePath() + "]");
+                            recentRecord.setFilePath(newDir.getAbsolutePath());
+                        }
+                    }
+                }
+                return recentRecords;
+            });
+
+            mEventBus.post(new RecentOpenFolderListChangeMessage().setRecentRecord(saveRecentList));
+
+            e.onNext(true);
+            e.onComplete();
+        });
     }
 
     public Observable<List<RecentRecord>> loadRecentOpenFolders(boolean detectFileExistence) {
@@ -209,8 +240,65 @@ public class UserDataService extends BaseService {
         });
     }
 
+    /*
+     * Hidden folders
+     */
+    public Observable<Boolean> addHiddenFolder(File dir){
+
+        return Observable.create(e -> {
+
+            Preference<LinkedList<File>> hiddenFolderPref = getHiddenFolderPreference();
+            LinkedList<File> files = hiddenFolderPref.get();
+            if (!files.contains(dir)) {
+                files.add(dir);
+            }
+
+            Log.d(TAG, "addHiddenFolder: " + files);
+            hiddenFolderPref.set(files);
+
+            e.onNext(true);
+            e.onComplete();
+        });
+    }
+
     @NonNull
-    private Preference<String> getJsonStringPreference(String prefKey) {
-        return mPreferences.getString(prefKey, "[]");
+    private Preference<LinkedList<File>> getHiddenFolderPreference() {
+        Preference<LinkedList<File>> object;
+        object = getPreferences().getObject(PREF_KEY_HIDDEN_FOLDER_LIST_JSON,
+                new LinkedList<File>(), new Preference.Converter<LinkedList<File>>() {
+                    @NonNull
+                    @Override
+                    public LinkedList<File> deserialize(@NonNull String serialized) {
+                        //serialized = "[]";
+                        Log.d(TAG, "deserialize() called with: serialized = [" + serialized + "]");
+
+                        Type listType = new TypeToken<ArrayList<String>>() {}.getType();
+                        ArrayList<String> files = new Gson().fromJson(serialized, listType);
+                        List<File> files1 = Stream.of(files).map(File::new).toList();
+                        return new LinkedList<File>(files1);
+                    }
+
+                    @NonNull
+                    @Override
+                    public String serialize(@NonNull LinkedList<File> value) {
+
+
+                        Type listType = new TypeToken<ArrayList<String>>() {}.getType();
+
+                        List<String> filePathList = Stream.of(value).map(File::getAbsolutePath).toList();
+                        String json = new Gson().toJson(filePathList, listType);
+                        Log.d(TAG, "serialize() called with: value = [" + value + "]" + " result = [" + json + "]");
+                        return json;
+                    }
+                });
+        return object;
+    }
+
+    public Observable<List<File>> getHiddenFolder() {
+        return Observable.create(e -> {
+            Preference<LinkedList<File>> hiddenFolderPreference = getHiddenFolderPreference();
+            e.onNext(hiddenFolderPreference.get());
+            e.onComplete();
+        });
     }
 }

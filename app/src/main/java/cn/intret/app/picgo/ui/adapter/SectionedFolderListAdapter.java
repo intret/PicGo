@@ -154,6 +154,36 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         return false;
     }
 
+    public boolean removeFolderItem(File selectedDir) {
+
+        int sec = -1;
+        int relative = -1;
+
+        for (int si = 0, mSectionsSize = mSections.size(); si < mSectionsSize; si++) {
+            Section section = mSections.get(si);
+            List<Item> items = section.getItems();
+            for (int ii = 0, itemsSize = items.size(); ii < itemsSize; ii++) {
+                Item item = items.get(ii);
+                if (item.getFile().equals(selectedDir)) {
+                    sec = si;
+                    relative = ii;
+                }
+            }
+        }
+
+
+        if (sec == -1 || relative == -1) {
+            return false;
+        } else {
+            mSections.get(sec).getItems().remove(relative);
+
+            int absolutePosition = getAbsolutePosition(sec, relative);
+            notifyItemRemoved(absolutePosition);
+
+            return true;
+        }
+    }
+
     private enum ItemType {
         HEADER,
         FOOTER,
@@ -771,7 +801,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
         void onItemClick(Section sectionItem, int section, Item item, int relativePos);
 
-        void onItemLongClick(Section sectionItem, int section, Item item, int relativePos);
+        void onItemLongClick(View v, Section sectionItem, int section, Item item, int relativePos);
     }
 
     /*
@@ -1121,7 +1151,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
                 if (mOnItemClickListener != null) {
                     Section sectionItem1 = mSections.get(coor.section());
-                    mOnItemClickListener.onItemLongClick(
+                    mOnItemClickListener.onItemLongClick(v,
                             sectionItem1, coor.section(),
                             sectionItem1.getItems().get(coor.relativePos()),
                             coor.relativePos());

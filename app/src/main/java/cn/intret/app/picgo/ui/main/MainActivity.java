@@ -1209,8 +1209,8 @@ public class MainActivity extends BaseAppCompatActivity {
             }
 
             @Override
-            public void onItemLongClick(SectionedFolderListAdapter.Section sectionItem, int section, SectionedFolderListAdapter.Item item, int relativePos) {
-                showFolderItemContextMenuDialog(item);
+            public void onItemLongClick(View v, SectionedFolderListAdapter.Section sectionItem, int section, SectionedFolderListAdapter.Item item, int relativePos) {
+                showFolderItemContextPopupMenu(v, item);
             }
         };
 
@@ -1236,10 +1236,10 @@ public class MainActivity extends BaseAppCompatActivity {
         // List item click event
         RecyclerItemTouchListener itemTouchListener = new RecyclerItemTouchListener(this,
                 mFolderList,
-                (view, position) -> onFolderListItemClick(position),
+                this::onFolderListItemClick,
                 (view, position) -> {
                     //
-                    // onFolderListItemLongClick(position);
+                    // onFolderListItemLongClick(view,position);
                 }
         );
         mFolderList.addOnItemTouchListener(itemTouchListener);
@@ -1329,13 +1329,125 @@ public class MainActivity extends BaseAppCompatActivity {
 
                     @Override
                     public void onItem(SectionedRecyclerViewAdapter adapter, ItemCoord coord) {
-                        showFolderItemContextMenuDialog(mFolderAdapter.getItem(coord));
+                        showFolderItemContextMenuDialog(null, mFolderAdapter.getItem(coord));
                         //showFolderMoveToHereDialog(item.getFile());
                     }
                 });
     }
 
-    private void showFolderItemContextMenuDialog(SectionedFolderListAdapter.Item item) {
+    private void showFolderItemContextPopupMenu(View v, SectionedFolderListAdapter.Item item) {
+
+        File selectedDir = item.getFile();
+
+        PopupMenu popupMenu = new PopupMenu(this, v, Gravity.TOP);
+        int menuOrder = 0;
+        int menuCategory = 0;
+
+        Menu menu = popupMenu.getMenu();
+        menu.add(menuCategory, R.id.menu_item_rename,
+                menuOrder, getString(R.string.rename_folder_s, selectedDir.getName()));
+
+        menuOrder++;
+        menu.add(menuCategory, R.id.menu_item_move,
+                menuOrder, getString(R.string.move_folder_s, item.getFile().getName()));
+
+        menuOrder++;
+        menu.add(menuCategory, R.id.menu_item_delete,
+                menuOrder, getString(R.string.remove_folder_s, item.getFile().getName()));
+
+
+        menuCategory++;
+        menuOrder++;
+        menu.add(menuCategory, R.id.menu_item_hide,
+                menuOrder, getString(R.string.hide_folder));
+
+        switch (mViewMode) {
+
+            case GRID_VIEW: {
+
+                List<Map.Entry<String, DefaultImageListAdapter>> inSelectionModeAdapter = Stream.of(mImageListAdapters)
+                        .filter(value -> value.getValue().isSelectionMode())
+                        .toList();
+                if (!inSelectionModeAdapter.isEmpty()) {
+                    menuOrder++;
+                    menu.add(menuCategory, R.id.menu_item_move_file_to_here,
+                            menuOrder, getString(R.string.move_selected_images_to_here));
+                }
+            }
+            break;
+            case LIST_VIEW: {
+
+                List<Map.Entry<String, DetailImageAdapter>> inSelectionModeAdapter = Stream.of(mDetailImageListAdapters)
+                        .filter(value -> value.getValue().isSelectionMode())
+                        .toList();
+                if (!inSelectionModeAdapter.isEmpty()) {
+                    menuOrder++;
+                    menu.add(menuCategory, R.id.menu_item_move_file_to_here,
+                            menuOrder, getString(R.string.move_selected_images_to_here));
+                }
+
+            }
+            break;
+            case UNKNOWN:
+                break;
+        }
+
+        popupMenu.setOnMenuItemClickListener(menuItem -> {
+            switch (menuItem.getItemId()) {
+                case R.id.menu_item_delete: {
+
+                }
+                break;
+                case R.id.menu_item_hide: {
+                    hideFolder(selectedDir);
+                }
+                break;
+                case R.id.menu_item_rename: {
+                    showFolderRenameDialog(item, selectedDir);
+                }
+                break;
+                case R.id.menu_item_move: {
+
+                }
+                break;
+                case R.id.menu_item_move_file_to_here: {
+                    showFolderMoveToHereDialog(selectedDir);
+                }
+                break;
+            }
+            return false;
+        });
+
+        popupMenu.show();
+    }
+
+    private void hideFolder(File selectedDir) {
+        if (selectedDir == null) {
+            Log.w(TAG, "hideFolder: hide null folder.");
+            return;
+        }
+
+        UserDataService.getInstance()
+                .addHiddenFolder(selectedDir)
+                .subscribe(ok -> {
+                    if (ok) {
+                        SystemImageService.getInstance()
+                                .hiddenFolder(selectedDir)
+                                .subscribe(removed -> {
+                                    if (removed) {
+                                        mFolderAdapter.removeFolderItem(selectedDir);
+                                    } else {
+                                        ToastUtils.toastLong(MainActivity.this, R.string.operation_failed);
+                                    }
+                                });
+                    }
+                }, RxUtils::unhandledThrowable)
+        ;
+    }
+
+    private void showFolderItemContextMenuDialog(View v, SectionedFolderListAdapter.Item item) {
+
+
         LinkedList<String> menuItems = new LinkedList<>();
         File selectedDir = item.getFile();
 
@@ -1392,6 +1504,9 @@ public class MainActivity extends BaseAppCompatActivity {
                             showFolderMoveToHereDialog(selectedDir);
                         }
                         break;
+                        case 4: {
+
+                        }
                     }
                 })
                 .show();
@@ -1469,7 +1584,7 @@ public class MainActivity extends BaseAppCompatActivity {
         dlg.show();
     }
 
-    private void onFolderListItemClick(int position) {
+    private void onFolderListItemClick(View view, int position) {
         new SectionedListItemClickDispatcher<>(mFolderAdapter)
                 .dispatchItemClick(position, (adapter, coord) -> {
                     SectionedFolderListAdapter.Item item = adapter.getItem(coord);

@@ -4,6 +4,7 @@ package cn.intret.app.picgo.model;
 import android.media.ExifInterface;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v7.widget.ShareActionProvider;
 import android.util.Log;
 import android.util.Pair;
 import android.util.Size;
@@ -14,6 +15,7 @@ import com.annimon.stream.function.BiConsumer;
 import com.annimon.stream.function.Consumer;
 import com.annimon.stream.function.Function;
 import com.annimon.stream.function.Supplier;
+import com.f2prateek.rx.preferences2.Preference;
 import com.t9search.model.PinyinSearchUnit;
 import com.t9search.util.T9Util;
 
@@ -83,6 +85,7 @@ public class SystemImageService extends BaseService {
     HashMap<String, List<ImageGroup>> mWeekImageGroupsMap = new LinkedHashMap<>();
     HashMap<String, List<ImageGroup>> mMonthImageGroupsMap = new LinkedHashMap<>();
 
+    ObjectGuarder<List<File>> mHiddenFolders = new ObjectGuarder<>(new LinkedList<File>());
     List<String> mHiddenFolder = new LinkedList<>();
 
     public static SystemImageService getInstance() {
@@ -91,11 +94,25 @@ public class SystemImageService extends BaseService {
 
     private SystemImageService() {
         super();
-        mHiddenFolder.add("污");
+
+        loadHiddenFileList();
+    }
+
+    private void loadHiddenFileList() {
+
+        UserDataService.getInstance()
+                .getHiddenFolder()
+                .subscribeOn(Schedulers.io())
+                .subscribe(files -> {
+                    mHiddenFolders.writeConsume(fileList -> {
+                        Log.d(TAG, "loadHiddenFileList: save file list " + fileList);
+                        fileList.clear();
+                        fileList.addAll(files);
+                    });
+                });
     }
 
     FolderModel mFolderModel;
-
     ReadWriteLock mFolderModelRWLock = new ReentrantReadWriteLock();
 
     /*
@@ -300,11 +317,14 @@ public class SystemImageService extends BaseService {
 
         for (int i = 0, s = mediaFolders.size(); i < s; i++) {
             File folder = mediaFolders.get(i);
-            if (mHiddenFolder.contains(folder.getName())) {
-                Log.d(TAG, "addParentFolderInfo: ignore folder " + folder);
-                continue;
-            }
-            subFolders.add(createImageFolder(folder));
+
+            mHiddenFolders.readConsume(fileList -> {
+                if (!fileList.contains(folder)) {
+                    subFolders.add(createImageFolder(folder));
+                } else {
+                    Log.d(TAG, "addParentFolderInfo: ignore folder " + folder);
+                }
+            });
         }
 
         containerFolder.setFile(dir);
@@ -1064,8 +1084,7 @@ public class SystemImageService extends BaseService {
             MoveFileDetectResult moveFileDetectResult = new MoveFileDetectResult()
                     .setCanMoveFiles(canMoveFiles)
                     .setConflictFiles(conflictFiles)
-                    .setTargetDir(destDir)
-                    ;
+                    .setTargetDir(destDir);
 
             e.onNext(moveFileDetectResult);
             e.onComplete();
@@ -1288,4 +1307,39 @@ public class SystemImageService extends BaseService {
         });
     }
 
+    public Observable<Boolean> hiddenFolder(File selectedDir) {
+        return Observable.create(e -> {
+            try {
+                mFolderModelRWLock.writeLock().lock();
+
+                int index = -1;
+                int subIndex = -1;
+
+                List<FolderModel.ContainerFolder> containerFolders = mFolderModel.getContainerFolders();
+                for (int i = 0, containerFoldersSize = containerFolders.size(); i < containerFoldersSize; i++) {
+                    FolderModel.ContainerFolder containerFolder = containerFolders.get(i);
+                    for (int ii = 0; ii < containerFolder.getFolders().size(); ii++) {
+                        ImageFolder imageFolder = containerFolder.getFolders().get(ii);
+                        if (imageFolder.getFile().equals(selectedDir)) {
+                            index = i;
+                            subIndex = ii;
+                            break;
+                        }
+                    }
+                }
+
+                if (index != -1) {
+                    containerFolders.get(index).getFolders().remove(subIndex);
+
+                    e.onNext(true);
+                    e.onComplete();
+                } else {
+                    e.onNext(false);
+                    e.onComplete();
+                }
+            } finally {
+                mFolderModelRWLock.writeLock().unlock();
+            }
+        });
+    }
 }
