@@ -3,6 +3,7 @@ package cn.intret.app.picgo.ui.main;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.MainThread;
@@ -13,11 +14,13 @@ import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.app.SharedElementCallback;
 import android.support.v4.util.Pair;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v4.widget.SimpleCursorAdapter;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.ListPopupWindow;
 import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.StaggeredGridLayoutManager;
@@ -34,8 +37,10 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.PopupWindow;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -112,10 +117,12 @@ import cn.intret.app.picgo.ui.adapter.SectionedListItemDispatchListener;
 import cn.intret.app.picgo.ui.event.CurrentImageChangeMessage;
 import cn.intret.app.picgo.ui.floating.FloatWindowService;
 import cn.intret.app.picgo.ui.pref.SettingActivity;
+import cn.intret.app.picgo.utils.Action0;
 import cn.intret.app.picgo.utils.DateTimeUtils;
 import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.utils.MapAction1;
 import cn.intret.app.picgo.utils.PathUtils;
+import cn.intret.app.picgo.utils.PopupUtils;
 import cn.intret.app.picgo.utils.RxUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
@@ -131,8 +138,6 @@ import io.reactivex.disposables.Disposable;
 import static cn.intret.app.picgo.model.ViewMode.GRID_VIEW;
 
 public class MainActivity extends BaseAppCompatActivity {
-
-    public static final Logger logger = LoggerFactory.getLogger(MainActivity.class);
 
     private static final String TAG = "MainActivity";
     public static final int MOVE_FILE_DIALOG_THUMBNEIL_COUNT = 3;
@@ -223,6 +228,7 @@ public class MainActivity extends BaseAppCompatActivity {
     private ExpandableFolderAdapter mExpandableFolderAdapter;
     private Disposable mUpdateImageConflictFileDisposable;
     private Disposable mUpdateDetailImageListConflictDisposable;
+    private ListPopupWindow mFolderItemContextMenu;
 
 
     @Override
@@ -700,7 +706,6 @@ public class MainActivity extends BaseAppCompatActivity {
     }
 
     private void diffUpdateFolderListAdapter(SectionedFolderListAdapter adapter) {
-        logger.info("差量更新文件夹列表");
 
         SystemImageService.getInstance()
                 .loadFolderList(true)
@@ -1210,7 +1215,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
             @Override
             public void onItemLongClick(View v, SectionedFolderListAdapter.Section sectionItem, int section, SectionedFolderListAdapter.Item item, int relativePos) {
-                showFolderItemContextPopupMenu(v, item);
+                showFolderItemContextPopupWindow(v, item);
             }
         };
 
@@ -1329,10 +1334,133 @@ public class MainActivity extends BaseAppCompatActivity {
 
                     @Override
                     public void onItem(SectionedRecyclerViewAdapter adapter, ItemCoord coord) {
-                        showFolderItemContextPopupMenu(view, mFolderAdapter.getItem(coord));
+//                        showFolderItemContextPopupMenu(view, mFolderAdapter.getItem(coord));
+                        showFolderItemContextPopupWindow(view, mFolderAdapter.getItem(coord));
                         //showFolderMoveToHereDialog(item.getFile());
                     }
                 });
+    }
+
+    private void showFolderItemContextPopupWindow(View v, SectionedFolderListAdapter.Item item) {
+
+        if (mFolderItemContextMenu != null) {
+            Log.w(TAG, "showFolderItemContextPopupWindow: already shown the popup menu, " + item.getName());
+            return;
+        }
+
+        com.orhanobut.logger.Logger.d("show context menu : " + item.getName());
+        File selectedDir = item.getFile();
+
+        // Window properties
+        ColorDrawable backgroundDrawable = new ColorDrawable(getResources().getColor(R.color.gray_98));
+        int contentWidth = getResources().getDimensionPixelSize(R.dimen.pop_menu_width);
+        int horizontalOffset = (int) -getResources().getDimension(R.dimen.pop_menu_margin);
+
+        // Create menu items
+        List<PopupUtils.PopupMenuItem> items = new LinkedList<>();
+        // Rename
+        items.add(
+                new PopupUtils.PopupMenuItem()
+                        .setIcon(getResources().getDrawable(R.drawable.ic_mode_edit_black_24px))
+                        .setName(getString(R.string.rename))
+                        .setAction(() -> {
+                            showFolderRenameDialog(item, selectedDir);
+                            return true;
+                        })
+        );
+
+        // Move
+        items.add(
+                new PopupUtils.PopupMenuItem()
+                        .setIcon(getResources().getDrawable(R.drawable.ic_move_to_folder))
+                        .setName(getString(R.string.move))
+                        .setAction(() -> {
+                            ToastUtils.toastShort(MainActivity.this, R.string.unimplemented);
+                            return true;
+                        })
+        );
+
+        // Delete
+        items.add(
+                new PopupUtils.PopupMenuItem()
+                        .setIcon(getResources().getDrawable(R.drawable.ic_delete_black_24px))
+                        .setName(getString(R.string.delete))
+                        .setAction(() -> {
+                            ToastUtils.toastShort(MainActivity.this, R.string.unimplemented);
+                            return true;
+                        })
+        );
+
+        // Hide
+        items.add(
+                new PopupUtils.PopupMenuItem()
+                        .setIcon(getResources().getDrawable(R.drawable.ic_remove_red_eye_black_24px))
+                        .setName(getString(R.string.hide_folder))
+                        .setAction(() -> {
+                            hideFolder(selectedDir);
+                            return true;
+                        })
+        );
+
+        // 根据是否有正在选中的文件显示“移动至这里”菜单项
+        Action0 gridViewModeAction = () -> {
+            List<Map.Entry<String, DefaultImageListAdapter>> inSelectionModeAdapter = Stream.of(mImageListAdapters)
+                    .filter(value -> value.getValue().isSelectionMode())
+                    .toList();
+            if (!inSelectionModeAdapter.isEmpty()) {
+
+                items.add(
+                        new PopupUtils.PopupMenuItem()
+                                .setIcon(null)
+                                .setName(getString(R.string.move_selected_images_to_here))
+                                .setAction(() -> {
+                                    showFolderMoveToHereDialog(selectedDir);
+                                    return true;
+                                })
+                );
+            }
+        };
+        Action0 listViewModeAction = () -> {
+            List<Map.Entry<String, DetailImageAdapter>> inSelectionModeAdapter = Stream.of(mDetailImageListAdapters)
+                    .filter(value -> value.getValue().isSelectionMode())
+                    .toList();
+            if (!inSelectionModeAdapter.isEmpty()) {
+
+                items.add(
+                        new PopupUtils.PopupMenuItem()
+                                .setIcon(null)
+                                .setName(getString(R.string.move_selected_images_to_here))
+                                .setAction(() -> {
+                                    showFolderMoveToHereDialog(selectedDir);
+                                    return true;
+                                })
+                );
+            }
+        };
+        dispatchViewMode(gridViewModeAction, listViewModeAction);
+
+        mFolderItemContextMenu = PopupUtils.build(this, items, v, backgroundDrawable, contentWidth, horizontalOffset, false);
+        mFolderItemContextMenu.setOnDismissListener(() -> mFolderItemContextMenu = null);
+        mFolderItemContextMenu.show();
+    }
+
+    private void dispatchViewMode(Action0 gridAction, Action0 listAction) {
+        switch (mViewMode) {
+
+            case GRID_VIEW: {
+                if (gridAction != null) {
+                    gridAction.accept();
+                }
+            }
+            break;
+            case LIST_VIEW:
+                if (listAction != null) {
+                    listAction.accept();
+                }
+                break;
+            case UNKNOWN:
+                break;
+        }
     }
 
     private void showFolderItemContextPopupMenu(View v, SectionedFolderListAdapter.Item item) {

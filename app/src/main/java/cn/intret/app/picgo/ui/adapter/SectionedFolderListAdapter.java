@@ -13,7 +13,6 @@ import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -39,7 +38,6 @@ import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.utils.DataConsumer2;
 import cn.intret.app.picgo.utils.PathUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
-import cn.intret.app.picgo.widget.RecyclerItemTouchListener;
 import q.rorbin.badgeview.Badge;
 import q.rorbin.badgeview.QBadgeView;
 
@@ -463,6 +461,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                 Item item = items.get(itemIndex);
                 if (item.getFile().equals(directory)) {
                     item.setThumbList(thumbnails);
+
                     if (mRecyclerView != null) {
                         RecyclerView.ViewHolder vh = mRecyclerView.findViewHolderForAdapterPosition(getAbsolutePosition(secIndex, itemIndex));
                         if (vh != null && vh instanceof SectionedFolderListAdapter.ItemViewHolder) {
@@ -1163,26 +1162,22 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                 }
             });
 
+/*
             vh.thumbList.addOnItemTouchListener(
                     new RecyclerItemTouchListener(
                             vh.itemView.getContext(),
-                            mRecyclerView, new RecyclerItemTouchListener.OnItemClickListener() {
-                        @Override
-                        public void onItemClick(View view, int position) {
+                            mRecyclerView, (view, position) -> {
 
-                        }
-                    }, new RecyclerItemTouchListener.OnItemLongClickListener() {
-                        @Override
-                        public void onItemLongClick(View view, int position) {
-                            if (mOnItemClickListener != null) {
-                                ItemCoord coor = getRelativePosition(vh.getAdapterPosition());
+                            }, (view, position) -> {
+                                if (mOnItemClickListener != null) {
+                                    ItemCoord coor = getRelativePosition(vh.getAdapterPosition());
 
-                                Section section1 = mSections.get(coor.section());
-                                Item item1 = section1.getItems().get(coor.relativePos());
-                                mOnItemClickListener.onItemLongClick(vh.thumbList, section1, coor.section(), item1,  coor.relativePos() );
-                            }
-                        }
-                    }));
+                                    Section section1 = mSections.get(coor.section());
+                                    Item item1 = section1.getItems().get(coor.relativePos());
+                                    mOnItemClickListener.onItemLongClick(vh.thumbList, section1, coor.section(), item1,  coor.relativePos() );
+                                }
+                            }));
+*/
         }
 
         vh.check.setVisibility(item.isSelected() ? View.VISIBLE : View.GONE);
@@ -1256,6 +1251,22 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         if (vh.mAdapter == null) {
 
             vh.mAdapter = new HorizontalImageListAdapter(filesToItems(item.getThumbList()));
+            vh.mAdapter.setOnClickListener(new HorizontalImageListAdapter.OnItemClickListener() {
+                @Override
+                public void onItemClick(View v, HorizontalImageListAdapter.Item ii, int position) {
+                    if (mOnItemClickListener != null) {
+                        mOnItemClickListener.onItemClick(null, -1, item, -1);
+                    }
+                }
+
+                @Override
+                public void onItemLongClick(View v, HorizontalImageListAdapter.Item ii, int position) {
+                    if (mOnItemClickListener != null) {
+                        mOnItemClickListener.onItemLongClick(v, null, -1, item, -1);
+                    }
+                }
+            });
+
 //            vh.thumbList.setClickable(false);
 
             vh.thumbList.setLayoutManager(vh.getLayout());
@@ -1488,7 +1499,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         }
 
         void setConflictCount(int conflictCount) {
-            badge.setBadgeBackgroundColor(itemView.getContext().getResources().getColor(R.color.warnning));
+            badge.setBadgeBackgroundColor(itemView.getContext().getResources().getColor(R.color.warning));
 //            badge.setBadgeNumber(conflictCount);
             badge.setBadgeText(itemView.getContext().getResources().getString(R.string.conflict_d, conflictCount));
         }

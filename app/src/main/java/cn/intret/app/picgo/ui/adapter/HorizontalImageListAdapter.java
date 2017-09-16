@@ -1,15 +1,11 @@
 package cn.intret.app.picgo.ui.adapter;
 
-import android.content.Context;
 import android.support.v7.widget.RecyclerView;
-import android.util.SparseArray;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.TransitionOptions;
 import com.bumptech.glide.request.RequestOptions;
 import com.github.siyamed.shapeimageview.RoundedImageView;
 
@@ -29,9 +25,15 @@ public class HorizontalImageListAdapter extends RecyclerView.Adapter<HorizontalI
     List<Item> mItems = new LinkedList<Item>();
 
     interface OnItemClickListener {
-        void onItemClick(Item item);
+        void onItemClick(View v, Item item, int position);
+
+        void onItemLongClick(View v, Item item, int position);
     }
-    public HorizontalImageListAdapter setOnClickListener() {
+
+    OnItemClickListener mClickListener;
+
+    public HorizontalImageListAdapter setOnClickListener(OnItemClickListener listener) {
+        mClickListener = listener;
         return this;
     }
 
@@ -64,6 +66,23 @@ public class HorizontalImageListAdapter extends RecyclerView.Adapter<HorizontalI
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
         Item item = mItems.get(mItems.size() - 1 - position);
+
+//        holder.itemView.setOnClickListener(v -> {
+//            if (mClickListener != null) {
+//                mClickListener.onItemClick(v, item, position);
+//            }
+//        });
+
+        holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                if (mClickListener != null) {
+                    mClickListener.onItemLongClick(v, item, position);
+                }
+                return true;
+            }
+        });
+
         if (item.getFile() != null) {
             Glide.with(holder.itemView.getContext())
                     .asBitmap()
@@ -82,9 +101,7 @@ public class HorizontalImageListAdapter extends RecyclerView.Adapter<HorizontalI
 
     class ViewHolder extends RecyclerView.ViewHolder {
 
-        @BindView(R.id.image)
-        RoundedImageView image;
-
+        @BindView(R.id.image) RoundedImageView image;
 
         public ViewHolder(View itemView) {
             super(itemView);

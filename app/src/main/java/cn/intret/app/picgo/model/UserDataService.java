@@ -23,7 +23,7 @@ import java.util.List;
 
 import cn.intret.app.picgo.model.event.RecentOpenFolderListChangeMessage;
 import cn.intret.app.picgo.model.event.RenameDirectoryMessage;
-import cn.intret.app.picgo.utils.Action1;
+import cn.intret.app.picgo.utils.Modifier;
 import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.utils.MapAction1;
 import io.reactivex.Observable;
@@ -99,7 +99,7 @@ public class UserDataService extends BaseService {
         return mPreferences.getString(prefKey, "[]");
     }
 
-    private void updatePreference(String preferenceKey, Action1 modifyAction) {
+    private void updatePreference(String preferenceKey, Modifier modifyAction) {
         Preference<String> prefRecent = getJsonStringPreference(preferenceKey);
 
     }
@@ -176,13 +176,13 @@ public class UserDataService extends BaseService {
         });
     }
 
-    private List<RecentRecord> updateOpenFolderRecentPreference(Action1<List<RecentRecord>> updateObjectAction) {
+    private List<RecentRecord> updateOpenFolderRecentPreference(Modifier<List<RecentRecord>> updateObjectAction) {
         Preference<String> prefRecent = getJsonStringPreference(PREF_KEY_FOLDER_ACCESS_RECENT_HISTORY);
 
         String json = prefRecent.get();
         List<RecentRecord> recentRecords = jsonToHistoryList(json);
 
-        List<RecentRecord> newList = updateObjectAction.onAction(recentRecords);
+        List<RecentRecord> newList = updateObjectAction.onModify(recentRecords);
 
         String newJson = recentHistoryListToJson(newList);
 //        Log.d(TAG, "updateOpenFolderRecentPreference: update [" + PREF_KEY_FOLDER_ACCESS_RECENT_HISTORY + "] with value : " + newJson);

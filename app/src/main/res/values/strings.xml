@@ -110,5 +110,6 @@
     <string name="paste">粘贴</string>
     <string name="request_failed">请求失败</string>
     <string name="operation_failed">操作失败</string>
+    <string name="rename">重命名</string>
 
 </resources>

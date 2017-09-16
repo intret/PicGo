@@ -240,7 +240,7 @@ public class SectionFolderListAdapter
 
         if (item.getAdapter() == null) {
             HorizontalImageListAdapter adapter = new HorizontalImageListAdapter(filesToItems(item.getThumbList()));
-            adapter.setOnClickListener();
+
             item.setAdapter(adapter);
             holder.thumbList.setAdapter(item.getAdapter());
         } else {

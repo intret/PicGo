@@ -31,4 +31,6 @@
     <dimen name="bottom_dialog_title_text_size">16sp</dimen>
     <dimen name="dialog_standard_content_margin">16dp</dimen>
     <dimen name="folder_list_item_height">44dp</dimen>
+    <dimen name="pop_menu_width">180dp</dimen>
+    <dimen name="pop_menu_margin">32dp</dimen>
 </resources>

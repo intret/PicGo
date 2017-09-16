@@ -384,7 +384,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
 
                             btnMoveFile.setText(getResources().getString(R.string.move_file_d_d,
                                     mSelectedFiles.size() - conflictFiles.size(), mSelectedFiles.size()));
-                            btnMoveFile.setTextColor(getResources().getColor(R.color.warnning));
+                            btnMoveFile.setTextColor(getResources().getColor(R.color.warning));
 
                             setDetectingResultText(contentView,
                                     getString(R.string.target_directory_exists__d_files_in_the_same_name,

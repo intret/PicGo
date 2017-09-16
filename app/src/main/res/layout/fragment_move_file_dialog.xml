@@ -35,7 +35,7 @@
             android:layout_marginLeft="8dp"
             android:layout_weight="0"
             android:text="@string/move_file"
-            tools:textColor="@color/warnning"
+            tools:textColor="@color/warning"
             tools:text="移动文件(9/12)"
             />
     </LinearLayout>

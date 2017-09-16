@@ -69,7 +69,7 @@ public class ExpandableFolderAdapter extends BaseMultiItemQuickAdapter<MultiItem
 
 
         void setConflictCount(int conflictCount) {
-            badge.setBadgeBackgroundColor(itemView.getContext().getResources().getColor(R.color.warnning));
+            badge.setBadgeBackgroundColor(itemView.getContext().getResources().getColor(R.color.warning));
 //            badge.setBadgeNumber(conflictCount);
             badge.setBadgeText(itemView.getContext().getResources().getString(R.string.conflict_d, conflictCount));
         }
@@ -160,7 +160,7 @@ public class ExpandableFolderAdapter extends BaseMultiItemQuickAdapter<MultiItem
         View itemView = viewHolder.itemView;
         Badge badge = (Badge) itemView.getTag(R.id.badge);
 
-        badge.setBadgeBackgroundColor(itemView.getContext().getResources().getColor(R.color.warnning));
+        badge.setBadgeBackgroundColor(itemView.getContext().getResources().getColor(R.color.warning));
 //            badge.setBadgeNumber(conflictCount);
         badge.setBadgeText(itemView.getContext().getResources().getString(R.string.conflict_d, conflictCount));
     }
