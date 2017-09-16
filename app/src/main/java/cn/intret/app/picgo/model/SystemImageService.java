@@ -1322,17 +1322,22 @@ public class SystemImageService extends BaseService {
 
             ImageFileInformation info = new ImageFileInformation();
 
-            if (PathUtils.isStaticImageFile(mediaFile.getAbsolutePath())) {
+            String fileAbsPath = mediaFile.getAbsolutePath();
+            boolean staticImageFile = PathUtils.isStaticImageFile(fileAbsPath);
+            boolean videoFile = PathUtils.isVideoFile(fileAbsPath);
+            if (staticImageFile) {
                 Size imageResolution = MediaUtils.getImageResolution(mediaFile);
                 info.setMediaResolution(imageResolution);
 
-            } else if (PathUtils.isVideoFile(mediaFile.getAbsolutePath())) {
-                Size videoResolution = MediaUtils.getVideoResolution(mContext, mediaFile);
-
-                info.setMediaResolution(videoResolution);
-                info.setVideoDuration(MediaUtils.getVideoFileDuration(mContext, mediaFile));
             } else {
-                Log.w(TAG, "loadImageInfo: don't load media file information : " + mediaFile);
+                if (videoFile) {
+                    Size videoResolution = MediaUtils.getVideoResolution(mContext, mediaFile);
+
+                    info.setMediaResolution(videoResolution);
+                    info.setVideoDuration(MediaUtils.getVideoFileDuration(mContext, mediaFile));
+                } else {
+                    Log.w(TAG, "loadImageInfo: don't load media file information : " + mediaFile);
+                }
             }
 
             info.setLastModified(mediaFile.lastModified());
@@ -1340,8 +1345,10 @@ public class SystemImageService extends BaseService {
 
 
             // Exif
-            ExifInterface exifInterface = new ExifInterface(mediaFile.getAbsolutePath());
-            info.setExif(exifInterface);
+            if (PathUtils.isExifFile(fileAbsPath)) {
+                ExifInterface exifInterface = new ExifInterface(fileAbsPath);
+                info.setExif(exifInterface);
+            }
 
             e.onNext(info);
             e.onComplete();

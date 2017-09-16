@@ -187,15 +187,20 @@ public class ImageFragment extends Fragment {
 
         mImage.setScaleType(ImageView.ScaleType.FIT_CENTER);
 
+
         RequestBuilder<Drawable> request = Glide.with(this)
                 .asDrawable()
                 .load(mFilePath)
                 .apply(RequestOptions.skipMemoryCacheOf(false))
                 .apply(RequestOptions.fitCenterTransform())
-                .transition(DrawableTransitionOptions.withCrossFade())
-                .listener(new ImageRequestObserver(mPerformEnterTransition));
-
-        request.into(mImage);
+                .transition(DrawableTransitionOptions.withCrossFade());
+        if (PathUtils.isStaticImageFile(mFilePath) || PathUtils.isVideoFile(mFilePath)) {
+                    request.listener(new ImageRequestObserver(mPerformEnterTransition));
+            request.into(mImage);
+        } else {
+            scheduleStartPostponedTransition(mImage);
+            request.into(mImage);
+        }
 
         // 文件类型图标
         if (PathUtils.isVideoFile(mFilePath)) {
@@ -230,7 +235,7 @@ public class ImageFragment extends Fragment {
         }
     }
 
-    class ImageRequestObserver implements RequestListener<Drawable> {
+    private class ImageRequestObserver implements RequestListener<Drawable> {
 
         boolean mPerformEnterTransition;
 

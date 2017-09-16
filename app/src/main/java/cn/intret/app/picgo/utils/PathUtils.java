@@ -3,16 +3,37 @@ package cn.intret.app.picgo.utils;
 
 import android.support.annotation.Nullable;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 
 public class PathUtils {
+    static final String[] EXIF_FILE_EXTENSIONS = {
+            "JPEG", "DNG", "CR2", "NEF", "NRW", "ARW", "RW2", "ORF", "RAF"};
+    static final String[] STATIC_FILE_EXTENSIONS = {
+            "PNG", "JPEG", "JPG", "WEBP"
+    };
+
+    static final String[] VIDEO_FILE_EXTENSIONS = {
+           "MP4","MOV","MPG","MPEG","RMVB"
+    };
+
+
+    public static boolean isExifFile(String filePath) {
+        if (StringUtils.isEmpty(filePath)) {
+            return false;
+        }
+        String extension = FilenameUtils.getExtension(filePath);
+        if (StringUtils.isEmpty(extension)) {
+            return false;
+        }
+
+        return ArrayUtils.contains(EXIF_FILE_EXTENSIONS, extension.toUpperCase());
+    }
 
     public static boolean isStaticImageFile(String filePath) {
         if (StringUtils.isEmpty(filePath)) {
@@ -22,16 +43,8 @@ public class PathUtils {
         if (StringUtils.isEmpty(extension)) {
             return false;
         }
-        switch (extension.toLowerCase()) {
-            case "png":
-            case "jpeg":
-            case "jpg":
-            case "webp": {
-                return true;
-            }
-        }
-        return false;
 
+        return ArrayUtils.contains(STATIC_FILE_EXTENSIONS, extension.toUpperCase());
     }
 
     public static boolean isVideoFile(String filePath) {
@@ -42,17 +55,8 @@ public class PathUtils {
         if (StringUtils.isEmpty(extension)) {
             return false;
         }
-        switch (extension.toLowerCase()) {
-            case "mp4":
-            case "avi":
-            case "mov":
-            case "mpg":
-            case "mpeg":
-            case "rmvb": {
-                return true;
-            }
-        }
-        return false;
+
+        return ArrayUtils.contains(VIDEO_FILE_EXTENSIONS, extension.toUpperCase());
     }
 
     public static boolean isGifFile(String filePath) {

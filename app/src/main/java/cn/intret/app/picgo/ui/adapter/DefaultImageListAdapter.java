@@ -12,6 +12,7 @@ import android.view.View;
 import android.widget.ImageView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.bitmap.BitmapTransitionOptions;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.bumptech.glide.request.RequestOptions;
 import com.chad.library.adapter.base.BaseViewHolder;
@@ -200,11 +201,11 @@ public class DefaultImageListAdapter extends BaseImageAdapter<DefaultImageListAd
                 .generateTransitionName(absolutePath));
 
         Glide.with(viewHolder.itemView.getContext())
-                .asDrawable()
-                //.asBitmap() // bitmap 不会播放 GIF
+                //.asDrawable()
+                .asBitmap() // bitmap 不会播放 GIF
                 .load(item.getFile())
                 .apply(RequestOptions.fitCenterTransform())
-                .transition(DrawableTransitionOptions.withCrossFade())
+                .transition(BitmapTransitionOptions.withCrossFade())
                 .into(imageView);
 
         // Image type
@@ -221,7 +222,7 @@ public class DefaultImageListAdapter extends BaseImageAdapter<DefaultImageListAd
                 viewHolder.setVisible(R.id.file_type, true);
             }
             if (gifFile) {
-                viewHolder.setImageResource(R.id.file_type, R.drawable.ic_gif);
+                viewHolder.setImageResource(R.id.file_type, R.drawable.ic_gif_black_48px);
                 viewHolder.setVisible(R.id.file_type, true);
             }
         } else {
