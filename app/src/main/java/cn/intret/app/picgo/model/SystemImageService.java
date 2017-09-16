@@ -4,7 +4,6 @@ package cn.intret.app.picgo.model;
 import android.media.ExifInterface;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v7.widget.ShareActionProvider;
 import android.util.Log;
 import android.util.Pair;
 import android.util.Size;
@@ -15,7 +14,6 @@ import com.annimon.stream.function.BiConsumer;
 import com.annimon.stream.function.Consumer;
 import com.annimon.stream.function.Function;
 import com.annimon.stream.function.Supplier;
-import com.f2prateek.rx.preferences2.Preference;
 import com.t9search.model.PinyinSearchUnit;
 import com.t9search.util.T9Util;
 
@@ -1285,17 +1283,20 @@ public class SystemImageService extends BaseService {
             ImageFileInformation info = new ImageFileInformation();
 
             if (PathUtils.isStaticImageFile(mediaFile.getAbsolutePath())) {
-                Size imageSize = null;
-                imageSize = MediaUtils.getImageResolution(mediaFile);
-                info.setMediaSize(imageSize);
+                Size imageResolution = MediaUtils.getImageResolution(mediaFile);
+                info.setMediaResolution(imageResolution);
+
             } else if (PathUtils.isVideoFile(mediaFile.getAbsolutePath())) {
-                Size videoSize = MediaUtils.getVideoResolution(mContext, mediaFile);
-                info.setMediaSize(videoSize);
+                Size videoResolution = MediaUtils.getVideoResolution(mContext, mediaFile);
+
+                info.setMediaResolution(videoResolution);
                 info.setVideoDuration(MediaUtils.getVideoFileDuration(mContext, mediaFile));
+            } else {
+                Log.w(TAG, "loadImageInfo: don't load media file information : " + mediaFile);
             }
 
-            info.setLastModifed(mediaFile.lastModified());
-            info.setFileSize(mediaFile.length());
+            info.setLastModified(mediaFile.lastModified());
+            info.setFileLength(mediaFile.length());
 
 
             // Exif

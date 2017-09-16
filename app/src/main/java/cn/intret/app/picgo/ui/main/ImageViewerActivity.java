@@ -187,7 +187,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
         // Size
         ViewUtils.setText(mDetailContainer,
                 R.id.value_file_size,
-                FileSizeUtils.formatFileSize(info.getFileSize(), false));
+                FileSizeUtils.formatFileSize(info.getFileLength(), false));
 
         ViewUtils.setText(mDetailContainer,
                 R.id.value_file_path,
@@ -206,7 +206,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
         ViewUtils.setText(mDetailContainer,
                 R.id.value_resolution,
-                MediaUtils.isValidSize(info.getImageSize()) ? sizeString : "-");
+                MediaUtils.isValidSize(info.getMediaResolution()) ? sizeString : "-");
     }
 
     private void hideImageDetailViews() {

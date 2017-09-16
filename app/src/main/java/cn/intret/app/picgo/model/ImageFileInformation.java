@@ -4,15 +4,19 @@ package cn.intret.app.picgo.model;
 import android.media.ExifInterface;
 import android.util.Size;
 
-import java.io.File;
-
 public class ImageFileInformation {
     private ExifInterface mExif;
-    private long mLastModifed;
-    private long mFileSize;
+    private long mLastModified;
+    private long mFileLength;
     private int mImageWidth;
     private int mImageHeight;
-    private Size mImageSize;
+    /**
+     * 图片分辨率、视频分辨率
+     */
+    private Size mMediaResolution;
+    /**
+     * 视频播放时长
+     */
     private int mVideoDuration;
 
     public ImageFileInformation setExif(ExifInterface exif) {
@@ -24,17 +28,17 @@ public class ImageFileInformation {
         return mExif;
     }
 
-    public ImageFileInformation setLastModifed(long lastModifed) {
-        mLastModifed = lastModifed;
+    public ImageFileInformation setLastModified(long lastModified) {
+        mLastModified = lastModified;
         return this;
     }
 
     public long getLastModified() {
-        return mLastModifed;
+        return mLastModified;
     }
 
-    public ImageFileInformation setFileSize(long fileSize) {
-        mFileSize = fileSize;
+    public ImageFileInformation setFileLength(long fileLength) {
+        mFileLength = fileLength;
         return this;
     }
 
@@ -42,8 +46,8 @@ public class ImageFileInformation {
      * Get file size, in bytes.
      * @return
      */
-    public long getFileSize() {
-        return mFileSize;
+    public long getFileLength() {
+        return mFileLength;
     }
 
     public void setImageWidth(int imageWidth) {
@@ -62,12 +66,12 @@ public class ImageFileInformation {
         return mImageHeight;
     }
 
-    public void setMediaSize(Size size) {
-        mImageSize = size;
+    public void setMediaResolution(Size size) {
+        mMediaResolution = size;
     }
 
-    public Size getImageSize() {
-        return mImageSize;
+    public Size getMediaResolution() {
+        return mMediaResolution;
     }
 
     public void setVideoDuration(int videoDuration) {

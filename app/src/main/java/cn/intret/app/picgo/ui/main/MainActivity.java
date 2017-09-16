@@ -1238,8 +1238,7 @@ public class MainActivity extends BaseAppCompatActivity {
                 mFolderList,
                 this::onFolderListItemClick,
                 (view, position) -> {
-                    //
-                    // onFolderListItemLongClick(view,position);
+                    //onFolderListItemLongClick(view, position);
                 }
         );
         mFolderList.addOnItemTouchListener(itemTouchListener);
@@ -1313,7 +1312,8 @@ public class MainActivity extends BaseAppCompatActivity {
         popupMenu.show();
     }
 
-    private void onFolderListItemLongClick(int position) {
+    private void onFolderListItemLongClick(View view, int position) {
+
 
         new SectionedListItemClickDispatcher<>(mFolderAdapter)
                 .dispatch(position, new SectionedListItemDispatchListener() {
@@ -1329,7 +1329,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
                     @Override
                     public void onItem(SectionedRecyclerViewAdapter adapter, ItemCoord coord) {
-                        showFolderItemContextMenuDialog(null, mFolderAdapter.getItem(coord));
+                        showFolderItemContextPopupMenu(view, mFolderAdapter.getItem(coord));
                         //showFolderMoveToHereDialog(item.getFile());
                     }
                 });
@@ -1339,7 +1339,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
         File selectedDir = item.getFile();
 
-        PopupMenu popupMenu = new PopupMenu(this, v, Gravity.TOP);
+        PopupMenu popupMenu = new PopupMenu(this, v, Gravity.NO_GRAVITY, R.attr.actionOverflowMenuStyle, 0);
         int menuOrder = 0;
         int menuCategory = 0;
 
