@@ -181,15 +181,15 @@ public class MainActivity extends BaseAppCompatActivity {
      */
 
     /**
-     * Key: file absolute path
+     * Key: Directory
      */
-    Map<String, DefaultImageListAdapter> mImageListAdapters = new LinkedHashMap<>();
+    Map<File, DefaultImageListAdapter> mImageListAdapters = new LinkedHashMap<>();
     private DefaultImageListAdapter mCurrentImageAdapter;
     private GridLayoutManager mGridLayoutManager;
 
     // todo Map<ViewMode,BaseImageAdapter>
 
-    Map<String, DetailImageAdapter> mDetailImageListAdapters = new LinkedHashMap<>();
+    Map<File, DetailImageAdapter> mDetailImageListAdapters = new LinkedHashMap<>();
     Map<String, SectionedImageListAdapter> mWeekSectionedImageListAdapters = new LinkedHashMap<>();
     Map<String, SectionedImageListAdapter> mDaySectionedImageListAdapters = new LinkedHashMap<>();
     Map<String, SectionedImageListAdapter> mMonthSectionedImageListAdapters = new LinkedHashMap<>();
@@ -451,7 +451,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
         File destDir = message.getDestDir();
         if (destDir != null) {
-            DefaultImageListAdapter adapter = mImageListAdapters.get(destDir.getAbsolutePath());
+            DefaultImageListAdapter adapter = mImageListAdapters.get(destDir);
             if (adapter != null) {
                 int selectedCount = adapter.getSelectedItemCount();
                 int itemCount = adapter.getItemCount();
@@ -463,9 +463,9 @@ public class MainActivity extends BaseAppCompatActivity {
         List<android.util.Pair<File, File>> successFiles = message.getResult().getSuccessFiles();
         if (successFiles != null) {
             Stream.of(successFiles)
-                    .groupBy(fileFilePair -> fileFilePair.second.getParent())
+                    .groupBy(fileFilePair -> fileFilePair.second.getParentFile())
                     .forEach(objectListEntry -> {
-                        String dir = objectListEntry.getKey();
+                        File dir = objectListEntry.getKey();
                         DefaultImageListAdapter adapter = mImageListAdapters.get(dir);
                         if (adapter != null) {
                             int selectedCount = adapter.getSelectedItemCount();
@@ -493,7 +493,7 @@ public class MainActivity extends BaseAppCompatActivity {
     public void onEvent(RemoveFileMessage message) {
         File file = message.getFile();
         if (file != null) {
-            String dir = file.getParent();
+            File dir = file.getParentFile();
 
             DefaultImageListAdapter adapter = mImageListAdapters.get(dir);
             if (adapter != null) {
@@ -519,26 +519,17 @@ public class MainActivity extends BaseAppCompatActivity {
 
         File dir = message.getDirectory();
 
-        // 更新图片列表
-        switch (mViewMode) {
-
-            case GRID_VIEW: {
-                DefaultImageListAdapter adapter = mImageListAdapters.get(dir.getAbsolutePath());
-                if (adapter != null) {
-                    diffUpdateDefaultImageListAdapter(adapter, true);
-                }
-            }
-            break;
-            case LIST_VIEW: {
-                DetailImageAdapter adapter = mDetailImageListAdapters.get(dir.getAbsolutePath());
-                if (adapter != null) {
-                    diffUpdateDetailImageAdapter(adapter, true);
-                }
-            }
-            break;
-            case UNKNOWN:
-                break;
+        // 更新所有当前 Adapter 图片列表
+        DefaultImageListAdapter adapter = mImageListAdapters.get(dir);
+        if (adapter != null) {
+            diffUpdateDefaultImageListAdapter(adapter, true);
         }
+
+        DetailImageAdapter detailImageAdapter = mDetailImageListAdapters.get(dir);
+        if (detailImageAdapter != null) {
+            diffUpdateDetailImageAdapter(detailImageAdapter, true);
+        }
+
 
         // 更新抽屉中的缩略图列表
         updateFolderListItemThumbnailList(dir);
@@ -620,22 +611,21 @@ public class MainActivity extends BaseAppCompatActivity {
         }
 
         // Update : Image list adapter
-        String oldDirAbsolutePath = oldDirectory.getAbsolutePath();
-        DefaultImageListAdapter defaultImageListAdapter = mImageListAdapters.get(oldDirAbsolutePath);
+        DefaultImageListAdapter defaultImageListAdapter = mImageListAdapters.get(oldDirectory);
         if (defaultImageListAdapter != null) {
 
-            mImageListAdapters.remove(oldDirAbsolutePath);
+            mImageListAdapters.remove(oldDirectory);
 
             defaultImageListAdapter.setDirectory(message.getNewDirectory());
-            mImageListAdapters.put(message.getNewDirectory().getAbsolutePath(), defaultImageListAdapter);
+            mImageListAdapters.put(message.getNewDirectory(), defaultImageListAdapter);
         }
 
         // Update : Detail image list adapter
-        DetailImageAdapter detailImageAdapter = mDetailImageListAdapters.get(oldDirAbsolutePath);
+        DetailImageAdapter detailImageAdapter = mDetailImageListAdapters.get(oldDirectory);
         if (detailImageAdapter != null) {
-            mDetailImageListAdapters.remove(oldDirAbsolutePath);
+            mDetailImageListAdapters.remove(oldDirectory);
             detailImageAdapter.setDirectory(message.getNewDirectory());
-            mDetailImageListAdapters.put(message.getNewDirectory().getAbsolutePath(), detailImageAdapter);
+            mDetailImageListAdapters.put(message.getNewDirectory(), detailImageAdapter);
         }
     }
 
@@ -1408,7 +1398,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
         // 根据是否有正在选中的文件显示“移动至这里”菜单项
         Action0 gridViewModeAction = () -> {
-            List<Map.Entry<String, DefaultImageListAdapter>> inSelectionModeAdapter = Stream.of(mImageListAdapters)
+            List<Map.Entry<File, DefaultImageListAdapter>> inSelectionModeAdapter = Stream.of(mImageListAdapters)
                     .filter(value -> value.getValue().isSelectionMode())
                     .toList();
             if (!inSelectionModeAdapter.isEmpty()) {
@@ -1425,7 +1415,7 @@ public class MainActivity extends BaseAppCompatActivity {
             }
         };
         Action0 listViewModeAction = () -> {
-            List<Map.Entry<String, DetailImageAdapter>> inSelectionModeAdapter = Stream.of(mDetailImageListAdapters)
+            List<Map.Entry<File, DetailImageAdapter>> inSelectionModeAdapter = Stream.of(mDetailImageListAdapters)
                     .filter(value -> value.getValue().isSelectionMode())
                     .toList();
             if (!inSelectionModeAdapter.isEmpty()) {
@@ -1497,7 +1487,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
             case GRID_VIEW: {
 
-                List<Map.Entry<String, DefaultImageListAdapter>> inSelectionModeAdapter = Stream.of(mImageListAdapters)
+                List<Map.Entry<File, DefaultImageListAdapter>> inSelectionModeAdapter = Stream.of(mImageListAdapters)
                         .filter(value -> value.getValue().isSelectionMode())
                         .toList();
                 if (!inSelectionModeAdapter.isEmpty()) {
@@ -1509,7 +1499,7 @@ public class MainActivity extends BaseAppCompatActivity {
             break;
             case LIST_VIEW: {
 
-                List<Map.Entry<String, DetailImageAdapter>> inSelectionModeAdapter = Stream.of(mDetailImageListAdapters)
+                List<Map.Entry<File, DetailImageAdapter>> inSelectionModeAdapter = Stream.of(mDetailImageListAdapters)
                         .filter(value -> value.getValue().isSelectionMode())
                         .toList();
                 if (!inSelectionModeAdapter.isEmpty()) {
@@ -1594,7 +1584,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
             case GRID_VIEW: {
 
-                List<Map.Entry<String, DefaultImageListAdapter>> inSelectionModeAdapter = Stream.of(mImageListAdapters)
+                List<Map.Entry<File, DefaultImageListAdapter>> inSelectionModeAdapter = Stream.of(mImageListAdapters)
                         .filter(value -> value.getValue().isSelectionMode())
                         .toList();
                 if (!inSelectionModeAdapter.isEmpty()) {
@@ -1604,7 +1594,7 @@ public class MainActivity extends BaseAppCompatActivity {
             break;
             case LIST_VIEW: {
 
-                List<Map.Entry<String, DetailImageAdapter>> inSelectionModeAdapter = Stream.of(mDetailImageListAdapters)
+                List<Map.Entry<File, DetailImageAdapter>> inSelectionModeAdapter = Stream.of(mDetailImageListAdapters)
                         .filter(value -> value.getValue().isSelectionMode())
                         .toList();
                 if (!inSelectionModeAdapter.isEmpty()) {
@@ -1739,7 +1729,7 @@ public class MainActivity extends BaseAppCompatActivity {
         switch (mViewMode) {
 
             case GRID_VIEW: {
-                List<Map.Entry<String, DefaultImageListAdapter>> selectionModeAdapters =
+                List<Map.Entry<File, DefaultImageListAdapter>> selectionModeAdapters =
                         Stream.of(mImageListAdapters)
                                 .filter(value -> value.getValue().isSelectionMode())
                                 .toList();
@@ -1780,11 +1770,11 @@ public class MainActivity extends BaseAppCompatActivity {
             }
             break;
             case LIST_VIEW: {
-                List<Map.Entry<String, DetailImageAdapter>> inSelectionMdoeAdapters = Stream.of(mDetailImageListAdapters)
+                List<Map.Entry<File, DetailImageAdapter>> inSelectionModeAdapters = Stream.of(mDetailImageListAdapters)
                         .filter(value -> value.getValue().isSelectionMode())
                         .toList();
-                if (!inSelectionMdoeAdapters.isEmpty()) {
-                    items = Stream.of(inSelectionMdoeAdapters)
+                if (!inSelectionModeAdapters.isEmpty()) {
+                    items = Stream.of(inSelectionModeAdapters)
                             .map(entry -> new FlatFolderListAdapter.Item()
                                     .setDirectory(entry.getValue().getDirectory())
                                     .setCount(entry.getValue().getSelectedItemCount())
@@ -2070,7 +2060,7 @@ public class MainActivity extends BaseAppCompatActivity {
     }
 
     private void showDetailImageList(File directory, boolean fromCacheFirst, boolean loadMediaFileDetail) {
-        DetailImageAdapter adapter = mDetailImageListAdapters.get(directory.getAbsolutePath());
+        DetailImageAdapter adapter = mDetailImageListAdapters.get(directory);
         if (adapter == null) {
 
             SystemImageService.getInstance()
@@ -2078,7 +2068,7 @@ public class MainActivity extends BaseAppCompatActivity {
                     .map(mediaFiles -> Stream.of(mediaFiles).map(this::mediaFileToDetailItem).toList())
                     .map(items -> createDetailImageAdapter(directory, items))
                     // cache adapter
-                    .doOnNext(detailImageAdapter -> mDetailImageListAdapters.put(directory.getAbsolutePath(), detailImageAdapter))
+                    .doOnNext(detailImageAdapter -> mDetailImageListAdapters.put(directory, detailImageAdapter))
                     .compose(workAndShow())
                     .subscribe(this::showDetailImageListAdapter, RxUtils::unhandledThrowable);
         } else {
@@ -2339,7 +2329,7 @@ public class MainActivity extends BaseAppCompatActivity {
     }
 
     private void showGridDefaultImageList(File directory) {
-        DefaultImageListAdapter listAdapter = mImageListAdapters.get(directory.getAbsolutePath());
+        DefaultImageListAdapter listAdapter = mImageListAdapters.get(directory);
         if (listAdapter != null) {
             com.orhanobut.logger.Logger.d("showGridDefaultImageList 切换显示目录 " + directory);
             showGridImageListAdapter(listAdapter);
@@ -2366,7 +2356,7 @@ public class MainActivity extends BaseAppCompatActivity {
     }
 
     private void cacheImageAdapter(File directory, DefaultImageListAdapter adapter) {
-        mImageListAdapters.put(directory.getAbsolutePath(), adapter);
+        mImageListAdapters.put(directory, adapter);
     }
 
     private DefaultImageListAdapter itemsToAdapter(File directory, List<DefaultImageListAdapter.Item> items) {
