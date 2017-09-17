@@ -65,6 +65,7 @@ import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -83,6 +84,8 @@ import cn.intret.app.picgo.model.MediaFile;
 import cn.intret.app.picgo.model.ImageFolder;
 import cn.intret.app.picgo.model.ImageGroup;
 import cn.intret.app.picgo.model.RecentRecord;
+import cn.intret.app.picgo.model.SortOrder;
+import cn.intret.app.picgo.model.SortWay;
 import cn.intret.app.picgo.model.SystemImageService;
 import cn.intret.app.picgo.model.UserDataService;
 import cn.intret.app.picgo.model.ViewMode;
@@ -666,9 +669,6 @@ public class MainActivity extends BaseAppCompatActivity {
                 .map(items -> {
                     DetailImageAdapter detailImageAdapter = new DetailImageAdapter(R.layout.item_image_detail, items);
                     transferAdapterStatus(adapter, detailImageAdapter);
-
-                    // todo detailImageAdapter.setFirstVisibleItem()
-
                     return detailImageAdapter;
                 })
                 .compose(workAndShow())
@@ -2065,7 +2065,28 @@ public class MainActivity extends BaseAppCompatActivity {
 
             SystemImageService.getInstance()
                     .loadMediaFileList(directory, fromCacheFirst, loadMediaFileDetail)
-                    .map(mediaFiles -> Stream.of(mediaFiles).map(this::mediaFileToDetailItem).toList())
+                    .map(mediaFiles -> {
+
+                        switch (mViewMode) {
+                            case GRID_VIEW: {
+                                return Stream.of(mediaFiles)
+                                        .map(this::mediaFileToDetailItem)
+                                        .sorted((o1, o2) -> o1.getDate().compareTo(o2.getDate()))
+                                        .toList();
+                            }
+                            case LIST_VIEW: {
+                                return Stream.of(mediaFiles)
+                                        .map(this::mediaFileToDetailItem)
+                                        .sorted((o1, o2) -> o1.getFile().getName().compareTo(o2.getFile().getName()))
+                                        .toList();
+                            }
+                        }
+
+                        // 未排序
+                        return Stream.of(mediaFiles)
+                                .map(this::mediaFileToDetailItem)
+                                .toList();
+                    })
                     .map(items -> createDetailImageAdapter(directory, items))
                     // cache adapter
                     .doOnNext(detailImageAdapter -> mDetailImageListAdapters.put(directory, detailImageAdapter))
@@ -2111,8 +2132,8 @@ public class MainActivity extends BaseAppCompatActivity {
                 showGridSectionedImageList(listAdapter);
             } else {
                 SystemImageService.getInstance()
-                        .loadImageGroupList(directory, groupMode, true)
-                        .map(this::imageGroupsToAdapter)
+                        .loadImageGroupList(directory, groupMode, true, SortWay.DATE, SortOrder.DESC)
+                        .map(this::sortImageGroupByViewMode)
                         .map((sectionList) -> {
                             SectionedImageListAdapter adapter = new SectionedImageListAdapter(sectionList);
                             adapter.setDirectory(directory);
@@ -2140,6 +2161,17 @@ public class MainActivity extends BaseAppCompatActivity {
         }
     }
 
+    private List<SectionedImageListAdapter.Section> sortImageGroupByViewMode(List<ImageGroup> imageGroups) {
+        // 项排序
+        SortWay way = SortWay.DATE;
+        SortOrder order = SortOrder.DESC;
+        if (mViewMode == ViewMode.LIST_VIEW) {
+            way = SortWay.NAME;
+            order = SortOrder.ASC;
+        }
+        return imageGroupsToAdapter(imageGroups, way, order);
+    }
+
     private void putGroupMode(File directory, GroupMode groupMode, SectionedImageListAdapter adapter) {
         switch (groupMode) {
 
@@ -2160,16 +2192,19 @@ public class MainActivity extends BaseAppCompatActivity {
         }
     }
 
-    private List<SectionedImageListAdapter.Section> imageGroupsToAdapter(List<ImageGroup> imageGroups) {
+    private List<SectionedImageListAdapter.Section> imageGroupsToAdapter(List<ImageGroup> imageGroups, SortWay sortWay, SortOrder order) {
+
         List<SectionedImageListAdapter.Section> sections = new LinkedList<>();
         for (int i = 0, imageGroupsSize = imageGroups.size(); i < imageGroupsSize; i++) {
             ImageGroup imageGroup = imageGroups.get(i);
-            sections.add(imageGroupToAdapterSection(imageGroup));
+            sections.add(imageGroupToAdapterSection(imageGroup, sortWay, order));
         }
+
+
         return sections;
     }
 
-    private SectionedImageListAdapter.Section imageGroupToAdapterSection(ImageGroup imageGroup) {
+    private SectionedImageListAdapter.Section imageGroupToAdapterSection(ImageGroup imageGroup, SortWay sortWay, SortOrder sortOrder) {
         SectionedImageListAdapter.Section section = new SectionedImageListAdapter.Section();
 
         section.setStartDate(imageGroup.getStartDate());
@@ -2185,7 +2220,51 @@ public class MainActivity extends BaseAppCompatActivity {
                         .setDate(mediaFile.getDate())
                 );
             }
-            section.setItems(items);
+
+            Comparator<SectionedImageListAdapter.Item> nameAscComparator = (o1, o2)
+                    -> o1.getFile().getName().compareTo(o2.getFile().getName());
+            Comparator<SectionedImageListAdapter.Item> nameDescComparator = (o1, o2)
+                    -> o2.getFile().getName().compareTo(o1.getFile().getName());
+
+            Comparator<SectionedImageListAdapter.Item> dateAscComparator = (o1, o2)
+                    -> o1.getDate().compareTo(o2.getDate());
+
+            Comparator<SectionedImageListAdapter.Item> dateDescComparator = (o1, o2)
+                    -> o2.getDate().compareTo(o1.getDate());
+
+
+            List<SectionedImageListAdapter.Item> sortedItems;
+            if (sortWay == SortWay.NAME) {
+                if (sortOrder == SortOrder.ASC) {
+                    sortedItems = Stream.of(items)
+                            .sorted(nameAscComparator)
+                            .toList();
+                } else {
+                    sortedItems = Stream.of(items)
+                            .sorted(nameDescComparator)
+                            .toList();
+                }
+
+                section.setItems(sortedItems);
+            } else if (sortWay == SortWay.SIZE) {
+
+                sortedItems = items;
+
+            } else if (sortWay == SortWay.DATE) {
+                if (sortOrder == SortOrder.ASC) {
+                    sortedItems = Stream.of(items)
+                            .sorted(dateAscComparator)
+                            .toList();
+                } else {
+                    sortedItems = Stream.of(items)
+                            .sorted(dateDescComparator)
+                            .toList();
+                }
+            } else {
+                sortedItems = items;
+            }
+
+            section.setItems(sortedItems);
         }
         section.setDescription(getSectionDescription(section.getStartDate(), MainActivity.this.mGroupMode));
         return section;

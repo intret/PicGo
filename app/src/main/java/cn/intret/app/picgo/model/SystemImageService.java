@@ -444,9 +444,11 @@ public class SystemImageService extends BaseService {
      * @param directory
      * @param mode
      * @param fromCacheFirst
-     * @return
+     * @param order
+     *@param way @return
      */
-    public Observable<List<ImageGroup>> loadImageGroupList(File directory, GroupMode mode, boolean fromCacheFirst) {
+    public Observable<List<ImageGroup>> loadImageGroupList(File directory, GroupMode mode,
+                                                           boolean fromCacheFirst, SortWay way, SortOrder order) {
         return Observable.<List<ImageGroup>>create(e -> {
             String absolutePath = directory.getAbsolutePath();
             if (fromCacheFirst) {
@@ -582,14 +584,14 @@ public class SystemImageService extends BaseService {
 
         // Todo load grouped image list
 
-        loadImageGroupList(destDir, GroupMode.WEEK, false)
+        loadImageGroupList(destDir, GroupMode.WEEK, false, SortWay.DATE, SortOrder.DESC)
                 .subscribe(imageGroups -> {
                     Log.d(TAG, "rescan week grouped directory: " + destDir);
                 }, throwable -> {
 
                 });
 
-        loadImageGroupList(destDir, GroupMode.MONTH, false)
+        loadImageGroupList(destDir, GroupMode.MONTH, false, SortWay.DATE, SortOrder.DESC)
                 .subscribe(imageGroups -> {
                     Log.d(TAG, "rescan month grouped directory: " + destDir);
                 }, throwable -> {
