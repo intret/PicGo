@@ -31,11 +31,14 @@ import io.reactivex.schedulers.Schedulers;
 
 public class UserDataService extends BaseService {
 
-    public static final String PREF_KEY_FOLDER_ACCESS_RECENT_HISTORY = "folder_access_recent_history";
-    public static final java.lang.String PREF_KEY_IMAGE_VIEW_MODE = "image_view_mode";
+    public static final String PREF_KEY_FOLDER_ACCESS_RECENT_HISTORY = "folder_recent_history";
+    public static final String PREF_KEY_IMAGE_VIEW_MODE = "image_view_mode";
+    private static final String PREF_KEY_IMAGE_SORT_ORDER = "image_sort_order";
+    private static final String PREF_KEY_IMAGE_SORT_WAY = "image_sort_way";
+
     public static final String VIEW_MODE_LIST_VIEW = "list_view";
     public static final String VIEW_MODE_GRID_VIEW = "grid_view";
-    public static final java.lang.String PREF_KEY_SHOW_HIDDEN_FOLDER = "show_hidden_folder";
+    public static final String PREF_KEY_SHOW_HIDDEN_FOLDER = "show_hidden_folder";
     public static final String PREF_KEY_HIDDEN_FOLDER_LIST_JSON = "hidden_folder_list_json";
     public static final String TAG = "UserDataService";
 
@@ -50,6 +53,10 @@ public class UserDataService extends BaseService {
     }
 
     int mMoveFileDialogFirstVisibleItemPosition = 0;
+
+    /*
+     * Inner class
+     */
 
     public int getMoveFileDialogFirstVisibleItemPosition() {
         return mMoveFileDialogFirstVisibleItemPosition;
@@ -124,20 +131,20 @@ public class UserDataService extends BaseService {
      * Recent folder list
      */
     private void validateRecentFolderList() {
+
         loadRecentOpenFolders(false)
                 .subscribeOn(Schedulers.io())
                 .subscribe(recentRecords -> {
-                    List<RecentRecord> invalidRecordList = Stream.of(recentRecords)
-                            .filter(record -> !new File(record.getFilePath()).exists())
-                            .toList();
 
-                    if (!invalidRecordList.isEmpty()) {
+                }, throwable -> {
+                    Log.e(TAG, "validateRecentFolderList: failed to load recent history" );
+                });
 
-                        Preference<String> prefRecent = getJsonStringPreference(PREF_KEY_FOLDER_ACCESS_RECENT_HISTORY);
-                        Log.w(TAG, "validateRecentFolderList: some folder exist : " + invalidRecordList);
+        getHiddenFolder().subscribeOn(Schedulers.io())
+                .subscribe(files -> {
 
-                        prefRecent.set(new Gson().toJson(invalidRecordList));
-                    }
+                }, throwable -> {
+                    Log.e(TAG, "validateRecentFolderList: failed to load hidden file list");
                 });
     }
 
@@ -217,20 +224,134 @@ public class UserDataService extends BaseService {
         });
     }
 
+    public Observable<UserInitialPreferences> loadInitialPreference(boolean detectFileExistence) {
+        return Observable.create(e -> {
+
+            UserInitialPreferences pref = new UserInitialPreferences();
+
+            // 最近访问文件列表
+            Preference<LinkedList<RecentRecord>> recentHistoryPreference = getRecentHistoryPreference();
+            LinkedList<RecentRecord> records = recentHistoryPreference.get();
+            pref.setRecentRecords(records);
+
+            LinkedList<RecentRecord> result = records;
+
+            if (detectFileExistence && !ListUtils.isEmpty(records)) {
+
+                // 移除掉不存在的目录
+                List<RecentRecord> checkedList = Stream.of(records).filter(record -> new File(record.getFilePath()).exists()).toList();
+                if (checkedList.size() < records.size()) {
+                    Log.d(TAG, "loadRecentOpenFolders: found invalid folder path, so update with new folder list");
+
+                    result = new LinkedList<RecentRecord>(checkedList);
+                    recentHistoryPreference.set(result);
+                }
+            }
+
+            // 图片显示模式偏好
+            Preference<ViewMode> viewMode = getViewMode();
+            if (viewMode.get() == ViewMode.UNKNOWN) {
+                viewMode.set(ViewMode.GRID_VIEW);
+            }
+            pref.setViewMode(viewMode.get());
+
+            // 排序偏好设置
+            Preference<SortWay> sortWay = getSortWay();
+            SortWay way = sortWay.get();
+            if (way == SortWay.UNKNOWN) {
+                sortWay.set(SortWay.DATE);
+            }
+            pref.setSortWay(sortWay.get());
+
+            Preference<SortOrder> sortOrder = getSortOrder();
+            SortOrder order = sortOrder.get();
+            if (order == SortOrder.UNKNOWN) {
+                if (way == SortWay.DATE || way == SortWay.SIZE) {
+                    sortOrder.set(SortOrder.DESC);
+                } else {
+                    sortOrder.set(SortOrder.ASC);
+                }
+            }
+            pref.setSortOrder(sortOrder.get());
+
+            e.onNext(pref);
+            e.onComplete();
+        });
+    }
+
+    public Preference<SortWay> getSortWay() {
+        return getPreferences().getObject(PREF_KEY_IMAGE_SORT_WAY,
+                SortWay.UNKNOWN, new Preference.Converter<SortWay>() {
+                    @NonNull
+                    @Override
+                    public SortWay deserialize(@NonNull String serialized) {
+                        return SortWay.fromString(serialized);
+                    }
+
+                    @NonNull
+                    @Override
+                    public String serialize(@NonNull SortWay value) {
+                        return value.toString();
+                    }
+                });
+    }
+
+    public Preference<SortOrder> getSortOrder() {
+        return getPreferences().getObject(PREF_KEY_IMAGE_SORT_ORDER,
+                SortOrder.UNKNOWN, new Preference.Converter<SortOrder>() {
+            @NonNull
+            @Override
+            public SortOrder deserialize(@NonNull String serialized) {
+                return SortOrder.fromString(serialized);
+            }
+
+            @NonNull
+            @Override
+            public String serialize(@NonNull SortOrder value) {
+                return value.toString();
+            }
+        });
+    }
+
+    public Preference<Boolean> getShowHiddenFilePreference() {
+        return getPreferences().getBoolean(PREF_KEY_SHOW_HIDDEN_FOLDER, false);
+    }
+
+    public Preference<ViewMode> getViewMode() {
+
+        return getPreferences().getObject(PREF_KEY_IMAGE_VIEW_MODE, ViewMode.UNKNOWN, new Preference.Converter<ViewMode>() {
+            @NonNull
+            @Override
+            public ViewMode deserialize(@NonNull String serialized) {
+                return ViewMode.fromString(serialized);
+            }
+
+            @NonNull
+            @Override
+            public String serialize(@NonNull ViewMode value) {
+                return value.toString();
+            }
+        });
+    }
+
     public Observable<List<RecentRecord>> loadRecentOpenFolders(boolean detectFileExistence) {
         return Observable.create(e -> {
-            Preference<String> prefRecent = getJsonStringPreference(PREF_KEY_FOLDER_ACCESS_RECENT_HISTORY);
-            List<RecentRecord> recentRecords = jsonToHistoryList(prefRecent.get());
+
+            Preference<LinkedList<RecentRecord>> pref = getRecentHistoryPreference();
+
+            List<RecentRecord> recentRecords = pref.get();
             List<RecentRecord> result = recentRecords;
 
             if (detectFileExistence) {
                 if (!ListUtils.isEmpty(recentRecords)) {
-                    List<RecentRecord> checkedList = Stream.of(recentRecords).filter(record -> new File(record.getFilePath()).exists()).toList();
+                    List<RecentRecord> checkedList = Stream.of(recentRecords)
+                            .filter(record -> new File(record.getFilePath()).exists())
+                            .toList();
                     if (checkedList.size() < recentRecords.size()) {
-                        Log.d(TAG, "loadRecentOpenFolders: found invalid folder path, so update with new folder list");
+                        Log.d(TAG, "loadRecentOpenFolders: found invalid folder path, will be removed.");
 
                         result = checkedList;
-                        prefRecent.set(new Gson().toJson(checkedList));
+                        pref.set(new LinkedList<>(checkedList));
                     }
                 }
             }
@@ -243,7 +364,7 @@ public class UserDataService extends BaseService {
     /*
      * Hidden folders
      */
-    public Observable<Boolean> addHiddenFolder(File dir){
+    public Observable<Boolean> addHiddenFolder(File dir) {
 
         return Observable.create(e -> {
 
@@ -262,6 +383,38 @@ public class UserDataService extends BaseService {
     }
 
     @NonNull
+    private Preference<LinkedList<RecentRecord>> getRecentHistoryPreference() {
+        Preference<LinkedList<RecentRecord>> object;
+        object = getPreferences().getObject(PREF_KEY_FOLDER_ACCESS_RECENT_HISTORY,
+                new LinkedList<RecentRecord>(), new Preference.Converter<LinkedList<RecentRecord>>() {
+                    @NonNull
+                    @Override
+                    public LinkedList<RecentRecord> deserialize(@NonNull String serialized) {
+                        //serialized = "[]";
+                        Log.d(TAG, "deserialize() called with: serialized = [" + serialized + "]");
+
+                        Type listType = new TypeToken<ArrayList<RecentRecord>>() {
+                        }.getType();
+                        ArrayList<RecentRecord> files = new Gson().fromJson(serialized, listType);
+                        return new LinkedList<RecentRecord>(files);
+                    }
+
+                    @NonNull
+                    @Override
+                    public String serialize(@NonNull LinkedList<RecentRecord> value) {
+
+                        Type listType = new TypeToken<ArrayList<RecentRecord>>() {
+                        }.getType();
+
+                        String json = new Gson().toJson(value, listType);
+                        Log.d(TAG, "serialize() called with: value = [" + value + "]" + " result = [" + json + "]");
+                        return json;
+                    }
+                });
+        return object;
+    }
+
+    @NonNull
     private Preference<LinkedList<File>> getHiddenFolderPreference() {
         Preference<LinkedList<File>> object;
         object = getPreferences().getObject(PREF_KEY_HIDDEN_FOLDER_LIST_JSON,
@@ -272,7 +425,8 @@ public class UserDataService extends BaseService {
                         //serialized = "[]";
                         Log.d(TAG, "deserialize() called with: serialized = [" + serialized + "]");
 
-                        Type listType = new TypeToken<ArrayList<String>>() {}.getType();
+                        Type listType = new TypeToken<ArrayList<String>>() {
+                        }.getType();
                         ArrayList<String> files = new Gson().fromJson(serialized, listType);
                         List<File> files1 = Stream.of(files).map(File::new).toList();
                         return new LinkedList<File>(files1);
@@ -282,8 +436,8 @@ public class UserDataService extends BaseService {
                     @Override
                     public String serialize(@NonNull LinkedList<File> value) {
 
-
-                        Type listType = new TypeToken<ArrayList<String>>() {}.getType();
+                        Type listType = new TypeToken<ArrayList<String>>() {
+                        }.getType();
 
                         List<String> filePathList = Stream.of(value).map(File::getAbsolutePath).toList();
                         String json = new Gson().toJson(filePathList, listType);

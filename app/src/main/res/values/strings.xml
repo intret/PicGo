@@ -103,7 +103,7 @@
     <string name="list_view">列表视图</string>
     <string name="source_folder">源目录</string>
     <string name="source_folder_d">源目录 | %1$d</string>
-    <string name="select_all">选择所有</string>
+    <string name="select_all">全选</string>
     <string name="option">选项</string>
     <string name="show_hidden_folder">显示隐藏目录</string>
     <string name="hide_folder">隐藏文件夹</string>
@@ -111,5 +111,6 @@
     <string name="request_failed">请求失败</string>
     <string name="operation_failed">操作失败</string>
     <string name="rename">重命名</string>
+    <string name="failed_to_load_preference">加载偏好设置失败</string>
 
 </resources>

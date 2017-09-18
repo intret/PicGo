@@ -23,7 +23,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
@@ -62,23 +61,20 @@ public class SystemImageService extends BaseService {
 
     private static final SystemImageService ourInstance = new SystemImageService();
     private static final String TAG = SystemImageService.class.getSimpleName();
-    public static final FilenameFilter MEDIA_FILENAME_FILTER = (dir, name) -> {
-        String lname = name.toLowerCase();
-        return lname.endsWith(".png") |
-                lname.endsWith(".jpeg") |
-                lname.endsWith(".jpg") |
-                lname.endsWith(".webp") |
-                lname.endsWith(".gif") |
-                lname.endsWith(".mp4") |
-                lname.endsWith(".avi");
-    };
 
     /**
      * 文件列表项获取的缩略图个数
      */
     public static final int DEFAULT_THUMBNAIL_COUNT = 3;
 
-    ObjectGuarder<HashMap<String, Boolean>> mCacheMediaInfoFlag = new ObjectGuarder<>(new LinkedHashMap<>());
+    ObjectGuarder<HashMap<File, Boolean>> mCacheMediaInfoFlag = new ObjectGuarder<>(new LinkedHashMap<>());
+
+    /**
+     * Key : directory file
+     */
+    HashMap<File, MediaFileList> mMediaFileListMap = new LinkedHashMap<>();
+    ObjectGuarder<HashMap<File, MediaFileList>> mMediaFileListMapGuard = new ObjectGuarder<>(mMediaFileListMap);
+
 
     HashMap<String, List<MediaFile>> mImageListMap = new LinkedHashMap<>();
     HashMap<String, List<ImageGroup>> mDayImageGroupsMap = new LinkedHashMap<>();
@@ -89,6 +85,29 @@ public class SystemImageService extends BaseService {
     List<String> mHiddenFolder = new LinkedList<>();
     private Preference<Boolean> mShowHiddenFolderPref;
     private boolean mShowHiddenFile = false;
+
+    class MediaFileList {
+        List<MediaFile> mMediaFiles;
+        boolean mIsLoadedExtraInfo = false;
+
+        public List<MediaFile> getMediaFiles() {
+            return mMediaFiles;
+        }
+
+        public MediaFileList setMediaFiles(List<MediaFile> mediaFiles) {
+            mMediaFiles = mediaFiles;
+            return this;
+        }
+
+        public boolean isLoadedExtraInfo() {
+            return mIsLoadedExtraInfo;
+        }
+
+        public MediaFileList setLoadedExtraInfo(boolean loadedExtraInfo) {
+            mIsLoadedExtraInfo = loadedExtraInfo;
+            return this;
+        }
+    }
 
     public static SystemImageService getInstance() {
         return ourInstance;
@@ -101,32 +120,35 @@ public class SystemImageService extends BaseService {
     }
 
     private void loadHiddenFileList() {
+        Log.d(TAG, "loadHiddenFileList: before");
 
+        // 是否显示隐藏目录
         Observable.<Preference<Boolean>>create(
                 e -> {
-                    Preference<Boolean> showHiddenFolder = UserDataService.getInstance()
-                            .getPreferences()
-                            .getBoolean(UserDataService.PREF_KEY_SHOW_HIDDEN_FOLDER, false);
+                    Preference<Boolean> showHiddenFolder = UserDataService.getInstance().getShowHiddenFilePreference();
 
                     e.onNext(showHiddenFolder);
                     e.onComplete();
                 })
-                .subscribeOn(Schedulers.io())
                 .subscribe(
                         preference -> {
                             mShowHiddenFolderPref = preference;
-                            mShowHiddenFolderPref.asObservable().subscribe(showHiddenFile -> {
-                                Log.d(TAG, "loadHiddenFileList: show hidden file preference changed : " + showHiddenFile);
-                                mShowHiddenFile = showHiddenFile;
+                            mShowHiddenFile = mShowHiddenFolderPref.get();
+                            Log.d(TAG, "loadHiddenFileList: mShowHiddenFile = " + mShowHiddenFile);
 
-                                Log.w(TAG, "loadHiddenFileList: todo reload folder list");
-                            });
+                            mShowHiddenFolderPref.asObservable()
+                                    .subscribe(showHiddenFile -> {
+                                        Log.d(TAG, "loadHiddenFileList: show hidden file preference changed : " + showHiddenFile);
+                                        mShowHiddenFile = showHiddenFile;
+
+                                        Log.w(TAG, "loadHiddenFileList: todo reload folder list");
+                                    });
                         }
                         , RxUtils::unhandledThrowable);
 
+        // 隐藏目录列表
         UserDataService.getInstance()
                 .getHiddenFolder()
-                .subscribeOn(Schedulers.io())
                 .subscribe(files -> {
                     mHiddenFolders.writeConsume(fileList -> {
                         Log.d(TAG, "loadHiddenFileList: save file list " + fileList);
@@ -134,7 +156,7 @@ public class SystemImageService extends BaseService {
                         fileList.addAll(files);
                     });
                 });
-
+        Log.d(TAG, "loadHiddenFileList: after");
     }
 
     FolderModel mFolderModel;
@@ -244,6 +266,8 @@ public class SystemImageService extends BaseService {
     public Observable<FolderModel> loadFolderList(boolean fromCacheFirst) {
         return Observable.create(
                 emitter -> {
+
+                    Log.d(TAG, "loadFolderList() called with: fromCacheFirst = [" + fromCacheFirst + "]");
 
                     if (fromCacheFirst) {
                         try {
@@ -365,7 +389,7 @@ public class SystemImageService extends BaseService {
 
     private ImageFolder createImageFolder(File folder) {
         // todo merge with createThumbnailList
-        File[] imageFiles = folder.listFiles(MEDIA_FILENAME_FILTER);
+        File[] imageFiles = folder.listFiles(PathUtils.MEDIA_FILENAME_FILTER);
 
         return new ImageFolder()
                 .setFile(folder)
@@ -378,11 +402,12 @@ public class SystemImageService extends BaseService {
 
 
     /**
+     * TODO: 按照显示模式来对文件列表排序并取前三个文件
      * 扫描目录，产生 {@link RescanFolderThumbnailListMessage} 通知。
      */
     public Observable<List<File>> rescanDirectoryThumbnailList(File dir) {
         return Observable.create(e -> {
-            File[] imageFiles = dir.listFiles(MEDIA_FILENAME_FILTER);
+            File[] imageFiles = dir.listFiles(PathUtils.MEDIA_FILENAME_FILTER);
             List<File> thumbnailList = createThumbnailList(imageFiles, DEFAULT_THUMBNAIL_COUNT);
 
             try {
@@ -393,8 +418,6 @@ public class SystemImageService extends BaseService {
                             .setDirectory(dir)
                             .setThumbnails(thumbnailList)
                     );
-                } else {
-                    Log.e(TAG, "更新目录缩略图列表失败或者无需更新：" + dir);
                 }
             } finally {
                 mFolderModelRWLock.writeLock().unlock();
@@ -408,7 +431,7 @@ public class SystemImageService extends BaseService {
         ImageFolder imageFolder = getFileModelImageFolder(folderModel, dir);
         if (imageFolder != null) {
             if (org.apache.commons.collections4.ListUtils.isEqualList(imageFolder.getThumbList(), thumbnailList)) {
-                Log.w(TAG, "updateFileModelThumbnailList: two thumbnail list ((cache one and new one) ) are equal, don't update");
+                Log.d(TAG, "updateFileModelThumbnailList: two thumbnail list (cache one and new one) are equal, don't update");
                 return false;
             }
             imageFolder.setThumbList(thumbnailList);
@@ -445,7 +468,7 @@ public class SystemImageService extends BaseService {
      * @param mode
      * @param fromCacheFirst
      * @param order
-     *@param way @return
+     * @param way            @return
      */
     public Observable<List<ImageGroup>> loadImageGroupList(File directory, GroupMode mode,
                                                            boolean fromCacheFirst, SortWay way, SortOrder order) {
@@ -483,7 +506,7 @@ public class SystemImageService extends BaseService {
                 }
             }
 
-            List<File> imageFiles = SystemImageService.getInstance().listImageFiles(directory);
+            List<File> imageFiles = SystemImageService.getInstance().listMediaFiles(directory);
             LinkedList<ImageGroup> sections = Stream.of(imageFiles)
                     .groupBy(file -> {
                         long d = file.lastModified();
@@ -560,10 +583,17 @@ public class SystemImageService extends BaseService {
      */
     private void rescanImageDirectory(File destDir, boolean onlyRescanDirInCache) {
 
+        Log.d(TAG, "rescanImageDirectory() called with: destDir = [" + destDir + "], onlyRescanDirInCache = [" + onlyRescanDirInCache + "]");
+
         boolean loadImageList = false;
         if (onlyRescanDirInCache) {
-            if (mImageListMap.containsKey(destDir.getAbsolutePath())) {
-                loadImageList = true;
+            try {
+                mMediaFileListMapGuard.readLock();
+                if (mMediaFileListMap.containsKey(destDir)) {
+                    loadImageList = true;
+                }
+            } finally {
+                mMediaFileListMapGuard.readUnlock();
             }
         } else {
             loadImageList = true;
@@ -571,7 +601,7 @@ public class SystemImageService extends BaseService {
 
         if (loadImageList) {
 
-            loadMediaFileList(destDir, false, false)
+            loadMediaFileList(destDir, new LoadMediaFileParam().setFromCacheFirst(false).setLoadMediaInfo(false))
                     .subscribe(images -> {
                         Log.d(TAG, "rescan directory : " + destDir);
 
@@ -580,10 +610,12 @@ public class SystemImageService extends BaseService {
                     }, throwable -> {
                         Log.e(TAG, "rescan directory with exception : " + throwable);
                     });
+        } else {
+            Log.w(TAG, "rescanImageDirectory: 不扫描目录");
         }
 
         // Todo load grouped image list
-
+/*
         loadImageGroupList(destDir, GroupMode.WEEK, false, SortWay.DATE, SortOrder.DESC)
                 .subscribe(imageGroups -> {
                     Log.d(TAG, "rescan week grouped directory: " + destDir);
@@ -596,13 +628,12 @@ public class SystemImageService extends BaseService {
                     Log.d(TAG, "rescan month grouped directory: " + destDir);
                 }, throwable -> {
 
-                });
+                });*/
     }
 
     private void rescanFolderList() {
         loadFolderList(false)
                 .subscribeOn(Schedulers.io())
-                .observeOn(Schedulers.io())
                 .subscribe(model -> {
                     mBus.post(new RescanFolderListMessage());
                 }, throwable -> {
@@ -655,17 +686,13 @@ public class SystemImageService extends BaseService {
     }
 
     /**
-     *
+     * 加载多媒体文件（图片、视频）列表
      *
      * @param directory
-     * @param fromCacheFirst
-     * @param loadMediaFileDetail true, to load image/video resolution, file length,
-     *                            video duration (if the file is a video file).
+     * @param param     指定加载参数
      * @return
      */
-    public Observable<List<MediaFile>> loadMediaFileList(File directory,
-                                                         boolean fromCacheFirst,
-                                                         boolean loadMediaFileDetail) {
+    public Observable<List<MediaFile>> loadMediaFileList(File directory, LoadMediaFileParam param) {
         return Observable.create(
                 e -> {
                     if (directory == null) {
@@ -677,38 +704,42 @@ public class SystemImageService extends BaseService {
                         return;
                     }
 
+                    if (param.isFromCacheFirst()) {
 
-                    boolean needToLoadMediaInfo = true;
-                    if (!loadMediaFileDetail) {
-                        needToLoadMediaInfo = false;
-                    } else {
-                        mCacheMediaInfoFlag.readLock();
-                        if (mCacheMediaInfoFlag.getObject().containsKey(directory.getAbsolutePath())) {
-                            needToLoadMediaInfo = !mCacheMediaInfoFlag.getObject().get(directory.getAbsolutePath());
+                        try {
+                            mMediaFileListMapGuard.readLock();
+                            MediaFileList mediaFileList = mMediaFileListMap.get(directory);
+                            if (mediaFileList != null) {
+
+                                // 1 需要加载媒体文件信息并且缓存已经加载文件信息
+                                // 2 或者不需要加载媒体文件信息时，
+                                // 可以从缓存读取
+                                if (!param.isLoadMediaInfo() || mediaFileList.isLoadedExtraInfo()) {
+                                    if (mediaFileList.getMediaFiles() != null) {
+                                        e.onNext(mediaFileList.getMediaFiles());
+                                        e.onComplete();
+                                        return;
+                                    }
+                                }
+                            }
+                        } finally {
+                            mMediaFileListMapGuard.readUnlock();
                         }
-                        mCacheMediaInfoFlag.readUnlock();
                     }
 
-                    List<MediaFile> mediaFiles;
-                    if (fromCacheFirst && !needToLoadMediaInfo) {
-                        mediaFiles = mImageListMap.get(directory.getAbsolutePath());
-                        if (mediaFiles != null) {
-                            e.onNext(mediaFiles);
-                            e.onComplete();
-                            return;
-                        }
-                    }
+                    // Get media file(image/video) list and sort
+                    List<File> imageFiles = SystemImageService.getInstance().listMediaFiles(directory);
 
-                    List<File> imageFiles = SystemImageService.getInstance().listImageFiles(directory);
-
-                    Comparator<MediaFile> mediaFileDateDescComparator =
-                            (MediaFile o1, MediaFile o2) -> o2.getDate().compareTo(o1.getDate());
+                    Comparator<MediaFile> comparator = getMediaFileComparator(param);
 
                     List<MediaFile> sortedMediaFiles;
-                    if (loadMediaFileDetail) {
+                    if (param.isLoadMediaInfo()) {
+
                         // Load video/image resolution, video duration, file disk usage,
                         sortedMediaFiles = Stream.of(imageFiles)
                                 .map(file -> {
+
+                                    // 填充媒体文件额外信息
 
                                     // Resolution
                                     MediaFile mediaFile = new MediaFile();
@@ -726,7 +757,7 @@ public class SystemImageService extends BaseService {
                                     mediaFile.setDate(new Date(file.lastModified()));
                                     return mediaFile;
                                 })
-                                .sorted(mediaFileDateDescComparator)
+                                .sorted(comparator)
                                 .toList();
                     } else {
 
@@ -737,42 +768,82 @@ public class SystemImageService extends BaseService {
                                     mediaFile.setDate(new Date(file.lastModified()));
                                     return mediaFile;
                                 })
-                                .sorted(mediaFileDateDescComparator)
+                                .sorted(comparator)
                                 .toList();
                     }
 
-                    cacheImageList(directory.getAbsolutePath(), sortedMediaFiles, loadMediaFileDetail);
+                    // Cache media file list
+                    cacheImageList(directory, sortedMediaFiles, param);
 
                     e.onNext(sortedMediaFiles);
                     e.onComplete();
                 });
     }
 
-    private void cacheImageList(String dirPath, List<MediaFile> mediaFiles, boolean loadMediaFileDetail) {
+    private Comparator<MediaFile> getMediaFileComparator(LoadMediaFileParam param) {
+        Comparator<MediaFile> comparator = null;
+        switch (param.getSortWay()) {
 
-        if (dirPath != null && mediaFiles != null) {
-            Log.d(TAG, "cacheImageList() called with: dirPath = [" + dirPath + "], images = [" + mediaFiles.size() + "]");
-            mImageListMap.put(dirPath, mediaFiles);
+            case NAME: {
+                switch (param.getSortOrder()) {
 
-            mCacheMediaInfoFlag.writeConsume(map -> {
-                map.put(dirPath, loadMediaFileDetail);
-            });
+                    case DESC:
+                        comparator = MediaFile.MEDIA_FILE_NAME_DESC_COMPARATOR;
+                        break;
+                    case ASC:
+                        comparator = MediaFile.MEDIA_FILE_NAME_ASC_COMPARATOR;
+                        break;
+                    default:
+                        comparator = MediaFile.MEDIA_FILE_NAME_DESC_COMPARATOR;
+                        break;
+                }
+            }
+            break;
+            case SIZE:
+                break;
+            case DATE: {
+                switch (param.getSortOrder()) {
+
+                    case DESC:
+                        comparator = MediaFile.MEDIA_FILE_DATE_DESC_COMPARATOR;
+                        break;
+                    case ASC:
+                        comparator = MediaFile.MEDIA_FILE_DATE_ASC_COMPARATOR;
+                        break;
+                    default:
+                        comparator = MediaFile.MEDIA_FILE_DATE_ASC_COMPARATOR;
+                        break;
+                }
+            }
+            break;
+            default:
+                comparator = MediaFile.MEDIA_FILE_DATE_DESC_COMPARATOR;
+                break;
         }
+        return comparator;
     }
 
-    public List<File> listImageFiles(File dir) {
+    private void cacheImageList(@NonNull File dir, @NonNull List<MediaFile> mediaFiles, LoadMediaFileParam param) {
+        Log.d(TAG, "cacheImageList() called with: dir = [" + dir + "], mediaFiles = [" + mediaFiles + "], param = [" + param + "]");
+
+        mMediaFileListMapGuard.writeConsume(object ->
+                object.put(dir, new MediaFileList().setMediaFiles(mediaFiles).setLoadedExtraInfo(param.isLoadMediaInfo())));
+    }
+
+    public List<File> listMediaFiles(File dir) {
         if (!dir.isDirectory()) {
             throw new InvalidParameterException("参数 'dir' 对应的目录（" + dir.getAbsolutePath() + "）不存在：");
         }
 
-        File[] allFiles = dir.listFiles(MEDIA_FILENAME_FILTER);
+        File[] allFiles = dir.listFiles(PathUtils.MEDIA_FILENAME_FILTER);
         if (allFiles == null) {
             return new LinkedList<>();
         }
 
-        return Stream.of(allFiles)
-                .sorted((file1, file2) -> Long.compare(file2.lastModified(), file1.lastModified()))
-                .toList();
+        return Arrays.asList(allFiles);
+//        return Stream.of(allFiles)
+//                .sorted((file1, file2) -> Long.compare(file2.lastModified(), file1.lastModified()))
+//                .toList();
     }
 
     public Observable<List<ImageFolder>> loadGalleryFolderList() {
@@ -805,6 +876,7 @@ public class SystemImageService extends BaseService {
         }
     }
 
+    @Deprecated
     void removeCachedFiles(String dirPath, List<File> files) {
         mImageListMap.containsKey(dirPath);
         rescanImageDirectory(new File(dirPath), false);
@@ -948,7 +1020,7 @@ public class SystemImageService extends BaseService {
      * Remove file.
      * Generate {@link RemoveFileMessage} event.
      *
-     * @param file
+     * @param file The file to remove.
      * @return
      */
     public Observable<Boolean> removeFile(File file) {
@@ -963,15 +1035,18 @@ public class SystemImageService extends BaseService {
 
             if (file.delete()) {
 
-                String parent = file.getParent();
-                List<MediaFile> mediaFiles = mImageListMap.get(parent);
-                if (mediaFiles != null) {
-                    int i = org.apache.commons.collections4.ListUtils.indexOf(mediaFiles, image -> SystemUtils.isSameFile(image.getFile(), file));
-                    if (i != -1) {
-                        mediaFiles.remove(i);
-                        Log.d(TAG, "removeFile: " + file + " at " + i);
+                mMediaFileListMapGuard.writeConsume(object -> {
+                    MediaFileList mediaFileList = object.get(file.getParentFile());
+                    if (mediaFileList != null) {
+                        List<MediaFile> mediaFiles = mediaFileList.getMediaFiles();
+
+                        int i = org.apache.commons.collections4.ListUtils.indexOf(mediaFiles, object1 -> object1.getFile().equals(file));
+                        if (i != -1) {
+                            mediaFiles.remove(i);
+                            Log.d(TAG, "removeFile: " + file + " at " + i);
+                        }
                     }
-                }
+                });
 
                 e.onNext(true);
                 e.onComplete();

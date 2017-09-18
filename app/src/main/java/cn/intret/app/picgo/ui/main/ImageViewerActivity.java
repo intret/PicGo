@@ -53,8 +53,10 @@ import butterknife.ButterKnife;
 import butterknife.OnClick;
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.model.ImageFileInformation;
+import cn.intret.app.picgo.model.LoadMediaFileParam;
 import cn.intret.app.picgo.model.MediaFile;
 import cn.intret.app.picgo.model.SystemImageService;
+import cn.intret.app.picgo.model.ViewMode;
 import cn.intret.app.picgo.model.event.RemoveFileMessage;
 import cn.intret.app.picgo.ui.adapter.DefaultImageListAdapter;
 import cn.intret.app.picgo.ui.adapter.ImageTransitionNameGenerator;
@@ -83,6 +85,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
     private static final String EXTRA_IMAGE_FILE_PATH = "extra:file_name";
     private static final String EXTRA_IMAGE_DIR_PATH = "extra:dir_path";
     private static final String EXTRA_IMAGE_ITEM_POSITION = "extra:image_item_position";
+    private static final String EXTRA_VIEW_MODE = "extra:view_mode";
 
     private static final String EXTRA_PARAM_FILE_PATH = "viewer:param:filepath";
     public static final String TRANSITION_NAME_IMAGE = "viewer:image";
@@ -111,6 +114,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
     private int mItemPosition;
     private boolean mCancelExitTransition;
     private int mCurrentItem = -1;
+    private ViewMode mViewMode;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -126,7 +130,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
         extractIntentData();
 
         initToolbar();
-        loadImageFile();
+        loadImageFiles();
         initImageTransition();
     }
 
@@ -456,11 +460,12 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
         return intent;
     }
 
-    public static Intent newIntentViewFileList(Context context, String dirAbsolutePath, int itemModelPosition) {
+    public static Intent newIntentViewFileList(Context context, String dirAbsolutePath, int itemModelPosition, ViewMode viewMode) {
         Intent intent = new Intent(context, ImageViewerActivity.class);
         intent.setAction(Intent.ACTION_VIEW);
         intent.putExtra(EXTRA_IMAGE_DIR_PATH, dirAbsolutePath);
         intent.putExtra(EXTRA_IMAGE_ITEM_POSITION, itemModelPosition);
+        intent.putExtra(EXTRA_VIEW_MODE, viewMode);
         return intent;
     }
 
@@ -485,19 +490,49 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 //        }
     }
 
-    private void loadImageFile() {
+    private void loadImageFiles() {
 
         if (mDirPath != null && mItemPosition != -1) {
 
-            SystemImageService.getInstance()
-                    .loadMediaFileList(new File(mDirPath), true, false)
-                    .compose(workAndShow())
-                    .map(this::imageListToImageListAdapter)
-                    .subscribe(adapter -> {
-                        showImageAdapter(adapter, mItemPosition);
-                    }, throwable -> {
+            // 浏览文件列表
+            if (mViewMode != null) {
 
-                    });
+                switch (mViewMode) {
+                    case GRID_VIEW: {
+
+                        SystemImageService.getInstance()
+                                .loadMediaFileList(new File(mDirPath),
+                                        new LoadMediaFileParam()
+                                                .setFromCacheFirst(true)
+                                                .setLoadMediaInfo(false)
+                                )
+                                .compose(workAndShow())
+                                .map(this::imageListToImageListAdapter)
+                                .subscribe(adapter -> {
+                                    showImageAdapter(adapter, mItemPosition);
+                                }, throwable -> {
+
+                                });
+                    }
+                    break;
+                    case LIST_VIEW: {
+                        SystemImageService.getInstance()
+                                .loadMediaFileList(new File(mDirPath),
+                                        new LoadMediaFileParam()
+                                        .setFromCacheFirst(true)
+                                        .setLoadMediaInfo(true)
+                                        )
+                                .compose(workAndShow())
+                                .map(this::imageListToImageListAdapter)
+                                .subscribe(adapter -> {
+                                    showImageAdapter(adapter, mItemPosition);
+                                }, throwable -> {
+
+                                });
+                    }
+                    break;
+                }
+            }
 
         } else if (mImageFilePath != null) {
 
@@ -699,6 +734,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
         mDirPath = intent.getStringExtra(EXTRA_IMAGE_DIR_PATH);
         mItemPosition = intent.getIntExtra(EXTRA_IMAGE_ITEM_POSITION, -1);
+        mViewMode = (ViewMode) intent.getSerializableExtra(EXTRA_VIEW_MODE);
     }
 
     private void showRandomImage() {

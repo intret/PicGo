@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
+import cn.intret.app.picgo.app.CoreModule;
 import cn.intret.app.picgo.model.ConflictResolverDialogFragment;
 import cn.intret.app.picgo.model.SystemImageService;
 import cn.intret.app.picgo.model.UserDataService;
@@ -535,14 +536,14 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
 
                             int successCount = successFiles.size();
                             if (successCount == mSelectedFiles.size()) {
-                                ToastUtils.toastLong(getActivity(),
-                                        getActivity().getString(R.string.already_moved_d_files, successCount));
+                                ToastUtils.toastLong(CoreModule.getInstance().getAppContext(),
+                                        R.string.already_moved_d_files, successCount);
                             } else {
                                 Log.w(TAG, "移动文件冲突: " + conflictFiles);
                                 if (!conflictFiles.isEmpty()) {
 
                                 } else {
-                                    ToastUtils.toastShort(getActivity(), R.string.move_files_failed);
+                                    ToastUtils.toastShort(CoreModule.getInstance().getAppContext(), R.string.move_files_failed);
                                 }
 
                                 if (successCount > 0 && successCount < mSelectedFiles.size()) {

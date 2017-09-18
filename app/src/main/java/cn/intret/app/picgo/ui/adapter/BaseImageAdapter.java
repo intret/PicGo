@@ -4,6 +4,8 @@ import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import com.annimon.stream.Stream;
+import com.annimon.stream.function.Predicate;
 import com.chad.library.adapter.base.BaseViewHolder;
 
 import java.io.File;
@@ -75,5 +77,30 @@ public abstract class BaseImageAdapter<T extends BaseFileItem,VH extends BaseVie
 
     public BaseImageAdapter(@LayoutRes int layoutResId) {
         super(layoutResId);
+    }
+
+    /*
+     * Update items
+     */
+
+    public void diffUpdate(@NonNull List<T> newData) {
+
+        updateDataSet(newData);
+
+        int oldCount = getSelectedItemCount();
+        long newCount = Stream.of(newData).filter(ItemSelectable::isSelected).count();
+
+        if (mIsSelectionMode && newCount == 0) {
+            mIsSelectionMode = false;
+            if (mOnInteractionListener != null) {
+                mOnInteractionListener.onSelectionModeChange(this, mIsSelectionMode);
+            }
+        }
+
+        if (oldCount != newCount) {
+            if (mOnInteractionListener != null) {
+                mOnInteractionListener.onSelectedCountChange(this, (int) newCount);
+            }
+        }
     }
 }

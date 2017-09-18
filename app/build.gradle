@@ -166,7 +166,7 @@ dependencies {
     compile 'com.truizlop.sectionedrecyclerview:library:1.2.0'
     compile 'commons-io:commons-io:2.5'
     compile 'de.cketti.share:share-intent-builder:0.0.2'
-    compile 'com.github.CymChad:BaseRecyclerViewAdapterHelper:2.9.22'
+    //compile 'com.github.CymChad:BaseRecyclerViewAdapterHelper:2.9.22'
     compile 'io.reactivex.rxjava2:rxandroid:2.0.1'
     compile 'io.reactivex.rxjava2:rxjava:2.1.1'
     compile 'joda-time:joda-time:2.9.9'
@@ -189,6 +189,7 @@ dependencies {
         exclude group: 'com.android.support', module: 'recyclerview-v7'
     }
     compile project(':sectioned-recyclerview')
+    compile project(':brvah')
 
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'

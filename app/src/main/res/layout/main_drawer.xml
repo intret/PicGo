@@ -71,16 +71,10 @@
             </RadioGroup>
 
             <!--图片列表-->
-            <cn.intret.app.picgo.widget.SuperRecyclerView
-                android:id="@+id/img_list"
+            <android.support.v4.widget.SwipeRefreshLayout
+                android:id="@+id/refresh"
                 android:layout_width="0dp"
                 android:layout_height="0dp"
-                android:clipToPadding="false"
-                android:padding="4dp"
-                android:scrollbarStyle="outsideOverlay"
-                android:scrollbars="vertical"
-                app:dsrv_autoScrollEnabled="true"
-                app:dsrv_autoScrollHotspotHeight="56dp"
                 app:layout_constraintBottom_toTopOf="@+id/floatingToolbar"
                 app:layout_constraintHorizontal_bias="0.0"
                 app:layout_constraintLeft_toLeftOf="parent"
@@ -90,9 +84,22 @@
                 tools:layout_constraintLeft_creator="1"
                 tools:layout_constraintRight_creator="1"
                 tools:layout_constraintTop_creator="1"
-                tools:listitem="@layout/image_list_item">
+                >
+                <cn.intret.app.picgo.widget.SuperRecyclerView
+                    android:id="@+id/img_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:clipToPadding="false"
+                    android:padding="4dp"
+                    android:scrollbarStyle="outsideOverlay"
+                    android:scrollbars="vertical"
+                    app:dsrv_autoScrollEnabled="true"
+                    app:dsrv_autoScrollHotspotHeight="56dp"
+                    tools:listitem="@layout/image_list_item">
 
-            </cn.intret.app.picgo.widget.SuperRecyclerView>
+                </cn.intret.app.picgo.widget.SuperRecyclerView>
+
+            </android.support.v4.widget.SwipeRefreshLayout>
 
             <ImageView
                 android:id="@+id/empty_view"

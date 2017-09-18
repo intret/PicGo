@@ -3,12 +3,31 @@ package cn.intret.app.picgo.model;
 import android.util.Size;
 
 import java.io.File;
+import java.util.Comparator;
 import java.util.Date;
 
 /**
  * Media file (image/video)
  */
 public class MediaFile {
+
+    // TODO: add sort by resolution
+    public final static Comparator<MediaFile> MEDIA_FILE_DATE_DESC_COMPARATOR =
+            (MediaFile o1, MediaFile o2) -> o2.getDate().compareTo(o1.getDate());
+    public final static Comparator<MediaFile> MEDIA_FILE_DATE_ASC_COMPARATOR =
+            (MediaFile o1, MediaFile o2) -> o1.getDate().compareTo(o2.getDate());
+
+    public final static Comparator<MediaFile> MEDIA_FILE_NAME_ASC_COMPARATOR =
+            (MediaFile o1, MediaFile o2) -> {
+                return o1 == null
+                        ? (o2 == null ? 0 : 1)
+                        : o1.getFile().compareTo(o2.getFile());
+            };
+
+    public final static Comparator<MediaFile> MEDIA_FILE_NAME_DESC_COMPARATOR =
+            (MediaFile o1, MediaFile o2) -> o2.getFile().compareTo(o1.getFile());
+
+
     File mFile;
     Date mDate;
 
@@ -27,6 +46,7 @@ public class MediaFile {
 
     /**
      * Get duration, in ms
+     *
      * @return
      */
     public long getVideoDuration() {
@@ -71,6 +91,22 @@ public class MediaFile {
     public MediaFile setDate(Date date) {
         mDate = date;
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof MediaFile)) return false;
+
+        MediaFile mediaFile = (MediaFile) o;
+
+        return mFile != null ? mFile.equals(mediaFile.mFile) : mediaFile.mFile == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        return mFile != null ? mFile.hashCode() : 0;
     }
 
     @Override

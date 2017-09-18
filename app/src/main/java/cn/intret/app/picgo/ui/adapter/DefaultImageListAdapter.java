@@ -17,6 +17,7 @@ import com.chad.library.adapter.base.BaseViewHolder;
 
 import java.io.File;
 import java.util.List;
+import java.util.stream.Stream;
 
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.utils.PathUtils;
@@ -28,107 +29,7 @@ import cn.intret.app.picgo.utils.SystemUtils;
 public class DefaultImageListAdapter extends BaseImageAdapter<DefaultImageListAdapter.Item, DefaultImageListAdapter.ViewHolder> {
 
     public static final String TAG = DefaultImageListAdapter.class.getSimpleName();
-
-    public DefaultImageListAdapter(@LayoutRes int layoutResId, @Nullable List data) {
-        super(layoutResId, data);
-    }
-
-    public DefaultImageListAdapter(@Nullable List data) {
-        super(data);
-    }
-
-    public DefaultImageListAdapter(@LayoutRes int layoutResId) {
-        super(layoutResId);
-    }
-
-
-    @MainThread
-    public void diffUpdate(List<Item> items) {
-
-        Log.d(TAG, "diffUpdate: 计算差异：old " + mData.size() + " new " + items.size());
-
-        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtil.Callback() {
-            @Override
-            public int getOldListSize() {
-                return mData.size();
-            }
-
-            @Override
-            public int getNewListSize() {
-                return items.size();
-            }
-
-            @Override
-            public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-                Item oldItem = mData.get(oldItemPosition);
-                Item newItem = items.get(newItemPosition);
-
-                return oldItem.getFile().getAbsolutePath().equalsIgnoreCase(newItem.getFile().getAbsolutePath());
-            }
-
-            @Override
-            public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-                Item oldItem = mData.get(oldItemPosition);
-                Item newItem = items.get(newItemPosition);
-                boolean isSameFile = SystemUtils.isSameFile(oldItem.getFile(), newItem.getFile());
-                boolean b = (oldItem.isSelected() == newItem.isSelected()) && isSameFile;
-                if (!b) {
-                    Log.d(TAG, String.format("areContentsTheSame false: old item at %d : %s, new item at %d : %s",
-                            oldItemPosition, oldItem.getFile(), newItemPosition, newItem.getFile()));
-                }
-                return b;
-            }
-
-            @Nullable
-            @Override
-            public Object getChangePayload(int oldItemPosition, int newItemPosition) {
-                Log.d(TAG, "getChangePayload() called with: oldItemPosition = [" + oldItemPosition + "], newItemPosition = [" + newItemPosition + "]");
-
-                Item oldItem = mData.get(oldItemPosition);
-                Item newItem = items.get(newItemPosition);
-                newItem.setSelected(oldItem.isSelected());
-
-                Bundle diffBundle = new Bundle();
-                diffBundle.putBoolean("selected", oldItem.isSelected());
-                return diffBundle;
-            }
-        }, true);
-
-        mData = items;
-        diffResult.dispatchUpdatesTo(this);
-
-        // TODO x
-        if (getSelectedItemCount() == 0 && mIsSelectionMode && mOnInteractionListener != null) {
-            mIsSelectionMode = false;
-            mOnInteractionListener.onSelectionModeChange(this, mIsSelectionMode);
-        }
-    }
-
-    public void selectAll() {
-        for (int i = 0, mDataSize = mData.size(); i < mDataSize; i++) {
-            Item item = mData.get(i);
-            item.setSelected(true);
-        }
-
-        notifyDataSetChanged();
-
-        if (mOnInteractionListener != null) {
-            mOnInteractionListener.onSelectedCountChange(this, mData.size());
-        }
-    }
-
-    public void unselectAll() {
-        for (int i = 0, mDataSize = mData.size(); i < mDataSize; i++) {
-            Item item = mData.get(i);
-            item.setSelected(false);
-        }
-
-        notifyDataSetChanged();
-
-        if (mOnInteractionListener != null) {
-            mOnInteractionListener.onSelectedCountChange(this, 0);
-        }
-    }
+    public static final String PAYLOAD_SELECTED = "PAYLOAD_SELECTED";
 
     /*
      * Internal class
@@ -174,6 +75,158 @@ public class DefaultImageListAdapter extends BaseImageAdapter<DefaultImageListAd
         public void setHeight(int height) {
             mHeight = height;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Item item = (Item) o;
+
+            return mFile != null ? mFile.equals(item.mFile) : item.mFile == null;
+
+        }
+
+        @Override
+        public int hashCode() {
+            return mFile != null ? mFile.hashCode() : 0;
+        }
+    }
+
+    /*
+     * View holder
+     */
+
+    public class ViewHolder extends BaseViewHolder {
+
+        public ViewHolder(View view) {
+            super(view);
+        }
+    }
+
+    /*
+     * Constructor
+     */
+    public DefaultImageListAdapter(@LayoutRes int layoutResId, @Nullable List data) {
+        super(layoutResId, data);
+    }
+
+    public DefaultImageListAdapter(@Nullable List data) {
+        super(data);
+    }
+
+    public DefaultImageListAdapter(@LayoutRes int layoutResId) {
+        super(layoutResId);
+    }
+
+//    /*
+//     * Diff and update
+//     */
+//    @MainThread
+//    public void diffUpdate(List<Item> items) {
+//
+//        Log.d(TAG, "diffUpdate: 计算差异：old " + mData.size() + " new " + items.size());
+//
+////        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+////            @Override
+////            public int getOldListSize() {
+////                return mData.size();
+////            }
+////
+////            @Override
+////            public int getNewListSize() {
+////                return items.size();
+////            }
+////
+////            @Override
+////            public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+////                Item oldItem = mData.get(oldItemPosition);
+////                Item newItem = items.get(newItemPosition);
+////
+////                return oldItem.getFile().equals(newItem.getFile());
+////            }
+////
+////            @Override
+////            public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+////                Item oldItem = mData.get(oldItemPosition);
+////                Item newItem = items.get(newItemPosition);
+////                boolean isSameFile = SystemUtils.isSameFile(oldItem.getFile(), newItem.getFile());
+////                boolean isSameSelected = (oldItem.isSelected() == newItem.isSelected());
+////                boolean areSameContent = isSameFile && isSameSelected;
+////                if (!areSameContent) {
+////
+////                    Log.d(TAG, String.format("areContentsTheSame false: old item at %d : %s, new item at %d : %s",
+////                            oldItemPosition, oldItem.getFile(), newItemPosition, newItem.getFile()));
+////                }
+////                return areSameContent;
+////            }
+////
+////            @Nullable
+////            @Override
+////            public Object getChangePayload(int oldItemPosition, int newItemPosition) {
+////                Log.d(TAG, "getChangePayload() called with: oldItemPosition = [" + oldItemPosition + "], newItemPosition = [" + newItemPosition + "]");
+////
+////                Item oldItem = mData.get(oldItemPosition);
+////                Item newItem = items.get(newItemPosition);
+////
+////                Bundle diffBundle = new Bundle();
+////                diffBundle.putBoolean(PAYLOAD_SELECTED, oldItem.isSelected());
+////                return diffBundle;
+////            }
+////        });
+//
+//
+////        mData = items;
+////        diffResult.dispatchUpdatesTo(this);
+//
+//        updateDataSet(items);
+//
+//        int oldSelectedItemCount = getSelectedItemCount();
+//
+//        // 新数据集合为空，应该退出选择模式
+//        int newSelectedItemCount = (int)com.annimon.stream.Stream.of(items).filter(Item::isSelected).count();
+//        if ( newSelectedItemCount == 0 && mIsSelectionMode && mOnInteractionListener != null) {
+//            mIsSelectionMode = false;
+//            mOnInteractionListener.onSelectionModeChange(this, mIsSelectionMode);
+//        }
+//
+//        // 新数据集合选中 Item 个数变化
+//
+//        if (oldSelectedItemCount != newSelectedItemCount) {
+//            if (mOnInteractionListener != null) {
+//                mOnInteractionListener.onSelectedCountChange(this, newSelectedItemCount);
+//            }
+//        }
+//    }
+
+    /*
+     * Select all
+     */
+
+    public void selectAll() {
+        for (int i = 0, mDataSize = mData.size(); i < mDataSize; i++) {
+            Item item = mData.get(i);
+            item.setSelected(true);
+        }
+
+        notifyDataSetChanged();
+
+        if (mOnInteractionListener != null) {
+            mOnInteractionListener.onSelectedCountChange(this, mData.size());
+        }
+    }
+
+    public void unselectAll() {
+        for (int i = 0, mDataSize = mData.size(); i < mDataSize; i++) {
+            Item item = mData.get(i);
+            item.setSelected(false);
+        }
+
+        notifyDataSetChanged();
+
+        if (mOnInteractionListener != null) {
+            mOnInteractionListener.onSelectedCountChange(this, 0);
+        }
     }
 
     @Override
@@ -187,6 +240,19 @@ public class DefaultImageListAdapter extends BaseImageAdapter<DefaultImageListAd
         holder.setVisible(R.id.checkbox, false);
         holder.setVisible(R.id.file_type, false);
         holder.getView(R.id.image).setTransitionName(null);
+    }
+
+    @Override
+    protected void convert(ViewHolder helper, Item item, List payloads) {
+        if (payloads.isEmpty()) {
+            super.convert(helper, item, payloads);
+        } else {
+            Bundle payload = (Bundle) payloads.get(0);
+
+            boolean selected = payload.getBoolean(PAYLOAD_SELECTED, false);
+            helper.setVisible(R.id.checkbox, selected);
+            Log.d(TAG, "convert: diff update selected " + selected + " : " + item.getFile());
+        }
     }
 
     @Override
@@ -230,16 +296,5 @@ public class DefaultImageListAdapter extends BaseImageAdapter<DefaultImageListAd
 
         // Item Checked
         viewHolder.setVisible(R.id.checkbox, item.isSelected());
-    }
-
-    /*
-     * View holder
-     */
-
-    public class ViewHolder extends BaseViewHolder {
-
-        public ViewHolder(View view) {
-            super(view);
-        }
     }
 }
