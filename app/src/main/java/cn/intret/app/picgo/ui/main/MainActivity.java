@@ -80,13 +80,13 @@ import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.model.ConflictResolverDialogFragment;
 import cn.intret.app.picgo.model.FolderModel;
 import cn.intret.app.picgo.model.GroupMode;
+import cn.intret.app.picgo.model.ImageService;
 import cn.intret.app.picgo.model.LoadMediaFileParam;
 import cn.intret.app.picgo.model.MediaFile;
 import cn.intret.app.picgo.model.ImageFolder;
 import cn.intret.app.picgo.model.ImageGroup;
 import cn.intret.app.picgo.model.SortOrder;
 import cn.intret.app.picgo.model.SortWay;
-import cn.intret.app.picgo.model.SystemImageService;
 import cn.intret.app.picgo.model.UserDataService;
 import cn.intret.app.picgo.model.ViewMode;
 import cn.intret.app.picgo.model.event.FolderModelChangeMessage;
@@ -677,7 +677,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
     private void diffUpdateFolderListAdapter(SectionedFolderListAdapter adapter, boolean fromCacheFirst) {
 
-        SystemImageService.getInstance()
+        ImageService.getInstance()
                 .loadFolderList(fromCacheFirst)
                 .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
                 .compose(workAndShow())
@@ -732,7 +732,7 @@ public class MainActivity extends BaseAppCompatActivity {
             Log.e(TAG, "diffUpdateDefaultImageListAdapter: the adapter didn't have the corresponding directory.");
             return;
         }
-        SystemImageService.getInstance()
+        ImageService.getInstance()
                 .loadMediaFileList(dir,
                         new LoadMediaFileParam()
                                 .setFromCacheFirst(fromCacheFirst)
@@ -763,7 +763,7 @@ public class MainActivity extends BaseAppCompatActivity {
             return;
         }
 
-        SystemImageService.getInstance()
+        ImageService.getInstance()
                 .loadMediaFileList(dir,
                         new LoadMediaFileParam()
                                 .setFromCacheFirst(fromCacheFirst)
@@ -1152,7 +1152,7 @@ public class MainActivity extends BaseAppCompatActivity {
                 .subscribe(input -> {
                     if (mEnableT9Filter) {
 
-                        SystemImageService.getInstance()
+                        ImageService.getInstance()
                                 .loadFolderList(true, input.toString())
                                 .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
                                 .compose(RxUtils.workAndShow())
@@ -1247,7 +1247,7 @@ public class MainActivity extends BaseAppCompatActivity {
             mFolderList.setEmptyView(mFolderListEmptyView);
 
             // 初始化相册文件夹列表
-            SystemImageService.getInstance()
+            ImageService.getInstance()
                     .loadFolderList(true)
                     .compose(workAndShow())
                     .doOnError(throwable -> {
@@ -1423,7 +1423,7 @@ public class MainActivity extends BaseAppCompatActivity {
                                 if (inputEditText != null) {
                                     String folderName = inputEditText.getEditableText().toString();
                                     File dir = new File(section.getFile(), folderName);
-                                    SystemImageService.getInstance()
+                                    ImageService.getInstance()
                                             .createFolder(dir)
                                             .compose(workAndShow())
                                             .subscribe(ok -> {
@@ -1696,7 +1696,7 @@ public class MainActivity extends BaseAppCompatActivity {
                 .addHiddenFolder(selectedDir)
                 .subscribe(ok -> {
                     if (ok) {
-                        SystemImageService.getInstance()
+                        ImageService.getInstance()
                                 .hiddenFolder(selectedDir)
                                 .subscribe(removed -> {
                                     if (removed) {
@@ -1784,7 +1784,7 @@ public class MainActivity extends BaseAppCompatActivity {
                 .content(getString(R.string.confirm_to_remove_folder_s, selectedDir.getName()))
                 .positiveText(R.string.delete)
                 .onPositive((dialog, which) -> {
-                    SystemImageService.getInstance()
+                    ImageService.getInstance()
                             .removeFolder(selectedDir)
                             .compose(workAndShow())
                             .subscribe(aBoolean -> {
@@ -1827,7 +1827,7 @@ public class MainActivity extends BaseAppCompatActivity {
                                 return;
                             }
 
-                            SystemImageService.getInstance()
+                            ImageService.getInstance()
                                     .renameDirectory(dir, newDirName)
                                     .compose(workAndShow())
                                     .subscribe(ok -> {
@@ -1967,7 +1967,7 @@ public class MainActivity extends BaseAppCompatActivity {
      */
 
     private void moveAdapterSelectedFilesToDir(File destDir) {
-        SystemImageService.getInstance()
+        ImageService.getInstance()
                 .moveFilesToDirectory(destDir,
                         getCurrentSelectedFilePathList(),
                         true,
@@ -2096,13 +2096,13 @@ public class MainActivity extends BaseAppCompatActivity {
         mFolderList.addItemDecoration(new SectionDecoration(this, new SectionDecoration.DecorationCallback() {
             @Override
             public long getGroupId(int position) {
-                return SystemImageService.getInstance().getSectionForPosition(position);
+                return ImageService.getInstance().getSectionForPosition(position);
 //                return mFolderListAdapter.getItemCount();
             }
 
             @Override
             public String getGroupFirstLine(int position) {
-                return SystemImageService.getInstance().getSectionFileName(position);
+                return ImageService.getInstance().getSectionFileName(position);
             }
         }));
         mFolderList.setAdapter(mFolderListAdapter);
@@ -2207,7 +2207,7 @@ public class MainActivity extends BaseAppCompatActivity {
         DetailImageAdapter adapter = mDetailImageListAdapters.get(directory);
         if (adapter == null) {
 
-            SystemImageService.getInstance()
+            ImageService.getInstance()
                     .loadMediaFileList(directory,
                             new LoadMediaFileParam()
                                     .setFromCacheFirst(true)
@@ -2243,35 +2243,6 @@ public class MainActivity extends BaseAppCompatActivity {
         DetailImageAdapter listAdapter = new DetailImageAdapter(R.layout.item_image_detail, items);
         listAdapter.setDirectory(directory);
 
-        listAdapter.setDiffUtilCallback(new BaseQuickAdapter.DiffUtilCallback<DetailImageAdapter.Item>() {
-
-            @Override
-            public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-                DetailImageAdapter.Item oldItem = getOldItem(oldItemPosition);
-                DetailImageAdapter.Item newItem = getNewItem(newItemPosition);
-
-                boolean isSameSelected = (oldItem.isSelected() == newItem.isSelected());
-                boolean isSameDate = (oldItem.getDate() == null) ?
-                        (newItem.getDate() == null)
-                        : oldItem.getDate().equals(newItem.getDate());
-
-                boolean isSameFileSize = (oldItem.getFileSize() == newItem.getFileSize());
-                boolean isSameResolution = oldItem.getMediaResolution() == null ?
-                        (newItem.getMediaResolution() == null)
-                        : oldItem.getMediaResolution().equals(newItem.getMediaResolution());
-
-                boolean isSameDuration = (oldItem.getVideoDuration() == newItem.getVideoDuration());
-
-                return isSameSelected && isSameDate && isSameFileSize && isSameResolution && isSameDuration;
-            }
-
-            @Nullable
-            @Override
-            public Object getChangePayload(int oldItemPosition, int newItemPosition) {
-                return super.getChangePayload(oldItemPosition, newItemPosition);
-            }
-        });
-
         listAdapter.setDetectMoves(true);
 
         return listAdapter;
@@ -2291,7 +2262,7 @@ public class MainActivity extends BaseAppCompatActivity {
                 Log.d(TAG, "show cached sectioned list adapter : " + directory.getName());
                 showSectionedImageList(listAdapter);
             } else {
-                SystemImageService.getInstance()
+                ImageService.getInstance()
                         .loadImageGroupList(directory, groupMode, true, SortWay.DATE, SortOrder.DESC)
                         .map(this::sortImageGroupByViewMode)
                         .map((sectionList) -> {
@@ -2457,7 +2428,7 @@ public class MainActivity extends BaseAppCompatActivity {
     private Observable<LinkedList<SectionedImageListAdapter.Section>> loadAdapterSections(File directory, GroupMode mode) {
         return Observable.create(e -> {
 
-            List<File> imageFiles = SystemImageService.getInstance().listMediaFiles(directory);
+            List<File> imageFiles = ImageService.getInstance().listMediaFiles(directory);
             LinkedList<SectionedImageListAdapter.Section> sections = Stream.of(imageFiles)
                     .groupBy(file -> {
                         long d = file.lastModified();
@@ -2577,7 +2548,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
             com.orhanobut.logger.Logger.d("showDefaultImageList 加载并显示目录 " + directory);
 
-            SystemImageService.getInstance()
+            ImageService.getInstance()
                     .loadMediaFileList(directory,
                             new LoadMediaFileParam()
                                     .setFromCacheFirst(true)
@@ -2638,7 +2609,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
             item.setVideoDuration(image.getVideoDuration());
             item.setFileSize(image.getFileSize());
-            image.setDate(image.getDate());
+            item.setDate(image.getDate());
 
             return item;
         }).toList();
@@ -2884,7 +2855,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
     private void updateFolderListConflictItems(List<File> sourceFiles) {
 
-        SystemImageService.getInstance()
+        ImageService.getInstance()
                 .detectFileExistence(sourceFiles)
                 .compose(workAndShow())
                 .subscribe(detectFileExistenceResult -> {
@@ -2927,7 +2898,7 @@ public class MainActivity extends BaseAppCompatActivity {
         if (mFolderAdapter != null) {
             diffUpdateFolderListAdapter(mFolderAdapter, false);
         } else {
-            SystemImageService.getInstance()
+            ImageService.getInstance()
                     .loadFolderList(false)
                     .compose(workAndShow())
                     .subscribe(this::showFolderList, RxUtils::unhandledThrowable);
@@ -3061,7 +3032,7 @@ public class MainActivity extends BaseAppCompatActivity {
             Log.e(TAG, "updateFolderListItemThumbnailList: directory is null/empty");
             return;
         }
-        SystemImageService.getInstance()
+        ImageService.getInstance()
                 .rescanDirectoryThumbnailList(directory)
                 .compose(workAndShow())
                 .subscribe(files -> {
@@ -3156,7 +3127,7 @@ public class MainActivity extends BaseAppCompatActivity {
                 getImageAdapterSelectCountChangeRelay()
                         .accept(listAdapter);
 
-                SystemImageService.getInstance()
+                ImageService.getInstance()
                         .detectMoveFileConflict(((BaseImageAdapter) adapter).getDirectory(),
                                 Stream.of(selectedItems).map(DefaultImageListAdapter.Item::getFile).toList());
             }
@@ -3181,7 +3152,7 @@ public class MainActivity extends BaseAppCompatActivity {
     private Observable<List<DefaultImageListAdapter.Item>> loadImages(File directory) {
         return Observable.create(e -> {
             LinkedList<DefaultImageListAdapter.Item> items = new LinkedList<DefaultImageListAdapter.Item>();
-            List<File> images = SystemImageService.getInstance().listMediaFiles(directory);
+            List<File> images = ImageService.getInstance().listMediaFiles(directory);
 
             for (File file : images) {
 
@@ -3327,7 +3298,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
                     List<File> selectedFiles = currImageAdapter.getSelectedFiles();
 
-                    SystemImageService.getInstance()
+                    ImageService.getInstance()
                             .removeFiles(selectedFiles)
                             .compose(workAndShow())
                             .subscribe(integerListPair -> {
@@ -3354,7 +3325,7 @@ public class MainActivity extends BaseAppCompatActivity {
         List<String> selectedFiles = getSelectedFileList();
         showMoveFileFragmentDialog(new ArrayList<>(selectedFiles));
 
-        /*SystemImageService.getInstance()
+        /*ImageService.getInstance()
                 .loadFolderList(true)
                 .compose(workAndShow())
                 .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
@@ -3415,7 +3386,7 @@ public class MainActivity extends BaseAppCompatActivity {
                     if (tag != null && tag instanceof SectionedFolderListAdapter.Item) {
 
                         File destDir = ((SectionedFolderListAdapter.Item) tag).getFile();
-                        SystemImageService.getInstance()
+                        ImageService.getInstance()
                                 .moveFilesToDirectory(destDir, selectedFiles)
                                 .compose(workAndShow())
                                 .subscribe(count -> {

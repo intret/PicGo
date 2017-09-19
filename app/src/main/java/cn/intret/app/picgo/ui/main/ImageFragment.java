@@ -43,7 +43,7 @@ import java.io.IOException;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
-import cn.intret.app.picgo.model.SystemImageService;
+import cn.intret.app.picgo.model.ImageService;
 import cn.intret.app.picgo.ui.event.CancelExitTransitionMessage;
 import cn.intret.app.picgo.ui.event.ImageFragmentSelectionChangeMessage;
 import cn.intret.app.picgo.utils.PathUtils;
@@ -232,7 +232,7 @@ public class ImageFragment extends Fragment {
                 .itemsCallback((dialog, itemView, position, text) -> {
                     switch (position) {
                         case 0: // delete files
-                            SystemImageService.getInstance()
+                            ImageService.getInstance()
                                     .removeFile(new File(mFilePath))
                                     .subscribe(aBoolean -> {
                                             if (aBoolean) {

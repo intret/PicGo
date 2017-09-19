@@ -57,7 +57,7 @@ public abstract class BaseSelectableAdapter< T extends ItemSelectable, VH extend
         if (recyclerView != null) {
             RecyclerView.ViewHolder vh = recyclerView.findViewHolderForAdapterPosition(position);
             if (vh != null && vh instanceof BaseViewHolder) {
-                onBindViewHolderSelected((BaseViewHolder) vh, item);
+                onBindViewHolderSelected((BaseViewHolder) vh, item.isSelected(), mIsSelectionMode);
             }
         }
     }
@@ -214,7 +214,7 @@ public abstract class BaseSelectableAdapter< T extends ItemSelectable, VH extend
         return this;
     }
 
-    abstract void onBindViewHolderSelected(BaseViewHolder vh, T item);
+    abstract void onBindViewHolderSelected(BaseViewHolder vh, boolean selected, boolean isSelectionMode);
 
     public boolean isSelectionMode() {
         return mIsSelectionMode;

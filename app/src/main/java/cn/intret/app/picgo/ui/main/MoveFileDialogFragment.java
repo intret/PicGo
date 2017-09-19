@@ -36,7 +36,7 @@ import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.app.CoreModule;
 import cn.intret.app.picgo.model.ConflictResolverDialogFragment;
-import cn.intret.app.picgo.model.SystemImageService;
+import cn.intret.app.picgo.model.ImageService;
 import cn.intret.app.picgo.model.UserDataService;
 import cn.intret.app.picgo.ui.adapter.FolderListAdapterUtils;
 import cn.intret.app.picgo.ui.adapter.SectionedFolderListAdapter;
@@ -134,7 +134,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
         super.onStart();
         Log.d(TAG, "onStart() called");
 
-        SystemImageService.getInstance()
+        ImageService.getInstance()
                 .loadFolderList(true)
                 .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
                 .map(this::setAdapterMoveFileSourceDir)
@@ -150,7 +150,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
                         mFolderList.scrollToPosition(visibleItemPosition);
                     }
 
-                    SystemImageService.getInstance()
+                    ImageService.getInstance()
                             .detectFileExistence(mSelectedFiles)
                             .compose(workAndShow())
                             .subscribe(detectFileExistenceResult -> {
@@ -263,7 +263,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
                 .subscribe(input -> {
                     Log.d(TAG, "initDialPad: dial");
                     String inputString = input.toString();
-                    SystemImageService.getInstance()
+                    ImageService.getInstance()
                             .loadFolderList(true, inputString)
                             .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
                             .map(this::setAdapterMoveFileSourceDir)
@@ -365,7 +365,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
 
         setStatusDetecting(contentView);
 
-        SystemImageService.getInstance()
+        ImageService.getInstance()
                 .detectMoveFileConflict(item.getFile(), mSelectedFiles)
                 .compose(RxUtils.workAndShow())
                 .subscribe(moveFileDetectResult -> {
@@ -480,7 +480,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
                     if (tag != null && tag instanceof SectionedFolderListAdapter.Item) {
 
                         File destDir = ((SectionedFolderListAdapter.Item) tag).getFile();
-                        SystemImageService.getInstance()
+                        ImageService.getInstance()
                                 .moveFilesToDirectory(destDir, Stream.of(mSelectedFiles).map(File::new).toList())
                                 .compose(RxUtils.workAndShow())
                                 .subscribe(count -> {
@@ -513,7 +513,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
         if (item != null) {
 
             File destDir = item.getFile();
-            SystemImageService.getInstance()
+            ImageService.getInstance()
                     .moveFilesToDirectory(destDir, mSelectedFiles, true, false)
                     .compose(RxUtils.workAndShow())
                     .subscribe(moveFileResult -> {

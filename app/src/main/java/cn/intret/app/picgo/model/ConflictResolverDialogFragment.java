@@ -102,7 +102,7 @@ public class ConflictResolverDialogFragment extends DialogFragment {
                         List<ConflictImageListAdapter.Item> keepSourceItems = adapter.getKeepSourceItems();
 
                         ToastUtils.toastShort(getActivity(), R.string.unimplemented);
-//                        SystemImageService.getInstance()
+//                        ImageService.getInstance()
 //                                .moveFilesToDirectory(new File(mDestDir), Stream.of(keepSourceItems)
 //                                        .map(ConflictImageListAdapter.Item::getSourceFile)
 //                                        .toList(), false, true)

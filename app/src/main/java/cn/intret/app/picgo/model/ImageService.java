@@ -57,10 +57,10 @@ import cn.intret.app.picgo.utils.SystemUtils;
 import io.reactivex.Observable;
 import io.reactivex.schedulers.Schedulers;
 
-public class SystemImageService extends BaseService {
+public class ImageService extends BaseService {
 
-    private static final SystemImageService ourInstance = new SystemImageService();
-    private static final String TAG = SystemImageService.class.getSimpleName();
+    private static final ImageService ourInstance = new ImageService();
+    private static final String TAG = ImageService.class.getSimpleName();
 
     /**
      * 文件列表项获取的缩略图个数
@@ -111,11 +111,11 @@ public class SystemImageService extends BaseService {
         }
     }
 
-    public static SystemImageService getInstance() {
+    public static ImageService getInstance() {
         return ourInstance;
     }
 
-    private SystemImageService() {
+    private ImageService() {
         super();
 
         loadHiddenFileList();
@@ -508,7 +508,7 @@ public class SystemImageService extends BaseService {
                 }
             }
 
-            List<File> imageFiles = SystemImageService.getInstance().listMediaFiles(directory);
+            List<File> imageFiles = ImageService.getInstance().listMediaFiles(directory);
             LinkedList<ImageGroup> sections = Stream.of(imageFiles)
                     .groupBy(file -> {
                         long d = file.lastModified();
@@ -745,7 +745,7 @@ public class SystemImageService extends BaseService {
                     }
 
                     // Get media file(image/video) list and sort
-                    List<File> imageFiles = SystemImageService.getInstance().listMediaFiles(directory);
+                    List<File> imageFiles = ImageService.getInstance().listMediaFiles(directory);
 
                     Comparator<MediaFile> comparator = getMediaFileComparator(param);
 
@@ -798,11 +798,7 @@ public class SystemImageService extends BaseService {
                     e.onNext(sortedMediaFiles);
                     e.onComplete();
                 })
-                .doOnNext(list -> {
-                    for (int i = 0; i < list.size(); i++) {
-                        Log.d(TAG, "loadMediaFileList: " + i + " " + list.get(i));
-                    }
-                });
+                ;
     }
 
     private Comparator<MediaFile> getMediaFileComparator(LoadMediaFileParam param) {

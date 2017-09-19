@@ -2,9 +2,7 @@ package cn.intret.app.picgo.ui.adapter;
 
 import android.os.Bundle;
 import android.support.annotation.LayoutRes;
-import android.support.annotation.MainThread;
 import android.support.annotation.Nullable;
-import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
@@ -17,11 +15,9 @@ import com.chad.library.adapter.base.BaseViewHolder;
 
 import java.io.File;
 import java.util.List;
-import java.util.stream.Stream;
 
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.utils.PathUtils;
-import cn.intret.app.picgo.utils.SystemUtils;
 
 /**
  * Waterfall Image List Adapter class for {@link RecyclerView}
@@ -230,8 +226,8 @@ public class DefaultImageListAdapter extends BaseImageAdapter<DefaultImageListAd
     }
 
     @Override
-    void onBindViewHolderSelected(BaseViewHolder vh, Item item) {
-        vh.setVisible(R.id.checkbox, item.isSelected());
+    void onBindViewHolderSelected(BaseViewHolder vh, boolean selected, boolean isSelectionMode) {
+        vh.setVisible(R.id.checkbox, isSelectionMode && selected);
     }
 
     @Override

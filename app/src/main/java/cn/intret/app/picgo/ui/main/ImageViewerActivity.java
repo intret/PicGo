@@ -53,11 +53,11 @@ import butterknife.ButterKnife;
 import butterknife.OnClick;
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.model.ImageFileInformation;
+import cn.intret.app.picgo.model.ImageService;
 import cn.intret.app.picgo.model.LoadMediaFileParam;
 import cn.intret.app.picgo.model.MediaFile;
 import cn.intret.app.picgo.model.SortOrder;
 import cn.intret.app.picgo.model.SortWay;
-import cn.intret.app.picgo.model.SystemImageService;
 import cn.intret.app.picgo.model.ViewMode;
 import cn.intret.app.picgo.model.event.RemoveFileMessage;
 import cn.intret.app.picgo.ui.adapter.DefaultImageListAdapter;
@@ -158,7 +158,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
     @OnClick(R.id.btn_delete)
     public void onClickDeleteButton(View view) {
 
-        SystemImageService.getInstance()
+        ImageService.getInstance()
                 .removeFile(mPagerAdapter.getImage(mCurrentItem).getFile())
                 .subscribe(aBoolean -> {
                     if (aBoolean) {
@@ -188,7 +188,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
                     .into(mBlurLayout);
 
             File showingImageFile = getShowingImageFile();
-            SystemImageService.getInstance()
+            ImageService.getInstance()
                     .loadImageInfo(showingImageFile)
                     .compose(workAndShow())
                     .subscribe(info -> updateFileDetailView(showingImageFile, info));
@@ -503,7 +503,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
         if (mDirPath != null && mItemPosition != -1) {
 
             // 浏览文件列表
-            SystemImageService.getInstance()
+            ImageService.getInstance()
                     .loadMediaFileList(new File(mDirPath),
                             new LoadMediaFileParam()
                                     .setFromCacheFirst(true)
@@ -588,7 +588,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
         mBrief.setText(getString(R.string.percent_d_d, position, total));
 
-        SystemImageService.getInstance()
+        ImageService.getInstance()
                 .loadImageInfo(image.getFile())
                 .compose(workAndShow())
                 .subscribe(imageFileInformation -> {
@@ -727,7 +727,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
     private void showRandomImage() {
         mBrief.setText(mImageFilePath);
-//        SystemImageService.getInstance().loadRandomImage()
+//        ImageService.getInstance().loadRandomImage()
         Observable.just(mImageFilePath)
                 .map(File::new)
                 .compose(workAndShow())
