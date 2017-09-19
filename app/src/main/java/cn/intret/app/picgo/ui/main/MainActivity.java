@@ -1148,7 +1148,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
         // DialPad
         mKeypad.getDialpadInputObservable()
-                .debounce(200, TimeUnit.MILLISECONDS)
+                .debounce(300, TimeUnit.MILLISECONDS)
                 .subscribe(input -> {
                     if (mEnableT9Filter) {
 

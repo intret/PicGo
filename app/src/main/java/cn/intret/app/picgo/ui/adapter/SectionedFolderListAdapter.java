@@ -25,6 +25,7 @@ import com.annimon.stream.Stream;
 
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.builder.EqualsBuilder;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -35,6 +36,7 @@ import java.util.Map;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
+import cn.intret.app.picgo.utils.BundleUtils;
 import cn.intret.app.picgo.utils.DataConsumer2;
 import cn.intret.app.picgo.utils.PathUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
@@ -375,14 +377,10 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                             Item oldItem = SectionedFolderListAdapter.this.getItem(oldCoord);
                             Item newItem = newAdapter.getItem(newCoord);
 
-                            boolean equals = oldItem.equals(newItem);
-                            if (!equals) {
-                                Log.e(TAG, "areContentsTheSame: not same content old:" + oldItem + " new item :" + newItem);
-                            }
-                            return equals;
+                            return oldItem.contentEquals(newItem);
                         }
                         default:
-                            Log.e(TAG, "areContentsTheSame: unhandled type : " + oldItemType );
+                            Log.e(TAG, "areContentsTheSame: unhandled type : " + oldItemType);
                             return false;
                     }
                 } else {
@@ -400,7 +398,12 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                 ItemCoord newCoord = newAdapter.getRelativePosition(newItemPosition);
 
                 ItemType oldItemType = getItemType(SectionedFolderListAdapter.this, oldItemPosition);
+                ItemType newItemType = getItemType(newAdapter , newItemPosition);
 
+                if (oldItemType != newItemType) {
+                    Log.w(TAG, "getChangePayload: not the same item type : old=" + oldItemCount + " new:" + newItemType );
+                    return null;
+                }
                 switch (oldItemType) {
 
                     case FOOTER:
@@ -416,9 +419,14 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                         return res;
                     }
                     case ITEM: {
-                        Item oldItem = SectionedFolderListAdapter.this.getItem(oldCoord);
+                        Item oldItem = getItem(oldCoord);
                         Item newItem = newAdapter.getItem(newCoord);
 
+                        if (oldItem == null || newItem == null) {
+
+                            Log.w(TAG, "getChangePayload: empty item " + oldItem + " new " + newItem);
+                            return null;
+                        }
                         List<File> oldConflictFiles = oldItem.getConflictFiles();
                         List<File> newConflictFiles = newItem.getConflictFiles();
 
@@ -435,7 +443,9 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
 
                         // 哪一项不一样就只存哪一项
+
                         Bundle payloadBundle = new Bundle();
+
                         if (!isSameName) {
                             Log.w(TAG, "getChangePayload: PAYLOAD_KEY_ITEM_NAME " + newItem.getName());
                             payloadBundle.putString(PAYLOAD_KEY_ITEM_NAME, newItem.getName());
@@ -483,7 +493,12 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         });
 
 
-        mSections = newAdapter.getSections();
+        mSections.clear();
+        for (int i = 0; i < newAdapter.getSections().size(); i++) {
+            Section section = newAdapter.getSections().get(i);
+            mSections.add((Section) section.clone());
+        }
+
         diffResult.dispatchUpdatesTo(this);
     }
 
@@ -517,7 +532,21 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                     if (mRecyclerView != null) {
                         RecyclerView.ViewHolder vh = mRecyclerView.findViewHolderForAdapterPosition(getAbsolutePosition(secIndex, itemIndex));
                         if (vh != null && vh instanceof SectionedFolderListAdapter.ItemViewHolder) {
-                            updateThumbList((ItemViewHolder) vh, item, true);
+                            updateThumbList((ItemViewHolder) vh, true, new HorizontalImageListAdapter.OnItemClickListener() {
+                                @Override
+                                public void onItemClick(View v, HorizontalImageListAdapter.Item ii, int position) {
+                                    if (mOnItemClickListener != null) {
+                                        mOnItemClickListener.onItemClick(null, -1, item, -1);
+                                    }
+                                }
+
+                                @Override
+                                public void onItemLongClick(View v, HorizontalImageListAdapter.Item ii, int position) {
+                                    if (mOnItemClickListener != null) {
+                                        mOnItemClickListener.onItemLongClick(v, null, -1, item, -1);
+                                    }
+                                }
+                            }, item.getThumbList());
                         }
                     }
                     return;
@@ -681,34 +710,40 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         }
 
         @Override
-        protected Object clone() throws CloneNotSupportedException {
-            Section clone = (Section) super.clone();
-            clone.setFile(new File(mFile.getAbsolutePath()));
+        public Object clone() {
+            try {
+                Section clone = (Section) super.clone();
+                clone.setFile(new File(mFile.getAbsolutePath()));
 
-            if (mItems != null) {
-                clone.mItems = new LinkedList<>();
-                for (Item item : mItems) {
-                    clone.mItems.add(item);
+                if (mItems != null) {
+                    clone.mItems = new LinkedList<>();
+                    for (int i = 0, mItemsSize = mItems.size(); i < mItemsSize; i++) {
+                        Item item = mItems.get(i);
+                        clone.mItems.add(item);
+                    }
                 }
+                return clone;
+            } catch (Throwable throwable) {
+                return null;
             }
-            return clone;
         }
     }
 
     public static final int COUNT_NONE = -1;
 
-    public static class Item implements Cloneable {
-        String mName;
-        int mSelectedCount = COUNT_NONE;
-        int mCount;
-        File mFile;
-        List<File> mThumbList;
-        List<File> mConflictFiles;
+    public static class Item implements Cloneable, ContentEqual {
+
         boolean mIsSelected;
         boolean mIsSelectionSourceDir = false;
+        File mFile;
+        int mCount;
+        int mSelectedCount = COUNT_NONE;
+        List<File> mConflictFiles;
 
-        private int mKeywordStartIndex;
+        List<File> mThumbList;
         private int mKeywordLength;
+        private int mKeywordStartIndex;
+        String mName;
 
         public boolean isSelectionSourceDir() {
             return mIsSelectionSourceDir;
@@ -792,17 +827,6 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             return mIsSelected;
         }
 
-        @Override
-        public String toString() {
-            return "Item{" +
-                    "mName='" + mName + '\'' +
-                    ", mSelectedCount=" + mSelectedCount +
-                    ", mCount=" + mCount +
-                    ", mConflictFiles=" + mConflictFiles +
-                    ", mIsSelected=" + mIsSelected +
-                    '}';
-        }
-
         public Item setKeywordStartIndex(int keywordStartIndex) {
             mKeywordStartIndex = keywordStartIndex;
             return this;
@@ -870,6 +894,50 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                 e.printStackTrace();
             }
             return null;
+        }
+
+        @Override
+        public String toString() {
+            return "Item{" +
+                    "mIsSelected=" + mIsSelected +
+                    ", mName='" + mName + '\'' +
+                    ", mFile=" + mFile +
+                    ", mCount=" + mCount +
+                    ", mKeywordLength=" + mKeywordLength +
+                    ", mKeywordStartIndex=" + mKeywordStartIndex +
+                    ", mSelectedCount=" + mSelectedCount +
+                    ", mIsSelectionSourceDir=" + mIsSelectionSourceDir +
+                    ", mConflictFiles=" + mConflictFiles +
+                    ", mThumbList=" + mThumbList +
+                    '}';
+        }
+
+        @Override
+        public boolean contentEquals(Object obj) {
+            if (obj == null) {
+                return false;
+            }
+            if (obj == this) {
+                return true;
+            }
+            if (obj.getClass() != getClass()) {
+                return false;
+            }
+            Item rhs = (Item) obj;
+            return new EqualsBuilder()
+                    .appendSuper(super.equals(obj))
+
+                    .append(mConflictFiles, rhs.mConflictFiles)
+                    .append(mCount, rhs.mCount)
+                    .append(mFile, rhs.mFile)
+                    .append(mIsSelected, rhs.mIsSelected)
+                    .append(mIsSelectionSourceDir, rhs.mIsSelectionSourceDir)
+                    .append(mKeywordLength, rhs.mKeywordLength)
+                    .append(mKeywordStartIndex, rhs.mKeywordStartIndex)
+                    .append(mSelectedCount, rhs.mSelectedCount)
+                    .append(mThumbList, rhs.mThumbList)
+
+                    .isEquals();
         }
     }
 
@@ -1282,7 +1350,108 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 //        vh.setSelectedCountText(item.getSelectedItemCount(), item.getCount());
 
         // Thumbnail image list
-        updateThumbList(vh, item, false);
+        updateThumbList(vh, false, new HorizontalImageListAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(View v, HorizontalImageListAdapter.Item ii, int position) {
+                if (mOnItemClickListener != null) {
+                    mOnItemClickListener.onItemClick(null, -1, item, -1);
+                }
+            }
+
+            @Override
+            public void onItemLongClick(View v, HorizontalImageListAdapter.Item ii, int position) {
+                if (mOnItemClickListener != null) {
+                    mOnItemClickListener.onItemLongClick(v, null, -1, item, -1);
+                }
+            }
+        }, item.getThumbList());
+    }
+
+    @Override
+    public void onBindViewHolder(SectionedViewHolder holder, int section, int relativePosition, int absolutePosition, List<Object> payloads) {
+        if (payloads.isEmpty()) {
+            Log.w(TAG, "onBindViewHolder: payload is empty");
+            onBindViewHolder(holder, section, relativePosition, absolutePosition);
+        } else {
+            Object o = payloads.get(0);
+            if (o instanceof Bundle) {
+
+
+                Bundle payload = (Bundle) o;
+                if (isHeader(absolutePosition)) {
+
+                    SectionedImageListAdapter.SectionHeaderViewHolder viewHolder = (SectionedImageListAdapter.SectionHeaderViewHolder) holder;
+                    String name = payload.getString(PAYLOAD_KEY_SECTION_NAME);
+                    ((SectionedImageListAdapter.SectionHeaderViewHolder) holder).title.setText(name);
+
+                } else if (isFooter(absolutePosition)) {
+
+                    Log.w(TAG, "onBindViewHolder: update footer do nothing");
+
+                } else {
+
+                    Item item = mSections.get(section).getItems().get(relativePosition);
+                    ItemViewHolder vh = (ItemViewHolder) holder;
+
+                    // name
+                    BundleUtils.<String>readBundle(payload, PAYLOAD_KEY_ITEM_NAME, vh.name::setText);
+
+                    // thumbnail list
+                    BundleUtils.<ArrayList<String>>readBundle(payload, PAYLOAD_KEY_THUMB_LIST, thumbFilePathList ->
+                            updateThumbList(vh, true, new HorizontalImageListAdapter.OnItemClickListener() {
+                                @Override
+                                public void onItemClick(View v, HorizontalImageListAdapter.Item ii, int position) {
+                                    if (mOnItemClickListener != null) {
+                                        mOnItemClickListener.onItemClick(null, -1, item, -1);
+                                    }
+                                }
+
+                                @Override
+                                public void onItemLongClick(View v, HorizontalImageListAdapter.Item ii, int position) {
+                                    if (mOnItemClickListener != null) {
+                                        mOnItemClickListener.onItemLongClick(v, null, -1, item, -1);
+                                    }
+                                }
+                            }, Stream.of(thumbFilePathList).map(File::new).toList()));
+
+                    // conflict files
+                    BundleUtils.<ArrayList<String>>readBundle(payload, PAYLOAD_KEY_CONFLICT_FILES, conflictFileList -> {
+                        Log.w(TAG, "onBindViewHolder: do nothing for conflict file partial update : " + conflictFileList);
+                    });
+
+                    // selection
+                    BundleUtils.<Boolean>readBundle(payload, PAYLOAD_KEY_SELECTION, selected -> {
+
+                        Log.d(TAG, "onBindViewHolder: partial update selected status, " + section + ":" + relativePosition + " selected : " + selected);
+                        vh.check.setVisibility(selected ? View.VISIBLE : View.GONE);
+                    });
+
+                    // Conflict file count
+                    BundleUtils.<Integer>readBundle(payload, PAYLOAD_KEY_CONFLICT_FILES_COUNT, conflictFileCount -> {
+                        if (conflictFileCount != -1) {
+                            Log.d(TAG, String.format("onBindViewHolder: 目录更新文件冲突个数为 %d", conflictFileCount));
+                            vh.setConflictCount(conflictFileCount);
+                        }
+                    });
+
+                    // Count
+                    BundleUtils.<Integer>readBundle(payload, PAYLOAD_KEY_COUNT, count -> {
+                        if (count != -1) {
+                            vh.count.setText(String.valueOf(count));
+                        }
+                    });
+
+                    // Name Keyword
+                    int keywordStartIndex = payload.getInt(PAYLOAD_KEY_KEYWORD_START_INDEX, -1);
+                    int keywordLength = payload.getInt(PAYLOAD_KEY_KEYWORD_LENGTH, -1);
+                    if (isValidKeyword(item.getName(), keywordStartIndex, keywordLength)) {
+                        vh.setHighlightName(keywordStartIndex, keywordLength, item.getName());
+                    }
+                }
+            } else {
+                Log.w(TAG, "onBindViewHolder: no bundle in list : " + o);
+            }
+        }
     }
 
     private boolean isValidKeyword(String name, int keywordStartIndex, int keywordLength) {
@@ -1320,29 +1489,15 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         }
     }
 
-    private void updateThumbList(ItemViewHolder vh, Item item, boolean forceUpdate) {
+    private void updateThumbList(ItemViewHolder vh, boolean forceUpdate, HorizontalImageListAdapter.OnItemClickListener onItemClickListener, List<File> thumbList) {
         if (forceUpdate) {
             vh.mAdapter = null;
         }
 
         if (vh.mAdapter == null) {
 
-            vh.mAdapter = new HorizontalImageListAdapter(filesToItems(item.getThumbList()));
-            vh.mAdapter.setOnClickListener(new HorizontalImageListAdapter.OnItemClickListener() {
-                @Override
-                public void onItemClick(View v, HorizontalImageListAdapter.Item ii, int position) {
-                    if (mOnItemClickListener != null) {
-                        mOnItemClickListener.onItemClick(null, -1, item, -1);
-                    }
-                }
-
-                @Override
-                public void onItemLongClick(View v, HorizontalImageListAdapter.Item ii, int position) {
-                    if (mOnItemClickListener != null) {
-                        mOnItemClickListener.onItemLongClick(v, null, -1, item, -1);
-                    }
-                }
-            });
+            vh.mAdapter = new HorizontalImageListAdapter(filesToItems(thumbList));
+            vh.mAdapter.setOnClickListener(onItemClickListener);
 
 //            vh.thumbList.setClickable(false);
 
@@ -1372,86 +1527,6 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             RecyclerView.ViewHolder selectedVH = mRecyclerView.findViewHolderForAdapterPosition(absolutePosition);
             if (selectedVH != null && selectedVH instanceof ItemViewHolder && consumer != null) {
                 consumer.accept(((ItemViewHolder) selectedVH), item);
-            }
-        }
-    }
-
-    @Override
-    public void onBindViewHolder(SectionedViewHolder holder, int section, int relativePosition, int absolutePosition, List<Object> payloads) {
-        if (payloads.isEmpty()) {
-            Log.w(TAG, "onBindViewHolder: payload is empty");
-            onBindViewHolder(holder, section, relativePosition, absolutePosition);
-        } else {
-            Object o = payloads.get(0);
-            if (o instanceof Bundle) {
-
-
-                Bundle payload = (Bundle) o;
-                if (isHeader(absolutePosition)) {
-                    SectionedImageListAdapter.SectionHeaderViewHolder viewHolder =
-                            (SectionedImageListAdapter.SectionHeaderViewHolder) holder;
-                    String name = payload.getString(PAYLOAD_KEY_SECTION_NAME);
-                    ((SectionedImageListAdapter.SectionHeaderViewHolder) holder).title.setText(name);
-                } else if (isFooter(absolutePosition)) {
-                    Log.w(TAG, "onBindViewHolder: update footer do nothing");
-                } else {
-                    Item item = mSections.get(section).getItems().get(relativePosition);
-                    ItemViewHolder vh = (ItemViewHolder) holder;
-                    // name
-                    String name = payload.getString(PAYLOAD_KEY_ITEM_NAME);
-                    if (name != null) {
-                        Log.d(TAG, "onBindViewHolder: 部分更新 Item 名称 : " + name);
-                        vh.name.setText(name);
-                    }
-
-                    // thumbnail list
-                    ArrayList<String> thumbList = payload.getStringArrayList(PAYLOAD_KEY_THUMB_LIST);
-                    if (thumbList != null) {
-                        Log.d(TAG, "onBindViewHolder: partial update thumbList: " + thumbList);
-
-                        vh.mAdapter = new HorizontalImageListAdapter(
-                                filesToItems(PathUtils.stringArrayListToFileList(thumbList)));
-                        vh.thumbList.setClickable(false);
-
-                        vh.thumbList.setLayoutManager(vh.getLayout());
-                        vh.thumbList.setAdapter(vh.mAdapter);
-                    } else {
-                        vh.thumbList.setAdapter(null);
-                    }
-
-                    // conflict files
-                    ArrayList<String> conflictFileList = payload.getStringArrayList(PAYLOAD_KEY_CONFLICT_FILES);
-                    if (conflictFileList != null) {
-                        Log.w(TAG, "onBindViewHolder: do nothing for conflict file partial update : " + conflictFileList);
-                    }
-
-                    // selection
-                    Boolean selected = payload.getBoolean(PAYLOAD_KEY_SELECTION, false);
-                    Log.d(TAG, "onBindViewHolder: partial update selected status, " + section + ":" + relativePosition + " selected : " + selected);
-                    vh.check.setVisibility(selected ? View.VISIBLE : View.GONE);
-
-                    // Conflict files
-                    int conflictFileCount = payload.getInt(PAYLOAD_KEY_CONFLICT_FILES_COUNT, -1);
-                    if (conflictFileCount != -1) {
-                        Log.d(TAG, String.format("onBindViewHolder: 目录更新文件冲突个数为 %d", conflictFileCount));
-                        vh.setConflictCount(conflictFileCount);
-                    }
-
-                    // Count
-                    int count = payload.getInt(PAYLOAD_KEY_COUNT, -1);
-                    if (count != -1) {
-                        vh.count.setText(String.valueOf(count));
-                    }
-
-                    // Name Keyword
-                    int keywordStartIndex = payload.getInt(PAYLOAD_KEY_KEYWORD_START_INDEX, -1);
-                    int keywordLength = payload.getInt(PAYLOAD_KEY_KEYWORD_LENGTH, -1);
-                    if (isValidKeyword(item.getName(), keywordStartIndex, keywordLength)) {
-                        vh.setHighlightName(keywordStartIndex, keywordLength, item.getName());
-                    }
-                }
-            } else {
-                Log.w(TAG, "onBindViewHolder: no bundle in list : " + o);
             }
         }
     }
