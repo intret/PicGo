@@ -14,77 +14,46 @@ import java.util.List;
 
 public class PathUtils {
 
+
+    private static final String[] EXIF_FILE_EXTENSIONS = {
+            "jpeg", "dng", "cr2", "nef", "nrw", "arw", "rw2", "orf", "raf"};
+
+    private static final String[] STATIC_IMAGE_FILE_EXTENSIONS = {
+            "png", "jpeg", "jpg", "webp"
+    };
+
+    private static final String[] ANIMATION_IMAGE_FILE_EXTENSIONS = {
+            "gif"
+    };
+
+    private static final String[] VIDEO_FILE_EXTENSIONS = {
+            "mp4", "mov", "mpg", "mpeg", "rmvb"
+    };
+
+    private static final String[] MEDIA_FILE_EXTENSIONS = {
+            "png","jpeg","jpg","webp",
+            "gif",
+            "mp4","mov","mpg","mpeg","rmvb","avi"
+    };
+
     public static final FilenameFilter MEDIA_FILENAME_FILTER = (dir, name) -> {
-        String lname = name.toLowerCase();
-        return lname.endsWith(".png") |
-                lname.endsWith(".jpeg") |
-                lname.endsWith(".jpg") |
-                lname.endsWith(".webp") |
-                lname.endsWith(".gif") |
-                lname.endsWith(".mp4") |
-                lname.endsWith(".mov") |
-                lname.endsWith(".mpg") |
-                lname.endsWith(".mpeg") |
-                lname.endsWith(".rmvb") |
-                lname.endsWith(".avi");
+        return !name.startsWith(".") && FilenameUtils.isExtension(name.toLowerCase(), MEDIA_FILE_EXTENSIONS);
     };
-    static final String[] EXIF_FILE_EXTENSIONS = {
-            "JPEG", "DNG", "CR2", "NEF", "NRW", "ARW", "RW2", "ORF", "RAF"};
-    static final String[] STATIC_FILE_EXTENSIONS = {
-            "PNG", "JPEG", "JPG", "WEBP"
-    };
-
-    static final String[] VIDEO_FILE_EXTENSIONS = {
-           "MP4","MOV","MPG","MPEG","RMVB"
-    };
-
 
     public static boolean isExifFile(String filePath) {
-        if (StringUtils.isEmpty(filePath)) {
-            return false;
-        }
-        String extension = FilenameUtils.getExtension(filePath);
-        if (StringUtils.isEmpty(extension)) {
-            return false;
-        }
-
-        return ArrayUtils.contains(EXIF_FILE_EXTENSIONS, extension.toUpperCase());
+        return FilenameUtils.isExtension(StringUtils.lowerCase(filePath), EXIF_FILE_EXTENSIONS);
     }
 
     public static boolean isStaticImageFile(String filePath) {
-        if (StringUtils.isEmpty(filePath)) {
-            return false;
-        }
-        String extension = FilenameUtils.getExtension(filePath);
-        if (StringUtils.isEmpty(extension)) {
-            return false;
-        }
-
-        return ArrayUtils.contains(STATIC_FILE_EXTENSIONS, extension.toUpperCase());
+        return FilenameUtils.isExtension(StringUtils.lowerCase(filePath), STATIC_IMAGE_FILE_EXTENSIONS);
     }
 
     public static boolean isVideoFile(String filePath) {
-        if (StringUtils.isEmpty(filePath)) {
-            return false;
-        }
-        String extension = FilenameUtils.getExtension(filePath);
-        if (StringUtils.isEmpty(extension)) {
-            return false;
-        }
-
-        return ArrayUtils.contains(VIDEO_FILE_EXTENSIONS, extension.toUpperCase());
+        return FilenameUtils.isExtension(StringUtils.lowerCase(filePath), VIDEO_FILE_EXTENSIONS);
     }
 
     public static boolean isGifFile(String filePath) {
-        if (StringUtils.isEmpty(filePath)) {
-            return false;
-        }
-        String extension = FilenameUtils.getExtension(filePath);
-        if (StringUtils.isEmpty(extension)) {
-            return false;
-        }
-
-        return extension.toLowerCase().equals("gif");
+        return FilenameUtils.isExtension(StringUtils.lowerCase(filePath), ANIMATION_IMAGE_FILE_EXTENSIONS);
     }
 
     public static boolean isVideoFile(File file) {
