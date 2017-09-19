@@ -2215,7 +2215,7 @@ public class MainActivity extends BaseAppCompatActivity {
                                     .setSortWay(mSortWay)
                                     .setSortOrder(mSortOrder)
                     )
-                    .map(mediaFiles -> Stream.of(mediaFiles).map(this::mediaFileToDetailItem).toList())
+                    .map( this::imagesToDetailListItems)
                     .map(items -> createDetailImageAdapter(directory, items))
                     // cache adapter
                     .doOnNext(detailImageAdapter -> mDetailImageListAdapters.put(directory, detailImageAdapter))
@@ -2602,17 +2602,7 @@ public class MainActivity extends BaseAppCompatActivity {
     }
 
     private List<DetailImageAdapter.Item> imagesToDetailListItems(List<MediaFile> mediaFiles) {
-        return Stream.of(mediaFiles).map(image -> {
-            DetailImageAdapter.Item item = new DetailImageAdapter.Item();
-            item.setFile(image.getFile());
-            item.setMediaResolution(image.getMediaResolution());
-
-            item.setVideoDuration(image.getVideoDuration());
-            item.setFileSize(image.getFileSize());
-            item.setDate(image.getDate());
-
-            return item;
-        }).toList();
+        return Stream.of(mediaFiles).map(this::mediaFileToDetailItem).toList();
     }
 
     private void showGridImageListAdapter(DefaultImageListAdapter adapter) {
