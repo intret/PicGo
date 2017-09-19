@@ -46,4 +46,14 @@ public class UserInitialPreferences {
         mSortOrder = sortOrder;
         return this;
     }
+
+    @Override
+    public String toString() {
+        return "UserInitialPreferences{" +
+                "mRecentRecords=" + mRecentRecords +
+                ", mViewMode=" + mViewMode +
+                ", mSortWay=" + mSortWay +
+                ", mSortOrder=" + mSortOrder +
+                '}';
+    }
 }

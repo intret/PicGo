@@ -85,6 +85,8 @@ public class SystemImageService extends BaseService {
     List<String> mHiddenFolder = new LinkedList<>();
     private Preference<Boolean> mShowHiddenFolderPref;
     private boolean mShowHiddenFile = false;
+    private SortWay mSortWay = SortWay.UNKNOWN;
+    private SortOrder mSortOrder = SortOrder.UNKNOWN;
 
     class MediaFileList {
         List<MediaFile> mMediaFiles;
@@ -601,7 +603,12 @@ public class SystemImageService extends BaseService {
 
         if (loadImageList) {
 
-            loadMediaFileList(destDir, new LoadMediaFileParam().setFromCacheFirst(false).setLoadMediaInfo(false))
+            loadMediaFileList(destDir, new LoadMediaFileParam()
+                    .setFromCacheFirst(false)
+                    .setLoadMediaInfo(false)
+                    .setSortOrder(mSortOrder)
+                    .setSortWay(mSortWay)
+            )
                     .subscribe(images -> {
                         Log.d(TAG, "rescan directory : " + destDir);
 
@@ -686,15 +693,20 @@ public class SystemImageService extends BaseService {
     }
 
     /**
-     * 加载多媒体文件（图片、视频）列表
+     * 加载多媒体文件（图片、视频）列表，按照参数 {@code param} 指定的排序方式返回列表。
      *
      * @param directory
-     * @param param     指定加载参数
+     * @param param     指定加载参数：是否有限从缓存加载，是否加载媒体信息，排序
      * @return
      */
     public Observable<List<MediaFile>> loadMediaFileList(File directory, LoadMediaFileParam param) {
-        return Observable.create(
+        return Observable.<List<MediaFile>>create(
                 e -> {
+
+                    mSortWay = param.getSortWay();
+                    mSortOrder = param.getSortOrder();
+
+                    Log.d(TAG, "loadMediaFileList() called with: directory = [" + directory + "], param = [" + param + "]");
                     if (directory == null) {
                         e.onError(new IllegalArgumentException("Argument 'directory' should not be null"));
                         return;
@@ -716,7 +728,12 @@ public class SystemImageService extends BaseService {
                                 // 可以从缓存读取
                                 if (!param.isLoadMediaInfo() || mediaFileList.isLoadedExtraInfo()) {
                                     if (mediaFileList.getMediaFiles() != null) {
-                                        e.onNext(mediaFileList.getMediaFiles());
+                                        List<MediaFile> mediaFiles = Stream.of(mediaFileList.getMediaFiles())
+                                                .sorted(getMediaFileComparator(param))
+                                                .toList();
+
+                                        //Log.d(TAG, "loadMediaFileList: return media file list with comparator : " );
+                                        e.onNext(mediaFiles);
                                         e.onComplete();
                                         return;
                                     }
@@ -732,6 +749,8 @@ public class SystemImageService extends BaseService {
 
                     Comparator<MediaFile> comparator = getMediaFileComparator(param);
 
+                    Log.d(TAG, "loadMediaFileList: comparator = " + comparator);
+
                     List<MediaFile> sortedMediaFiles;
                     if (param.isLoadMediaInfo()) {
 
@@ -739,10 +758,15 @@ public class SystemImageService extends BaseService {
                         sortedMediaFiles = Stream.of(imageFiles)
                                 .map(file -> {
 
+                                    // File length
+                                    MediaFile mediaFile = new MediaFile();
+                                    mediaFile.setFile(file);
+                                    mediaFile.setFileSize(file.length());
+                                    mediaFile.setDate(new Date(file.lastModified()));
+
                                     // 填充媒体文件额外信息
 
                                     // Resolution
-                                    MediaFile mediaFile = new MediaFile();
                                     if (PathUtils.isVideoFile(file.getAbsolutePath())) {
                                         mediaFile.setVideoDuration(
                                                 MediaUtils.getVideoFileDuration(mContext, file));
@@ -750,11 +774,6 @@ public class SystemImageService extends BaseService {
                                         mediaFile.setMediaResolution(MediaUtils.getImageResolution(file));
                                     }
 
-                                    // File length
-                                    mediaFile.setFile(file);
-                                    mediaFile.setFileSize(file.length());
-
-                                    mediaFile.setDate(new Date(file.lastModified()));
                                     return mediaFile;
                                 })
                                 .sorted(comparator)
@@ -765,6 +784,7 @@ public class SystemImageService extends BaseService {
                                 .map(file -> {
                                     MediaFile mediaFile = new MediaFile();
                                     mediaFile.setFile(file);
+                                    mediaFile.setFileSize(file.length());
                                     mediaFile.setDate(new Date(file.lastModified()));
                                     return mediaFile;
                                 })
@@ -777,6 +797,11 @@ public class SystemImageService extends BaseService {
 
                     e.onNext(sortedMediaFiles);
                     e.onComplete();
+                })
+                .doOnNext(list -> {
+                    for (int i = 0; i < list.size(); i++) {
+                        Log.d(TAG, "loadMediaFileList: " + i + " " + list.get(i));
+                    }
                 });
     }
 
@@ -800,6 +825,18 @@ public class SystemImageService extends BaseService {
             }
             break;
             case SIZE:
+                switch (param.getSortOrder()) {
+
+                    case DESC:
+                        comparator = MediaFile.MEDIA_FILE_LENGTH_DESC_COMPARATOR;
+                        break;
+                    case ASC:
+                        comparator = MediaFile.MEDIA_FILE_LENGTH_ASC_COMPARATOR;
+                        break;
+                    default:
+                        comparator = MediaFile.MEDIA_FILE_LENGTH_DESC_COMPARATOR;
+                        break;
+                }
                 break;
             case DATE: {
                 switch (param.getSortOrder()) {
@@ -817,6 +854,7 @@ public class SystemImageService extends BaseService {
             }
             break;
             default:
+                Log.w(TAG, "getMediaFileComparator: return default comparator for sort way : " + param.getSortWay());
                 comparator = MediaFile.MEDIA_FILE_DATE_DESC_COMPARATOR;
                 break;
         }

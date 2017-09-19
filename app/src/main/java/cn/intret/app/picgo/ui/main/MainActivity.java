@@ -337,7 +337,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
         ViewMode viewMode = UserDataService.getInstance().getViewMode().get();
         if (viewMode == ViewMode.UNKNOWN) {
-            Log.e(TAG, "onCreateOptionsMenu: invalid view mode : " + viewMode );
+            Log.e(TAG, "onCreateOptionsMenu: invalid view mode : " + viewMode);
         } else {
 
             MenuItem item = menu.findItem(R.id.app_bar_view_mode);
@@ -736,7 +736,10 @@ public class MainActivity extends BaseAppCompatActivity {
                 .loadMediaFileList(dir,
                         new LoadMediaFileParam()
                                 .setFromCacheFirst(fromCacheFirst)
-                                .setLoadMediaInfo(false))
+                                .setLoadMediaInfo(false)
+                                .setSortOrder(mSortOrder)
+                                .setSortWay(mSortWay)
+                )
                 .map((mediaFiles) -> mediaFilesToListItems(mediaFiles, adapter.getSelectedFiles()))
                 .compose(workAndShow())
                 .subscribe((newData) -> {
@@ -765,6 +768,8 @@ public class MainActivity extends BaseAppCompatActivity {
                         new LoadMediaFileParam()
                                 .setFromCacheFirst(fromCacheFirst)
                                 .setLoadMediaInfo(true)
+                                .setSortWay(mSortWay)
+                                .setSortOrder(mSortOrder)
                 )
                 .map(this::imagesToDetailListItems)
                 .map(items -> {
@@ -2134,6 +2139,9 @@ public class MainActivity extends BaseAppCompatActivity {
     @MainThread
     private void showDirectoryImages(File directory, boolean updateFolderList, ViewMode fromViewMode, ViewMode toViewMode) {
 
+        Log.d(TAG, "showDirectoryImages() called with: directory = [" + directory + "], updateFolderList = [" + updateFolderList + "], fromViewMode = [" + fromViewMode + "], toViewMode = [" + toViewMode + "]");
+
+
         if (directory == null) {
             Log.w(TAG, "show empty folder");
             return;
@@ -2189,7 +2197,8 @@ public class MainActivity extends BaseAppCompatActivity {
                 showDetailImageList(directory);
             }
             break;
-            case UNKNOWN:
+            default:
+                Log.w(TAG, "showDirectoryImages: 没有显示图片目录，未知视图模式：" + toViewMode);
                 break;
         }
     }
@@ -2203,29 +2212,10 @@ public class MainActivity extends BaseAppCompatActivity {
                             new LoadMediaFileParam()
                                     .setFromCacheFirst(true)
                                     .setLoadMediaInfo(true)
+                                    .setSortWay(mSortWay)
+                                    .setSortOrder(mSortOrder)
                     )
-                    .map(mediaFiles -> {
-
-                        switch (mViewMode) {
-                            case GRID_VIEW: {
-                                return Stream.of(mediaFiles)
-                                        .map(this::mediaFileToDetailItem)
-                                        .sorted((o1, o2) -> o1.getDate().compareTo(o2.getDate()))
-                                        .toList();
-                            }
-                            case LIST_VIEW: {
-                                return Stream.of(mediaFiles)
-                                        .map(this::mediaFileToDetailItem)
-                                        .sorted((o1, o2) -> o1.getFile().getName().compareTo(o2.getFile().getName()))
-                                        .toList();
-                            }
-                        }
-
-                        // 未排序
-                        return Stream.of(mediaFiles)
-                                .map(this::mediaFileToDetailItem)
-                                .toList();
-                    })
+                    .map(mediaFiles -> Stream.of(mediaFiles).map(this::mediaFileToDetailItem).toList())
                     .map(items -> createDetailImageAdapter(directory, items))
                     // cache adapter
                     .doOnNext(detailImageAdapter -> mDetailImageListAdapters.put(directory, detailImageAdapter))
@@ -2591,7 +2581,10 @@ public class MainActivity extends BaseAppCompatActivity {
                     .loadMediaFileList(directory,
                             new LoadMediaFileParam()
                                     .setFromCacheFirst(true)
-                                    .setLoadMediaInfo(false))
+                                    .setLoadMediaInfo(false)
+                                    .setSortOrder(mSortOrder)
+                                    .setSortWay(mSortWay)
+                    )
                     .compose(workAndShow())
                     .map(this::mediaFilesToListItems)
                     .map(items -> itemsToAdapter(directory, items))
@@ -2988,6 +2981,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
             UserDataService.getInstance().loadInitialPreference(true)
                     .compose(workAndShow())
+                    .doOnNext(userInitialPreferences -> Log.d(TAG, "Loaded user initial preference : " + userInitialPreferences))
                     .subscribe(userInitialPreferences -> {
                         mRecentHistory = Stream.of(userInitialPreferences.getRecentRecords()).map(r -> new File(r.getFilePath())).toList();
                         mViewMode = userInitialPreferences.getViewMode();
@@ -3221,7 +3215,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
         // Construct an Intent as normal
         Intent intent = ImageViewerActivity.newIntentViewFileList(this, directory.getAbsolutePath(),
-                position, mViewMode);
+                position, mSortOrder, mSortWay);
 
         // BEGIN_INCLUDE(start_activity)
         /**

@@ -18,14 +18,17 @@ public class MediaFile {
             (MediaFile o1, MediaFile o2) -> o1.getDate().compareTo(o2.getDate());
 
     public final static Comparator<MediaFile> MEDIA_FILE_NAME_ASC_COMPARATOR =
-            (MediaFile o1, MediaFile o2) -> {
-                return o1 == null
-                        ? (o2 == null ? 0 : 1)
-                        : o1.getFile().compareTo(o2.getFile());
-            };
+            (MediaFile o1, MediaFile o2) -> o1.getFile().compareTo(o2.getFile());
 
     public final static Comparator<MediaFile> MEDIA_FILE_NAME_DESC_COMPARATOR =
             (MediaFile o1, MediaFile o2) -> o2.getFile().compareTo(o1.getFile());
+
+    public final static Comparator<MediaFile> MEDIA_FILE_LENGTH_DESC_COMPARATOR =
+            (MediaFile o1, MediaFile o2) -> Long.compare(o2.getFileSize(), o1.getFileSize());
+
+
+    public final static Comparator<MediaFile> MEDIA_FILE_LENGTH_ASC_COMPARATOR =
+            (MediaFile o1, MediaFile o2) -> Long.compare(o1.getFileSize(), o2.getFileSize());
 
 
     File mFile;

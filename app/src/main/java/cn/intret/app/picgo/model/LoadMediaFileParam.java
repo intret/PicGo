@@ -41,4 +41,14 @@ public class LoadMediaFileParam {
         mSortOrder = sortOrder;
         return this;
     }
+
+    @Override
+    public String toString() {
+        return "LoadMediaFileParam{" +
+                "mFromCacheFirst=" + mFromCacheFirst +
+                ", mLoadMediaInfo=" + mLoadMediaInfo +
+                ", mSortWay=" + mSortWay +
+                ", mSortOrder=" + mSortOrder +
+                '}';
+    }
 }

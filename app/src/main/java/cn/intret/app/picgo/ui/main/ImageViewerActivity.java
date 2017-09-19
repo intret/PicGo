@@ -55,6 +55,8 @@ import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.model.ImageFileInformation;
 import cn.intret.app.picgo.model.LoadMediaFileParam;
 import cn.intret.app.picgo.model.MediaFile;
+import cn.intret.app.picgo.model.SortOrder;
+import cn.intret.app.picgo.model.SortWay;
 import cn.intret.app.picgo.model.SystemImageService;
 import cn.intret.app.picgo.model.ViewMode;
 import cn.intret.app.picgo.model.event.RemoveFileMessage;
@@ -86,6 +88,8 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
     private static final String EXTRA_IMAGE_DIR_PATH = "extra:dir_path";
     private static final String EXTRA_IMAGE_ITEM_POSITION = "extra:image_item_position";
     private static final String EXTRA_VIEW_MODE = "extra:view_mode";
+    private static final String EXTRA_SORT_WAY = "extra:sort_way";
+    private static final String EXTRA_SORT_ORDER = "extra:sort_order";
 
     private static final String EXTRA_PARAM_FILE_PATH = "viewer:param:filepath";
     public static final String TRANSITION_NAME_IMAGE = "viewer:image";
@@ -115,6 +119,8 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
     private boolean mCancelExitTransition;
     private int mCurrentItem = -1;
     private ViewMode mViewMode;
+    private SortWay mSortWay;
+    private SortOrder mSortOrder;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -460,12 +466,14 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
         return intent;
     }
 
-    public static Intent newIntentViewFileList(Context context, String dirAbsolutePath, int itemModelPosition, ViewMode viewMode) {
+    public static Intent newIntentViewFileList(Context context, String dirAbsolutePath, int itemModelPosition, SortOrder sortOrder, SortWay sortWay) {
         Intent intent = new Intent(context, ImageViewerActivity.class);
         intent.setAction(Intent.ACTION_VIEW);
         intent.putExtra(EXTRA_IMAGE_DIR_PATH, dirAbsolutePath);
         intent.putExtra(EXTRA_IMAGE_ITEM_POSITION, itemModelPosition);
-        intent.putExtra(EXTRA_VIEW_MODE, viewMode);
+
+        intent.putExtra(EXTRA_SORT_WAY, sortWay);
+        intent.putExtra(EXTRA_SORT_ORDER, sortOrder);
         return intent;
     }
 
@@ -495,47 +503,25 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
         if (mDirPath != null && mItemPosition != -1) {
 
             // 浏览文件列表
-            if (mViewMode != null) {
+            SystemImageService.getInstance()
+                    .loadMediaFileList(new File(mDirPath),
+                            new LoadMediaFileParam()
+                                    .setFromCacheFirst(true)
+                                    .setLoadMediaInfo(false)
+                                    .setSortOrder(mSortOrder)
+                                    .setSortWay(mSortWay)
+                    )
+                    .compose(workAndShow())
+                    .map(this::imageListToImageListAdapter)
+                    .subscribe(adapter -> {
+                        showImageAdapter(adapter, mItemPosition);
+                    }, throwable -> {
 
-                switch (mViewMode) {
-                    case GRID_VIEW: {
-
-                        SystemImageService.getInstance()
-                                .loadMediaFileList(new File(mDirPath),
-                                        new LoadMediaFileParam()
-                                                .setFromCacheFirst(true)
-                                                .setLoadMediaInfo(false)
-                                )
-                                .compose(workAndShow())
-                                .map(this::imageListToImageListAdapter)
-                                .subscribe(adapter -> {
-                                    showImageAdapter(adapter, mItemPosition);
-                                }, throwable -> {
-
-                                });
-                    }
-                    break;
-                    case LIST_VIEW: {
-                        SystemImageService.getInstance()
-                                .loadMediaFileList(new File(mDirPath),
-                                        new LoadMediaFileParam()
-                                        .setFromCacheFirst(true)
-                                        .setLoadMediaInfo(true)
-                                        )
-                                .compose(workAndShow())
-                                .map(this::imageListToImageListAdapter)
-                                .subscribe(adapter -> {
-                                    showImageAdapter(adapter, mItemPosition);
-                                }, throwable -> {
-
-                                });
-                    }
-                    break;
-                }
-            }
+                    });
 
         } else if (mImageFilePath != null) {
 
+            // 浏览单个文件
             Observable.just(mImageFilePath)
                     .map(File::new)
                     .map(file -> {
@@ -551,7 +537,6 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
                     }, RxUtils::unhandledThrowable)
             ;
         }
-
     }
 
     private void showImageAdapter(ImageFragmentStatePagerAdapter adapter, int position) {
@@ -734,7 +719,10 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
         mDirPath = intent.getStringExtra(EXTRA_IMAGE_DIR_PATH);
         mItemPosition = intent.getIntExtra(EXTRA_IMAGE_ITEM_POSITION, -1);
-        mViewMode = (ViewMode) intent.getSerializableExtra(EXTRA_VIEW_MODE);
+//        mViewMode = (ViewMode) intent.getSerializableExtra(EXTRA_VIEW_MODE);
+
+        mSortWay = (SortWay)intent.getSerializableExtra(EXTRA_SORT_WAY);
+        mSortOrder = (SortOrder)intent.getSerializableExtra(EXTRA_SORT_ORDER);
     }
 
     private void showRandomImage() {
