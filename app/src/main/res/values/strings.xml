@@ -105,12 +105,17 @@
     <string name="source_folder_d">源目录 | %1$d</string>
     <string name="select_all">全选</string>
     <string name="option">选项</string>
-    <string name="show_hidden_folder">显示隐藏目录</string>
-    <string name="hide_folder">隐藏文件夹</string>
+    <string name="show_exclude_folder">显示排除目录</string>
+    <string name="exclude_folder">排除文件夹</string>
     <string name="paste">粘贴</string>
     <string name="request_failed">请求失败</string>
     <string name="operation_failed">操作失败</string>
     <string name="rename">重命名</string>
     <string name="failed_to_load_preference">加载偏好设置失败</string>
+    <string name="hidden_folders">隐藏目录</string>
+    <string name="view_exclude_folders">查看排除目录</string>
+    <string name="close">关闭</string>
+    <string name="exclude_folders">排除目录</string>
+    <string name="exclude_folder_dialog_content_description">您可以删除下面的排除目录列表列表项，删除对应项对应目录将继续在主界面侧边栏中显示。</string>
 
 </resources>

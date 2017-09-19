@@ -11,19 +11,21 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:minHeight="?android:attr/actionBarSize"
         android:orientation="horizontal"
         android:paddingLeft="@dimen/dialog_standard_content_margin"
         android:paddingRight="@dimen/dialog_standard_content_margin"
         >
 
         <TextView
+            android:id="@+id/title"
             style="?android:attr/textAppearanceLarge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/move_file_to"
-            android:textStyle="bold"
             android:layout_gravity="center_vertical"
+            android:layout_weight="1"
+            android:text="@string/exclude_folders"
+            android:textStyle="bold"
             />
 
         <Button
@@ -34,9 +36,10 @@
             android:layout_gravity="center_vertical"
             android:layout_marginLeft="8dp"
             android:layout_weight="0"
-            android:text="@string/move_file"
-            tools:textColor="@color/warning"
-            tools:text="移动文件(9/12)"
+            android:text="@string/close"
+            android:visibility="visible"
+            tools:textColor="@color/colorAccent"
+            tools:visibility="visible"
             />
     </LinearLayout>
 
@@ -48,6 +51,7 @@
         android:layout_gravity="right"
         android:background="@null"
         android:gravity="center"
+        android:layout_marginBottom="8dp"
         android:minHeight="@dimen/bottom_tab_height"
         android:orientation="horizontal">
 
@@ -60,8 +64,7 @@
             android:paddingLeft="16dp"
             android:paddingRight="16dp"
             android:paddingTop="8dp"
-            android:text="@string/select_a_target_folder"
-            tools:text="Camera"
+            android:text="@string/exclude_folder_dialog_content_description"
             />
 
     </LinearLayout>
@@ -74,6 +77,7 @@
         android:paddingLeft="16dp"
         android:paddingRight="16dp"
         android:paddingTop="8dp"
+        android:visibility="gone"
         >
 
         <!--冲突检查进度信息-->
@@ -158,12 +162,12 @@
             android:id="@+id/t9_keypad_container"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
             android:layout_gravity="top"
             android:layout_marginBottom="16dp"
             android:layout_marginLeft="10dp"
             android:layout_marginRight="@dimen/dialog_standard_content_margin"
             android:layout_marginTop="48dp"
-            android:layout_alignParentEnd="true"
             android:alpha="0.8"
             android:focusableInTouchMode="true"
             android:visibility="invisible"

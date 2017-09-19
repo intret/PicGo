@@ -1014,6 +1014,10 @@ public class MainActivity extends BaseAppCompatActivity {
                 reloadFolderList();
             }
             break;
+            case R.id.app_bar_view_hidden_folders:
+                ExcludeFolderDialogFragment fragment = ExcludeFolderDialogFragment.newInstance(new ArrayList<String>());
+                fragment.show(getSupportFragmentManager(), "Hidden File List Dialog");
+                break;
         }
 
         return true;
@@ -1444,10 +1448,6 @@ public class MainActivity extends BaseAppCompatActivity {
                 case R.id.folder_detail:
                     ToastUtils.toastShort(MainActivity.this, R.string.unimplemented);
                     break;
-                case R.id.app_bar_show_hidden_folder: {
-
-                }
-                break;
             }
             return false;
         });
@@ -1532,7 +1532,7 @@ public class MainActivity extends BaseAppCompatActivity {
         items.add(
                 new PopupUtils.PopupMenuItem()
                         .setIcon(getResources().getDrawable(R.drawable.ic_remove_red_eye_black_24px))
-                        .setName(getString(R.string.hide_folder))
+                        .setName(getString(R.string.exclude_folder))
                         .setAction(() -> {
                             hideFolder(selectedDir);
                             return true;
@@ -1624,7 +1624,7 @@ public class MainActivity extends BaseAppCompatActivity {
         menuCategory++;
         menuOrder++;
         menu.add(menuCategory, R.id.menu_item_hide,
-                menuOrder, getString(R.string.hide_folder));
+                menuOrder, getString(R.string.exclude_folder));
 
         switch (mViewMode) {
 
@@ -1720,7 +1720,7 @@ public class MainActivity extends BaseAppCompatActivity {
         menuItems.add(getString(R.string.move_folder_s, item.getFile().getName()));
         menuItems.add(getString(R.string.remove_folder_s, item.getFile().getName()));
 
-        menuItems.add(getString(R.string.hide_folder));
+        menuItems.add(getString(R.string.exclude_folder));
 
         // TODO adapter
         switch (mViewMode) {

@@ -1,6 +1,7 @@
 package cn.intret.app.picgo.model;
 
 
+import android.annotation.SuppressLint;
 import android.media.ExifInterface;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -59,53 +60,54 @@ import io.reactivex.schedulers.Schedulers;
 
 public class ImageService extends BaseService {
 
+    @SuppressLint("StaticFieldLeak")
     private static final ImageService ourInstance = new ImageService();
     private static final String TAG = ImageService.class.getSimpleName();
 
     /**
      * 文件列表项获取的缩略图个数
      */
-    public static final int DEFAULT_THUMBNAIL_COUNT = 3;
-
-    ObjectGuarder<HashMap<File, Boolean>> mCacheMediaInfoFlag = new ObjectGuarder<>(new LinkedHashMap<>());
+    private static final int DEFAULT_THUMBNAIL_COUNT = 3;
 
     /**
      * Key : directory file
      */
-    HashMap<File, MediaFileList> mMediaFileListMap = new LinkedHashMap<>();
-    ObjectGuarder<HashMap<File, MediaFileList>> mMediaFileListMapGuard = new ObjectGuarder<>(mMediaFileListMap);
+    private HashMap<File, MediaFileList> mMediaFileListMap = new LinkedHashMap<>();
+    private ObjectGuarder<HashMap<File, MediaFileList>> mMediaFileListMapGuard = new ObjectGuarder<>(mMediaFileListMap);
 
+    private HashMap<String, List<MediaFile>> mImageListMap = new LinkedHashMap<>();
+    private HashMap<String, List<ImageGroup>> mDayImageGroupsMap = new LinkedHashMap<>();
+    private HashMap<String, List<ImageGroup>> mWeekImageGroupsMap = new LinkedHashMap<>();
+    private HashMap<String, List<ImageGroup>> mMonthImageGroupsMap = new LinkedHashMap<>();
 
-    HashMap<String, List<MediaFile>> mImageListMap = new LinkedHashMap<>();
-    HashMap<String, List<ImageGroup>> mDayImageGroupsMap = new LinkedHashMap<>();
-    HashMap<String, List<ImageGroup>> mWeekImageGroupsMap = new LinkedHashMap<>();
-    HashMap<String, List<ImageGroup>> mMonthImageGroupsMap = new LinkedHashMap<>();
+    private ObjectGuarder<List<File>> mHiddenFolders = new ObjectGuarder<>(new LinkedList<File>());
 
-    ObjectGuarder<List<File>> mHiddenFolders = new ObjectGuarder<>(new LinkedList<File>());
-    List<String> mHiddenFolder = new LinkedList<>();
     private Preference<Boolean> mShowHiddenFolderPref;
     private boolean mShowHiddenFile = false;
     private SortWay mSortWay = SortWay.UNKNOWN;
     private SortOrder mSortOrder = SortOrder.UNKNOWN;
 
-    class MediaFileList {
+    FolderModel mFolderModel;
+    ReadWriteLock mFolderModelRWLock = new ReentrantReadWriteLock();
+
+    private class MediaFileList {
         List<MediaFile> mMediaFiles;
         boolean mIsLoadedExtraInfo = false;
 
-        public List<MediaFile> getMediaFiles() {
+        List<MediaFile> getMediaFiles() {
             return mMediaFiles;
         }
 
-        public MediaFileList setMediaFiles(List<MediaFile> mediaFiles) {
+        MediaFileList setMediaFiles(List<MediaFile> mediaFiles) {
             mMediaFiles = mediaFiles;
             return this;
         }
 
-        public boolean isLoadedExtraInfo() {
+        boolean isLoadedExtraInfo() {
             return mIsLoadedExtraInfo;
         }
 
-        public MediaFileList setLoadedExtraInfo(boolean loadedExtraInfo) {
+        MediaFileList setLoadedExtraInfo(boolean loadedExtraInfo) {
             mIsLoadedExtraInfo = loadedExtraInfo;
             return this;
         }
@@ -118,10 +120,10 @@ public class ImageService extends BaseService {
     private ImageService() {
         super();
 
-        loadHiddenFileList();
+        loadUserHiddenFileList();
     }
 
-    private void loadHiddenFileList() {
+    private void loadUserHiddenFileList() {
         Log.d(TAG, "loadHiddenFileList: before");
 
         // 是否显示隐藏目录
@@ -161,8 +163,6 @@ public class ImageService extends BaseService {
         Log.d(TAG, "loadHiddenFileList: after");
     }
 
-    FolderModel mFolderModel;
-    ReadWriteLock mFolderModelRWLock = new ReentrantReadWriteLock();
 
     /*
      * 文件夹列表
@@ -264,6 +264,47 @@ public class ImageService extends BaseService {
         }
     }
 
+    public Observable<FolderModel> loadHiddenFileListModel(String t9NumberInput) {
+        return loadHiddenFileListModel()
+                .map(model -> {
+                    if (StringUtils.isBlank(t9NumberInput)) {
+                        return model;
+                    }
+
+                    // The variable 'model' is a copy of original model, we can modify it.
+                    filterModelByT9NumberInput(model, t9NumberInput);
+
+                    model.setT9FilterMode(true);
+                    return model;
+                });
+    }
+
+    public Observable<FolderModel> loadHiddenFileListModel() {
+
+        return Observable.create(e -> {
+
+            FolderModel folderModel = new FolderModel();
+            mHiddenFolders.readConsume(object -> Stream.of(object)
+                    .groupBy(File::getParentFile)
+                    .forEach(fileListEntry -> {
+                        File parentDir = fileListEntry.getKey();
+                        List<File> subFolderList = fileListEntry.getValue();
+
+                        List<ImageFolder> imageFolders = Stream.of(subFolderList)
+                                .map(this::createImageFolder)
+                                .toList();
+
+                        folderModel.addFolderSection(new FolderModel.ContainerFolder()
+                                .setFile(parentDir)
+                                .setName(parentDir.getName())
+                                .setFolders(imageFolders)
+                        );
+                    }));
+
+            e.onNext(folderModel);
+            e.onComplete();
+        });
+    }
 
     public Observable<FolderModel> loadFolderList(boolean fromCacheFirst) {
         return Observable.create(

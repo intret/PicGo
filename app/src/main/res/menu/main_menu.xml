@@ -18,6 +18,7 @@
         android:title="@string/view_mode"
         app:showAsAction="always"
         />
+
     <item
         android:id="@+id/app_bar_search"
         android:actionViewClass="android.widget.SearchView"
@@ -26,14 +27,21 @@
         app:showAsAction="ifRoom"
         />
 
-    <group android:id="@+id/options">
+    <group android:id="@+id/options"
+        >
+
         <item
             android:id="@+id/app_bar_show_hidden_folder"
             android:checkable="true"
             android:checked="false"
-            android:title="@string/show_hidden_folder"
+            android:title="@string/show_exclude_folder"
+            />
+        <item android:id="@+id/app_bar_view_hidden_folders"
+              android:title="@string/view_exclude_folders"
+              android:icon="@drawable/ic_remove_red_eye_black_24px"
             />
     </group>
+
     <item
         android:id="@+id/app_bar_setting"
         android:title="@string/setting"

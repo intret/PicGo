@@ -57,13 +57,13 @@ import io.reactivex.schedulers.Schedulers;
 /**
  * Move selected file ( Fragment argument specified ) to user selected target folder.
  */
-public class MoveFileDialogFragment extends BottomSheetDialogFragment implements T9KeypadView.OnT9KeypadInteractionHandler {
+public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment implements T9KeypadView.OnT9KeypadInteractionHandler {
 
-    public static final String TAG = MoveFileDialogFragment.class.getSimpleName();
+    public static final String TAG = ExcludeFolderDialogFragment.class.getSimpleName();
 
-    private static final String ARG_SELECTED_FILES = "selected_files";
+    private static final String ARG_EXCLUDE_FOLDERS = "ARG_EXCLUDE_FOLDERS";
 
-    private List<File> mSelectedFiles;
+    private List<File> mHiddenFolders;
 
     private OnFragmentInteractionListener mListener;
 
@@ -78,16 +78,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
     private boolean mEnableDetectSelectedFolder = false;
 
 
-    class DialogViews {
-        @BindView(R.id.folder_list) public RecyclerView mFolderList;
-        @BindView(R.id.desc) public TextView mDesc;
-
-        @BindView(R.id.t9_keypad) public T9KeypadView mT9KeypadView;
-    }
-
-    DialogViews mDialogViews = new DialogViews();
-
-    public MoveFileDialogFragment() {
+    public ExcludeFolderDialogFragment() {
         // Required empty public constructor
     }
 
@@ -95,15 +86,17 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
      * Use this factory method to create a new instance of
      * this fragment using the provided parameters.
      *
-     * @param selectedFiles Parameter 2.
+     * @param hiddenFiles Parameter 2.
      * @return A new instance of fragment MoveFileDialogFragment.
      */
     // TODO: Rename and change types and number of parameters
-    public static MoveFileDialogFragment newInstance(ArrayList<String> selectedFiles) {
-        MoveFileDialogFragment fragment = new MoveFileDialogFragment();
+    public static ExcludeFolderDialogFragment newInstance(ArrayList<String> hiddenFiles) {
+        ExcludeFolderDialogFragment fragment = new ExcludeFolderDialogFragment();
+
         Bundle args = new Bundle();
-        args.putStringArrayList(ARG_SELECTED_FILES, selectedFiles);
+        args.putStringArrayList(ARG_EXCLUDE_FOLDERS, hiddenFiles);
         fragment.setArguments(args);
+
         return fragment;
     }
 
@@ -111,11 +104,11 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            ArrayList<String> files = getArguments().getStringArrayList(ARG_SELECTED_FILES);
+            ArrayList<String> files = getArguments().getStringArrayList(ARG_EXCLUDE_FOLDERS);
             if (files == null) {
-                mSelectedFiles = new LinkedList<>();
+                mHiddenFolders = new LinkedList<>();
             } else {
-                mSelectedFiles = Stream.of(files).map(File::new).toList();
+                mHiddenFolders = Stream.of(files).map(File::new).toList();
             }
         }
     }
@@ -129,15 +122,15 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
         return createContentView(container);
     }
 
+
     @Override
     public void onStart() {
         super.onStart();
         Log.d(TAG, "onStart() called");
 
         ImageService.getInstance()
-                .loadFolderList(true)
+                .loadHiddenFileListModel()
                 .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
-                .map(this::setAdapterMoveFileSourceDir)
                 .doOnNext(adapter -> mListAdapter = adapter)
                 .subscribe(adapter -> {
 
@@ -150,25 +143,14 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
                         mFolderList.scrollToPosition(visibleItemPosition);
                     }
 
-                    ImageService.getInstance()
-                            .detectFileExistence(mSelectedFiles)
-                            .compose(workAndShow())
-                            .subscribe(detectFileExistenceResult -> {
-                                Log.w(TAG, "onStart: 文件冲突 " + detectFileExistenceResult );
-
-                                mListAdapter.updateConflictFiles(detectFileExistenceResult.getExistedFiles());
-
-                            }, RxUtils::unhandledThrowable);
                 }, throwable -> {
-                    ToastUtils.toastShort(MoveFileDialogFragment.this.getActivity(), R.string.load_folder_list_failed);
+                    ToastUtils.toastShort(ExcludeFolderDialogFragment.this.getActivity(), R.string.load_folder_list_failed);
                 });
-
-
     }
 
     private SectionedFolderListAdapter setAdapterMoveFileSourceDir(SectionedFolderListAdapter adapter) {
-        if (!ListUtils.isEmpty(mSelectedFiles)) {
-            adapter.setMoveFileSourceDir(mSelectedFiles.get(0).getParentFile());
+        if (!ListUtils.isEmpty(mHiddenFolders)) {
+            adapter.setMoveFileSourceDir(mHiddenFolders.get(0).getParentFile());
         }
         return adapter;
     }
@@ -192,8 +174,8 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
     }
 
     private View createContentView(ViewGroup root) {
-        View contentView = LayoutInflater.from(getActivity()).inflate(R.layout.fragment_move_file_dialog, root, false);
-        ButterKnife.bind(MoveFileDialogFragment.this, contentView);
+        View contentView = LayoutInflater.from(getActivity()).inflate(R.layout.fragment_exclude_folder_list, root, false);
+        ButterKnife.bind(ExcludeFolderDialogFragment.this, contentView);
 
         initContentView(contentView);
 
@@ -242,10 +224,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
 
     private void initHeader(View contentView) {
         Button btnMoveFile = (Button) contentView.findViewById(R.id.btn_positive);
-
-        btnMoveFile.setText(getResources().getString(R.string.move_file_d_, mSelectedFiles.size()));
         btnMoveFile.setOnClickListener(v -> {
-            moveFile(contentView);
             dismiss();
         });
     }
@@ -261,12 +240,12 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
                 .getDialpadInputObservable()
                 .debounce(369, TimeUnit.MILLISECONDS)
                 .subscribe(input -> {
-                    Log.d(TAG, "initDialPad: dial");
+
                     String inputString = input.toString();
+
                     ImageService.getInstance()
-                            .loadFolderList(true, inputString)
+                            .loadHiddenFileListModel(inputString)
                             .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
-                            .map(this::setAdapterMoveFileSourceDir)
                             .compose(RxUtils.workAndShow())
                             .subscribe(newAdapter -> {
 
@@ -345,7 +324,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
 
                             SectionedFolderListAdapter.Item item = ((SectionedFolderListAdapter) adapter).getItem(coord);
                             contentView.setTag(R.id.item, item);
-                            onClickFolderListItem(item, contentView);
+//                            onClickFolderListItem(item, contentView);
                         }
                     });
         };
@@ -358,6 +337,8 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
     }
 
     private void onClickFolderListItem(SectionedFolderListAdapter.Item item, View contentView) {
+
+
         String msg = getString(R.string.move_selected_images_to_directory_s, item.getFile().getName());
 
         // 移动文件描述信息
@@ -366,11 +347,11 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
         setStatusDetecting(contentView);
 
         ImageService.getInstance()
-                .detectMoveFileConflict(item.getFile(), mSelectedFiles)
+                .detectMoveFileConflict(item.getFile(), mHiddenFolders)
                 .compose(RxUtils.workAndShow())
                 .subscribe(moveFileDetectResult -> {
-                    int colorOk = MoveFileDialogFragment.this.getResources().getColor(android.R.color.holo_green_dark);
-                    int colorConflict = MoveFileDialogFragment.this.getResources().getColor(android.R.color.holo_red_dark);
+                    int colorOk = ExcludeFolderDialogFragment.this.getResources().getColor(android.R.color.holo_green_dark);
+                    int colorConflict = ExcludeFolderDialogFragment.this.getResources().getColor(android.R.color.holo_red_dark);
 
                     if (moveFileDetectResult != null) {
                         List<Pair<File, File>> conflictFiles = moveFileDetectResult.getConflictFiles();
@@ -384,7 +365,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
                         } else {
 
                             btnMoveFile.setText(getResources().getString(R.string.move_file_d_d,
-                                    mSelectedFiles.size() - conflictFiles.size(), mSelectedFiles.size()));
+                                    mHiddenFolders.size() - conflictFiles.size(), mHiddenFolders.size()));
                             btnMoveFile.setTextColor(getResources().getColor(R.color.warning));
 
                             setDetectingResultText(contentView,
@@ -396,7 +377,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
                 }, throwable -> {
                     throwable.printStackTrace();
                     setDetectingResultText(contentView, getString(R.string.detect_move_file_action_result_failed),
-                            MoveFileDialogFragment.this.getResources().getColor(android.R.color.holo_red_light));
+                            ExcludeFolderDialogFragment.this.getResources().getColor(android.R.color.holo_red_light));
                 });
     }
 
@@ -481,13 +462,13 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
 
                         File destDir = ((SectionedFolderListAdapter.Item) tag).getFile();
                         ImageService.getInstance()
-                                .moveFilesToDirectory(destDir, Stream.of(mSelectedFiles).map(File::new).toList())
+                                .moveFilesToDirectory(destDir, Stream.of(mHiddenFolders).map(File::new).toList())
                                 .compose(RxUtils.workAndShow())
                                 .subscribe(count -> {
-                                    if (count == mSelectedFiles.size()) {
+                                    if (count == mHiddenFolders.size()) {
                                         ToastUtils.toastLong(getActivity(),
                                                 getActivity().getString(R.string.already_moved_d_files, count));
-                                    } else if (count > 0 && count < mSelectedFiles.size()) {
+                                    } else if (count > 0 && count < mHiddenFolders.size()) {
                                         // 部分文件移动失败
                                         ToastUtils.toastShort(getActivity(), R.string.move_files_successfully_but_);
                                     } else {
@@ -514,7 +495,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
 
             File destDir = item.getFile();
             ImageService.getInstance()
-                    .moveFilesToDirectory(destDir, mSelectedFiles, true, false)
+                    .moveFilesToDirectory(destDir, mHiddenFolders, true, false)
                     .compose(RxUtils.workAndShow())
                     .subscribe(moveFileResult -> {
                         storePosition(contentView);
@@ -535,7 +516,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
                             }
 
                             int successCount = successFiles.size();
-                            if (successCount == mSelectedFiles.size()) {
+                            if (successCount == mHiddenFolders.size()) {
                                 ToastUtils.toastLong(CoreModule.getInstance().getAppContext(),
                                         R.string.already_moved_d_files, successCount);
                             } else {
@@ -546,7 +527,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
                                     ToastUtils.toastShort(CoreModule.getInstance().getAppContext(), R.string.move_files_failed);
                                 }
 
-                                if (successCount > 0 && successCount < mSelectedFiles.size()) {
+                                if (successCount > 0 && successCount < mHiddenFolders.size()) {
                                     // 部分文件移动失败
 //                                            ToastUtils.toastShort(getActivity(), R.string.move_files_successfully_but_);
 

@@ -10,10 +10,10 @@
         android:id="@+id/folder_detail"
         android:title="@string/folder_detail"/>
 
-    <group>
+    <group android:visible="false">
         <item android:id="@+id/app_bar_show_hidden_folder"
               android:checkable="true"
-              android:title="@string/show_hidden_folder"
+              android:title="@string/show_exclude_folder"
             />
     </group>
 </menu>
