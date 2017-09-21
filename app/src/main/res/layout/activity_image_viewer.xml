@@ -5,20 +5,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    android:clipToPadding="true"
     tools:context="cn.intret.app.picgo.ui.main.ImageViewerActivity">
 
-    <android.support.v7.widget.Toolbar
-        android:id="@+id/toolbar"
-        android:layout_width="0dp"
-        android:layout_height="56dp"
-        android:fitsSystemWindows="true"
-        android:theme="@style/ThemeOverlay.AppCompat.ActionBar"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        >
-
-    </android.support.v7.widget.Toolbar>
 
     <!--Pager-->
     <FrameLayout
@@ -92,7 +82,6 @@
             android:layout_height="wrap_content"
             android:layout_alignParentRight="true"
             android:layout_gravity="bottom"
-            android:background="@drawable/bg_tool_bar_gradient"
             android:gravity="right"
             android:orientation="horizontal"
             android:paddingRight="16dp"
@@ -278,4 +267,19 @@
 
     </RelativeLayout>
 
+    <!--https://stackoverflow.com/questions/26969424/how-to-set-toolbar-text-and-back-arrow-color-->
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="0dp"
+        android:navigationIcon="@drawable/ic_arrow_back_white_24px"
+        android:layout_height="?android:attr/actionBarSize"
+        app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
+        app:titleTextAppearance="@style/ActionBarTitleText"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        >
+
+    </android.support.v7.widget.Toolbar>
 </android.support.constraint.ConstraintLayout>

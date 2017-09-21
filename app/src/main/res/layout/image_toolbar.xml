@@ -11,10 +11,10 @@
     android:layout_height="?android:attr/actionBarSize"
     android:background="@android:color/white"
     android:paddingTop="8dp"
+    android:elevation="3dp"
     app:layout_constraintBottom_toBottomOf="parent"
     app:layout_constraintLeft_toLeftOf="parent"
     app:layout_constraintRight_toRightOf="parent"
-    android:visibility="gone"
     tools:showIn="@layout/main_drawer"
     tools:visibility="visible"
     >

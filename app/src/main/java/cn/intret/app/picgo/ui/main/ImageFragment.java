@@ -47,6 +47,7 @@ import cn.intret.app.picgo.model.ImageService;
 import cn.intret.app.picgo.ui.event.CancelExitTransitionMessage;
 import cn.intret.app.picgo.ui.event.ImageFragmentSelectionChangeMessage;
 import cn.intret.app.picgo.utils.PathUtils;
+import cn.intret.app.picgo.utils.StatusBarUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageView;
@@ -292,6 +293,9 @@ public class ImageFragment extends Fragment {
                 FragmentActivity activity = ImageFragment.this.getActivity();
                 if (activity != null) {
                     ActivityCompat.startPostponedEnterTransition(activity);
+
+                    EventBus.getDefault().post(new ImageAnimationStartMessage());
+//                    StatusBarUtils.hideStatusBar(getActivity());
                 } else {
                     Log.e(TAG, "onResourceReady: 应该启动进入动画，但是不能获取 Activity");
                 }

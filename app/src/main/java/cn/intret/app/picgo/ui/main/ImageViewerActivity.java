@@ -22,6 +22,7 @@ import android.transition.Transition;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseArray;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -31,6 +32,7 @@ import com.annimon.stream.Stream;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.github.chrisbanes.photoview.PhotoView;
+import com.jaeger.library.StatusBarUtil;
 import com.orhanobut.logger.Logger;
 
 import org.apache.commons.io.FilenameUtils;
@@ -60,7 +62,7 @@ import cn.intret.app.picgo.model.SortOrder;
 import cn.intret.app.picgo.model.SortWay;
 import cn.intret.app.picgo.model.ViewMode;
 import cn.intret.app.picgo.model.event.RemoveFileMessage;
-import cn.intret.app.picgo.ui.adapter.DefaultImageListAdapter;
+import cn.intret.app.picgo.ui.adapter.brvah.DefaultImageListAdapter;
 import cn.intret.app.picgo.ui.adapter.ImageTransitionNameGenerator;
 import cn.intret.app.picgo.ui.event.CurrentImageChangeMessage;
 import cn.intret.app.picgo.utils.FileSizeUtils;
@@ -68,6 +70,7 @@ import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.utils.MediaUtils;
 import cn.intret.app.picgo.utils.PathUtils;
 import cn.intret.app.picgo.utils.RxUtils;
+import cn.intret.app.picgo.utils.StatusBarUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
 import cn.intret.app.picgo.utils.ViewUtils;
@@ -128,14 +131,16 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
         supportPostponeEnterTransition();
 
+        View decorView = getWindow().getDecorView();
+
         setContentView(R.layout.activity_image_viewer);
-        initStatusBar();
 
         ButterKnife.bind(this);
 
         extractIntentData();
 
         initToolbar();
+
         loadImageFiles();
         initImageTransition();
     }
@@ -150,9 +155,128 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
         if (actionBar != null) {
             actionBar.setDisplayShowHomeEnabled(true);
             actionBar.setDisplayHomeAsUpEnabled(true);
-            actionBar.setDisplayShowTitleEnabled(true);
-            actionBar.setTitle("ddd");
+            actionBar.setHomeButtonEnabled(true);
         }
+
+        initStatusBar();
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            ActivityCompat.finishAfterTransition(this);
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    /**
+     * https://developer.android.com/training/system-ui/status.html
+     */
+    private void initStatusBar() {
+
+//        View decorView = getWindow().getDecorView();
+//        decorView.setOnSystemUiVisibilityChangeListener
+//                (new View.OnSystemUiVisibilityChangeListener() {
+//                    @Override
+//                    public void onSystemUiVisibilityChange(int visibility) {
+//                        // Note that system bars will only be "visible" if none of the
+//                        // LOW_PROFILE, HIDE_NAVIGATION, or FULLSCREEN flags are set.
+//                        if ((visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0) {
+//                            // TODO: The system bars are visible. Make any desired
+//                            // adjustments to your UI, such as showing the action bar or
+//                            // other navigational controls.
+//                        } else {
+//                            // TODO: The system bars are NOT visible. Make any desired
+//                            // adjustments to your UI, such as hiding the action bar or
+//                            // other navigational controls.
+//                        }
+//                    }
+//                });
+//        StatusBarUtil.setTranslucent(this);
+//        StatusBarUtil.setTranslucent(this, 125);
+
+//        StatusBarUtil.setColor(this, getResources().getColor(R.color.black));
+    }
+
+    private void initImageTransition() {
+        ActivityCompat.setEnterSharedElementCallback(this, new SharedElementCallback() {
+
+            @Override
+            public void onMapSharedElements(List<String> names, Map<String, View> sharedElements) {
+
+                Log.d(TAG, "imageView enter before onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
+                if (mCurrentItem != -1) {
+                    Image item = mPagerAdapter.getImage(mCurrentItem);
+
+                    ImageFragment fragment = mPagerAdapter.getRegisteredFragment(mCurrentItem);
+
+                    String absolutePath = item.getFile().getAbsolutePath();
+                    String transitionName = ImageTransitionNameGenerator.generateTransitionName(absolutePath);
+                    String fileTypeTransitionName = ImageTransitionNameGenerator.generateTransitionName(ImageTransitionNameGenerator.TRANSITION_PREFIX_FILETYPE, absolutePath);
+
+                    names.clear();
+                    names.add(transitionName);
+                    names.add(fileTypeTransitionName);
+
+                    sharedElements.clear();
+                    PhotoView image = fragment.getImage();
+                    if (image != null) {
+                        sharedElements.put(transitionName, fragment.getImage());
+                    } else {
+                        View iv = null;
+                        View root = fragment.getView();
+                        if (root != null) {
+                            iv = root.findViewById(R.id.image);
+                        }
+
+                        if (iv != null) {
+                            sharedElements.put(transitionName, iv);
+                        } else {
+                            Log.e(TAG, "imageView enter onMapSharedElements: cannot get PhotoView instance.");
+                        }
+                    }
+
+                    ImageView fileType = fragment.getFileType();
+                    if (fileType != null) {
+                        sharedElements.put(fileTypeTransitionName, fragment.getFileType());
+                    } else {
+                        View iv = null;
+                        View root = fragment.getView();
+                        if (root != null) {
+                            iv = root.findViewById(R.id.file_type);
+                        }
+
+                        if (iv != null) {
+                            sharedElements.put(fileTypeTransitionName, iv);
+                        } else {
+                            Log.e(TAG, "imageView enter onMapSharedElements: cannot get FileType ImageView instance.");
+                        }
+                    }
+                }
+                Log.d(TAG, "imageView enter after onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
+                super.onMapSharedElements(names, sharedElements);
+            }
+        });
+
+        ActivityCompat.setExitSharedElementCallback(this, new SharedElementCallback() {
+            @Override
+            public void onMapSharedElements(List<String> names, Map<String, View> sharedElements) {
+                Log.d(TAG, "imageView enter before onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
+                int currentItem = mViewPager.getCurrentItem();
+                if (currentItem != -1) {
+                    Image item = mPagerAdapter.getImage(currentItem);
+                    sharedElements.clear();
+                    String transitionName = ImageTransitionNameGenerator.generateTransitionName(item.getFile().getAbsolutePath());
+                    String fileTypeTransitionName = ImageTransitionNameGenerator.generateTransitionName(ImageTransitionNameGenerator.TRANSITION_PREFIX_FILETYPE, item.getFile().getAbsolutePath());
+
+                    sharedElements.put(transitionName, ((ImageFragment) mPagerAdapter.getItem(currentItem)).getImage());
+                    sharedElements.put(fileTypeTransitionName, ((ImageFragment) mPagerAdapter.getItem(currentItem)).getFileType());
+                }
+                Log.d(TAG, "imageView enter after onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
+                super.onMapSharedElements(names, sharedElements);
+            }
+        });
     }
 
     @OnClick(R.id.btn_delete)
@@ -338,93 +462,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 //        }).show();
     }
 
-    private void initStatusBar() {
 
-//        StatusBarUtil.setTranslucent(this);
-//        StatusBarUtil.setTranslucent(this, 125);
-
-//        StatusBarUtil.setColor(this, getResources().getColor(R.color.black));
-    }
-
-    private void initImageTransition() {
-        ActivityCompat.setEnterSharedElementCallback(this, new SharedElementCallback() {
-
-            @Override
-            public void onMapSharedElements(List<String> names, Map<String, View> sharedElements) {
-
-                Log.d(TAG, "imageView enter before onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
-                if (mCurrentItem != -1) {
-                    Image item = mPagerAdapter.getImage(mCurrentItem);
-
-                    ImageFragment fragment = mPagerAdapter.getRegisteredFragment(mCurrentItem);
-
-                    String absolutePath = item.getFile().getAbsolutePath();
-                    String transitionName = ImageTransitionNameGenerator.generateTransitionName(absolutePath);
-                    String fileTypeTransitionName = ImageTransitionNameGenerator.generateTransitionName(ImageTransitionNameGenerator.TRANSITION_PREFIX_FILETYPE, absolutePath);
-
-                    names.clear();
-                    names.add(transitionName);
-                    names.add(fileTypeTransitionName);
-
-                    sharedElements.clear();
-                    PhotoView image = fragment.getImage();
-                    if (image != null) {
-                        sharedElements.put(transitionName, fragment.getImage());
-                    } else {
-                        View iv = null;
-                        View root = fragment.getView();
-                        if (root != null) {
-                            iv = root.findViewById(R.id.image);
-                        }
-
-                        if (iv != null) {
-                            sharedElements.put(transitionName, iv);
-                        } else {
-                            Log.e(TAG, "imageView enter onMapSharedElements: cannot get PhotoView instance.");
-                        }
-                    }
-
-                    ImageView fileType = fragment.getFileType();
-                    if (fileType != null) {
-                        sharedElements.put(fileTypeTransitionName, fragment.getFileType());
-                    } else {
-                        View iv = null;
-                        View root = fragment.getView();
-                        if (root != null) {
-                            iv = root.findViewById(R.id.file_type);
-                        }
-
-                        if (iv != null) {
-                            sharedElements.put(fileTypeTransitionName, iv);
-                        } else {
-                            Log.e(TAG, "imageView enter onMapSharedElements: cannot get FileType ImageView instance.");
-                        }
-                    }
-                }
-                Log.d(TAG, "imageView enter after onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
-                super.onMapSharedElements(names, sharedElements);
-            }
-        });
-
-        ActivityCompat.setExitSharedElementCallback(this, new SharedElementCallback() {
-            @Override
-            public void onMapSharedElements(List<String> names, Map<String, View> sharedElements) {
-                Log.d(TAG, "imageView enter before onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
-                int currentItem = mViewPager.getCurrentItem();
-                if (currentItem != -1) {
-                    Image item = mPagerAdapter.getImage(currentItem);
-                    sharedElements.clear();
-                    String transitionName = ImageTransitionNameGenerator.generateTransitionName(item.getFile().getAbsolutePath());
-                    String fileTypeTransitionName = ImageTransitionNameGenerator.generateTransitionName(ImageTransitionNameGenerator.TRANSITION_PREFIX_FILETYPE, item.getFile().getAbsolutePath());
-
-                    sharedElements.put(transitionName, ((ImageFragment) mPagerAdapter.getItem(currentItem)).getImage());
-                    sharedElements.put(fileTypeTransitionName, ((ImageFragment) mPagerAdapter.getItem(currentItem)).getFileType());
-                }
-                Log.d(TAG, "imageView enter after onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
-                super.onMapSharedElements(names, sharedElements);
-            }
-        });
-    }
 
     @Override
     protected void onStart() {
@@ -475,6 +513,19 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
         intent.putExtra(EXTRA_SORT_WAY, sortWay);
         intent.putExtra(EXTRA_SORT_ORDER, sortOrder);
         return intent;
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onEvent(ImageAnimationStartMessage message) {
+//        View decorView = getWindow().getDecorView();
+
+        // Hide the status bar.
+//        int uiOptions = View.SYSTEM_UI_FLAG_FULLSCREEN;
+//        decorView.setSystemUiVisibility(uiOptions);
+        // Remember that you should never show the action bar if the
+        // status bar is hidden, so hide that too if necessary.
+
+        //        StatusBarUtils.hideStatusBar(this);
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -602,6 +653,11 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
                 }, throwable -> {
                     mResolution.setText("-");
                 });
+
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setTitle(image.getFile().getName());
+        }
     }
 
     @NonNull
@@ -721,8 +777,8 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
         mItemPosition = intent.getIntExtra(EXTRA_IMAGE_ITEM_POSITION, -1);
 //        mViewMode = (ViewMode) intent.getSerializableExtra(EXTRA_VIEW_MODE);
 
-        mSortWay = (SortWay)intent.getSerializableExtra(EXTRA_SORT_WAY);
-        mSortOrder = (SortOrder)intent.getSerializableExtra(EXTRA_SORT_ORDER);
+        mSortWay = (SortWay) intent.getSerializableExtra(EXTRA_SORT_WAY);
+        mSortOrder = (SortOrder) intent.getSerializableExtra(EXTRA_SORT_ORDER);
     }
 
     private void showRandomImage() {

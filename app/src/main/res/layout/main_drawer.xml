@@ -75,7 +75,7 @@
                 android:id="@+id/refresh"
                 android:layout_width="0dp"
                 android:layout_height="0dp"
-                app:layout_constraintBottom_toTopOf="@+id/floatingToolbar"
+                app:layout_constraintBottom_toTopOf="@+id/image_tool_bar"
                 app:layout_constraintHorizontal_bias="0.0"
                 app:layout_constraintLeft_toLeftOf="parent"
                 app:layout_constraintRight_toRightOf="parent"
@@ -122,7 +122,9 @@
                 android:layout_gravity="bottom"
                 android:background="@android:color/white"
                 android:visibility="gone"
+                android:elevation="1dp"
                 app:floatingMenu="@menu/image_action_menu"
+                app:layout_constraintTop_toTopOf="@id/refresh"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintLeft_toLeftOf="parent"
                 app:layout_constraintRight_toRightOf="parent"
@@ -130,6 +132,7 @@
 
             <include
                 android:id="@+id/image_tool_bar"
+                android:visibility="gone"
                 layout="@layout/image_toolbar"/>
         </android.support.constraint.ConstraintLayout>
 

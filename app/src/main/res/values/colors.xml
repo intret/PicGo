@@ -47,4 +47,5 @@
     <color name="black_alpha_90">#e5000000</color>
     <color name="black_alpha_95">#F2000000</color>
     <color name="black">#000000</color>
+    <color name="action_bar_title_color">@color/white</color>
 </resources>

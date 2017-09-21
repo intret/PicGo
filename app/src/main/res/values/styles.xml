@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
@@ -9,6 +9,19 @@
         <item name="android:windowContentTransitions">true</item>
     </style>
 
+    <!-- ToolBar -->
+    <!--<style name="ToolBarStyle" parent="Theme.AppCompat">-->
+        <!--<item name="android:textColorPrimary">@android:color/white</item>-->
+        <!--<item name="android:textColorSecondary">@android:color/white</item>-->
+        <!--<item name="actionMenuTextColor">@android:color/white</item>-->
+        <!--<item name="actionOverflowButtonStyle">@style/ActionButtonOverflowStyle</item>-->
+        <!--<item name="drawerArrowStyle">@style/DrawerArrowStyle</item>-->
+    <!--</style>-->
+
+    <style name="ActionBarTitleText" parent="TextAppearance.AppCompat.Widget.ActionBar.Title">
+        <item name="android:shadowColor">@color/white</item>
+    </style>
+
     <style name="AppTheme.ImageViewer" parent="AppTheme">
         <!-- Customize your theme here. -->
         <item name="android:windowContentTransitions">false</item>
@@ -16,9 +29,33 @@
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowTranslucentStatus">true</item>
         <item name="android:immersive">true</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowFullscreen">true</item>
+
+        <item name="android:toolbarStyle">@style/MyActionBar</item>
+        <!--<item name="android:windowActionBarOverlay">true</item>-->
+        <!--<item name="android:statusBarColor">@android:color/transparent</item>-->
         <item name="android:windowSharedElementEnterTransition">@transition/transition_image</item>
         <item name="android:windowSharedElementExitTransition">@transition/transition_image</item>
+    </style>
+    <style name="Main" parent="AppTheme">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowTranslucentStatus">true</item>
+        <item name="android:immersive">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:radioButtonStyle">@style/MenuRadioButtonStyle</item>
+    </style>
+
+    <style name="MyActionBar" parent="Widget.AppCompat.ActionBar">
+        <item name="android:background">@color/transparent</item>
+        <item name="android:elevation" tools:ignore="NewApi">4dp</item>
+        <item name="android:navigationIcon">@drawable/ic_arrow_back_white_24px</item>
+
+        <item name="titleTextAppearance">@color/action_bar_title_color</item>
+    </style>
+
+    <style name="ThemeOverlay.MyApp.ActionBar" parent="ThemeOverlay.AppCompat.ActionBar">
+        <!-- Parent theme sets colorControlNormal to textColorPrimary. -->
+        <item name="android:textColorPrimary">@color/action_bar_title_color</item>
     </style>
 
     <style name="MDLightBlue" parent="Theme.AppCompat.Light.NoActionBar">
@@ -29,11 +66,6 @@
     <style name="translucent" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:windowBackground" >@color/translucent</item>
         <item name="android:windowIsTranslucent">true</item>
-    </style>
-
-    <!--自己定义PopupMenu上的RadioButton的样式-->
-    <style name="PopupMenuStyle" parent="AppTheme">
-        <item name="android:radioButtonStyle">@style/MenuRadioButtonStyle</item>
     </style>
 
     <style name="MenuRadioButtonStyle" parent="@android:style/Widget.CompoundButton.RadioButton">

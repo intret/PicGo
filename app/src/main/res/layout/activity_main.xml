@@ -6,7 +6,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    style="@style/PopupMenuStyle"
+    style="@style/Main"
+    android:fitsSystemWindows="true"
     tools:context="cn.intret.app.picgo.ui.main.MainActivity"
     >
 
