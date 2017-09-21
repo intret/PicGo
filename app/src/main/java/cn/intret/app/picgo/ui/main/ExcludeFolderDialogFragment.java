@@ -2,14 +2,18 @@ package cn.intret.app.picgo.ui.main;
 
 import android.app.Dialog;
 import android.content.Context;
+import android.graphics.Canvas;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomSheetDialogFragment;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.Log;
 import android.util.Pair;
 import android.view.LayoutInflater;
@@ -22,6 +26,16 @@ import android.widget.TextView;
 import com.afollestad.sectionedrecyclerview.ItemCoord;
 import com.afollestad.sectionedrecyclerview.SectionedRecyclerViewAdapter;
 import com.annimon.stream.Stream;
+import com.chad.library.adapter.base.BaseViewHolder;
+import com.chad.library.adapter.base.callback.ItemDragAndSwipeCallback;
+import com.chad.library.adapter.base.listener.OnItemSwipeListener;
+import com.mikepenz.fastadapter.FastAdapter;
+import com.mikepenz.fastadapter.IAdapter;
+import com.mikepenz.fastadapter.IExpandable;
+import com.mikepenz.fastadapter.IItem;
+import com.mikepenz.fastadapter.ISelectionListener;
+import com.mikepenz.fastadapter.commons.adapters.FastItemAdapter;
+import com.mikepenz.fastadapter_extensions.RangeSelectorHelper;
 
 import org.greenrobot.eventbus.EventBus;
 
@@ -36,12 +50,18 @@ import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.app.CoreModule;
 import cn.intret.app.picgo.model.ConflictResolverDialogFragment;
+import cn.intret.app.picgo.model.FolderModel;
+import cn.intret.app.picgo.model.ImageFolder;
 import cn.intret.app.picgo.model.ImageService;
 import cn.intret.app.picgo.model.UserDataService;
-import cn.intret.app.picgo.ui.adapter.FolderListAdapterUtils;
+import cn.intret.app.picgo.ui.adapter.brvah.ExpandableFolderAdapter;
+import cn.intret.app.picgo.ui.adapter.brvah.FolderListAdapter;
+import cn.intret.app.picgo.ui.adapter.brvah.FolderListAdapterUtils;
 import cn.intret.app.picgo.ui.adapter.SectionedFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedListItemClickDispatcher;
 import cn.intret.app.picgo.ui.adapter.SectionedListItemDispatchListener;
+import cn.intret.app.picgo.ui.adapter.fast.FolderItem;
+import cn.intret.app.picgo.ui.adapter.fast.SectionItem;
 import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.utils.RxUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
@@ -75,8 +95,15 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
     @BindView(R.id.keyboard_switch_layout) View mKeyboardSwitchLayout;
     @BindView(R.id.keyboard_switch_image_view) ImageView mKeyboardSwitchIv;
     private SectionedFolderListAdapter mListAdapter;
-    private boolean mEnableDetectSelectedFolder = false;
+    private FolderListAdapter mAdapter;
 
+    private boolean mEnableDetectSelectedFolder = false;
+    private RangeSelectorHelper mRangeSelectorHelper;
+    private ExpandableFolderAdapter mExpandableAdapter;
+//    private DragSelectTouchListener mDragSelectTouchListener;
+
+    private ItemTouchHelper mItemTouchHelper;
+    private ItemDragAndSwipeCallback mItemDragAndSwipeCallback;
 
     public ExcludeFolderDialogFragment() {
         // Required empty public constructor
@@ -112,6 +139,9 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
             }
         }
     }
+    //save our FastAdapter
+    private FastItemAdapter<IItem> mItemAdapter;
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -119,7 +149,7 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
 
         Log.d(TAG, "onCreateView() called with: inflater = [" + inflater + "], container = [" + container + "], savedInstanceState = [" + savedInstanceState + "]");
 
-        return createContentView(container);
+        return createContentView(container, savedInstanceState);
     }
 
 
@@ -128,6 +158,71 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
         super.onStart();
         Log.d(TAG, "onStart() called");
 
+        //loadSectionFolderList();
+
+        loadExpandableFolderList();
+    }
+
+    private void loadExpandableFolderList() {
+        ImageService.getInstance()
+                .loadHiddenFileListModel()
+                .map(FolderListAdapterUtils::folderModelToExpandableFolderAdapter)
+                .subscribe(this::showExpandableFolderList, RxUtils::unhandledThrowable);
+    }
+
+    private void showExpandableFolderList(ExpandableFolderAdapter adapter) {
+
+        adapter.setOnItemClickListener((baseQuickAdapter, view, i) ->
+                Log.d(TAG, "onItemClick() called with: baseQuickAdapter = [" + baseQuickAdapter + "], view = [" + view + "], i = [" + i + "]"));
+        adapter.setOnInteractionListener(item ->  {
+
+        });
+
+        final GridLayoutManager manager = new GridLayoutManager(this.getActivity(), 1);
+        manager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
+            @Override
+            public int getSpanSize(int position) {
+                return adapter.getItemViewType(position) == ExpandableFolderAdapter.TYPE_LEVEL_1 ? 1 : manager.getSpanCount();
+            }
+        });
+
+        OnItemSwipeListener onItemSwipeListener = new OnItemSwipeListener() {
+            @Override
+            public void onItemSwipeStart(RecyclerView.ViewHolder viewHolder, int pos) {
+                Log.d(TAG, "view swiped start: " + pos);
+                BaseViewHolder holder = ((BaseViewHolder) viewHolder);
+//                holder.setTextColor(R.id.tv, Color.WHITE);
+            }
+
+            @Override
+            public void clearView(RecyclerView.ViewHolder viewHolder, int pos) {
+                Log.d(TAG, "View reset: " + pos);
+                BaseViewHolder holder = ((BaseViewHolder) viewHolder);
+//                holder.setTextColor(R.id.tv, Color.BLACK);
+            }
+
+            @Override
+            public void onItemSwiped(RecyclerView.ViewHolder viewHolder, int pos) {
+                Log.d(TAG, "View Swiped: " + pos);
+            }
+
+            @Override
+            public void onItemSwipeMoving(Canvas canvas, RecyclerView.ViewHolder viewHolder, float dX, float dY, boolean isCurrentlyActive) {
+                canvas.drawColor(ContextCompat.getColor(getActivity(), R.color.list_item_swipe_delete));
+//                canvas.drawText("Just some text", 0, 40, paint);
+            }
+        };
+        //mItemDragAndSwipeCallback = new ItemDragAndSwipeCallback(adapter);
+
+        mFolderList.setAdapter(adapter);
+        mExpandableAdapter = adapter;
+
+        // important! setLayoutManager should be called after setAdapter
+        mFolderList.setLayoutManager(manager);
+        adapter.expandAll();
+    }
+
+    private void loadSectionFolderList() {
         ImageService.getInstance()
                 .loadHiddenFileListModel()
                 .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
@@ -173,11 +268,11 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
         super.onDestroyView();
     }
 
-    private View createContentView(ViewGroup root) {
+    private View createContentView(ViewGroup root, Bundle savedInstanceState) {
         View contentView = LayoutInflater.from(getActivity()).inflate(R.layout.fragment_exclude_folder_list, root, false);
         ButterKnife.bind(ExcludeFolderDialogFragment.this, contentView);
 
-        initContentView(contentView);
+        initContentView(contentView, savedInstanceState);
 
         ViewUtil.setHideIme(getActivity(), contentView);
 
@@ -216,10 +311,171 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
 //        });
     }
 
-    private void initContentView(View contentView) {
+    private void initContentView(View contentView, Bundle savedInstanceState) {
         initHeader(contentView);
         initFolderList(contentView);
+        initFolder(contentView);
         initDialPad(contentView);
+
+        //initList(contentView, savedInstanceState);
+    }
+
+    private void initList(View contentView, Bundle savedInstanceState) {
+        //create our FastAdapter
+
+        //we init our ActionModeHelper
+
+
+        //create our adapters
+//        final StickyHeaderAdapter stickyHeaderAdapter = new StickyHeaderAdapter();
+        mItemAdapter = new FastItemAdapter<>();
+
+        //configure our mFastAdapter
+        //as we provide id's for the items we want the hasStableIds enabled to speed up things
+        mItemAdapter.withSelectable(true);
+        mItemAdapter.withMultiSelect(true);
+        mItemAdapter.withSelectOnLongClick(true);
+        mItemAdapter.withPositionBasedStateManagement(false);
+        mItemAdapter.withOnPreClickListener(new FastAdapter.OnClickListener<IItem>() {
+            @Override
+            public boolean onClick(View v, IAdapter adapter, IItem item, int position) {
+                //we handle the default onClick behavior for the actionMode. This will return null if it didn't do anything and you can handle a normal onClick
+//                Boolean res = mActionModeHelper.onClick(item);
+//                return res != null ? res : false;
+                return true;
+            }
+        });
+
+        mItemAdapter.withOnClickListener(new FastAdapter.OnClickListener<IItem>() {
+            @Override
+            public boolean onClick(View view, IAdapter<IItem> iAdapter, IItem item, int i) {
+                mItemAdapter.select(i);
+                return true;
+            }
+        });
+
+        mItemAdapter.withSelectionListener(new ISelectionListener() {
+            @Override
+            public void onSelectionChanged(IItem item, boolean selected) {
+                if (item instanceof FolderItem) {
+
+
+//                    IItem headerItem = ((FolderItem) item).getParent();
+//                    if (headerItem != null) {
+//                        int pos = mItemAdapter.getAdapterPosition(headerItem);
+//                        // Important: notify the header directly, not via the notifyadapterItemChanged!
+//                        // we just want to update the view and we are sure, nothing else has to be done
+//                        Bundle payload = new Bundle();
+//
+//                        mItemAdapter.notifyItemChanged(pos);
+//                    }
+                }
+            }
+        });
+        mItemAdapter.withOnPreLongClickListener((v, adapter, item, position) -> {
+            //we do not want expandable items to be selected
+            if (item instanceof IExpandable) {
+                if (((IExpandable) item).getSubItems() != null) {
+                    return true;
+                }
+            }
+
+            return false;
+        });
+
+        // this will take care of selecting range of items via long press on the first and afterwards on the last item
+        mRangeSelectorHelper = new RangeSelectorHelper(mItemAdapter)
+                .withSavedInstanceState(savedInstanceState);
+
+//        // setup the drag select listener and add it to the RecyclerView
+//        mDragSelectTouchListener = new DragSelectTouchListener()
+//                .withSelectListener(new DragSelectTouchListener.OnDragSelectListener()
+//                {
+//                    @Override
+//                    public void onSelectChange(int start, int end, boolean isSelected)
+//                    {
+//                        mRangeSelectorHelper.selectRange(start, end, isSelected, true);
+//                        // we handled the long press, so we reset the range selector
+//                        mRangeSelectorHelper.reset();
+//                    }
+//                });
+//        rv.addOnItemTouchListener(mDragSelectTouchListener);
+
+        //get our recyclerView and do basic setup
+        RecyclerView folderList = (RecyclerView) contentView.findViewById(R.id.folder_list);
+        folderList.setLayoutManager(new LinearLayoutManager(this.getActivity()));
+        folderList.setItemAnimator(new DefaultItemAnimator());
+        folderList.setAdapter( mItemAdapter);
+
+
+//        final StickyRecyclerHeadersDecoration decoration = new StickyRecyclerHeadersDecoration(stickyHeaderAdapter);
+//        folderList.addItemDecoration(decoration);
+
+
+        //so the headers are aware of changes
+//        stickyHeaderAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
+//            @Override
+//            public void onChanged() {
+//                decoration.invalidateHeaders();
+//            }
+//        });
+
+        //init cache with the added items, this is useful for shorter lists with many many different view types (at least 4 or more
+        //new RecyclerViewCacheUtil().withCacheSize(2).apply(folderList, items);
+
+        //set the back arrow in the toolbar
+//        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+//        getSupportActionBar().setHomeButtonEnabled(false);
+
+        //we define the items
+        showHiddenFolders();
+
+        //restore selections (this has to be done after the items were added
+//        mFastAdapter.withSavedInstanceState(savedInstanceState);
+    }
+
+    private void showHiddenFolders() {
+
+        ImageService.getInstance()
+                .loadHiddenFileListModel()
+                .map(this::getIItems)
+                .compose(workAndShow())
+                .subscribe(items -> {
+                    mItemAdapter.add(items);
+                    mItemAdapter.expand();
+                });
+    }
+
+    @NonNull
+    private List<IItem> getIItems(FolderModel folder) {
+        List<IItem> items = new ArrayList<>();
+        for (int i = 0; i < folder.getContainerFolders().size(); i++) {
+            FolderModel.ContainerFolder containerFolder = folder.getContainerFolders().get(i);
+
+            SectionItem<SectionItem, FolderItem> section = new SectionItem<>();
+
+            section.setHeader(containerFolder.getName());
+            section.setFile(containerFolder.getFile());
+
+            List<FolderItem> subSubItems = new LinkedList<>();
+            List<ImageFolder> folders = containerFolder.getFolders();
+            for (int i1 = 0; i1 < folders.size(); i1++) {
+                ImageFolder imageFolder = folders.get(i1);
+
+                FolderItem<? extends IItem> subItem = new FolderItem<>();
+                subItem.setName(imageFolder.getName());
+                subItem.setFile(imageFolder.getFile());
+                subItem.setCount(imageFolder.getCount());
+                subItem.setThumbList(imageFolder.getThumbList());
+
+                subSubItems.add(subItem);
+            }
+
+            section.withSubItems(subSubItems);
+
+            items.add(section);
+        }
+        return items;
     }
 
     private void initHeader(View contentView) {
@@ -249,11 +505,11 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
                             .compose(RxUtils.workAndShow())
                             .subscribe(newAdapter -> {
 
-                                if (folderList != null) {
-                                    SectionedFolderListAdapter currAdapter = (SectionedFolderListAdapter) folderList.getAdapter();
-
-                                    currAdapter.diffUpdate(newAdapter);
-                                }
+//                                if (folderList != null) {
+//                                    SectionedFolderListAdapter currAdapter = (SectionedFolderListAdapter) folderList.getAdapter();
+//
+//                                    currAdapter.diffUpdate(newAdapter);
+//                                }
                             }, RxUtils::unhandledThrowable);
                 });
 
@@ -291,6 +547,15 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
         ViewUtil.showView(keypadContainer);
         keypadContainer.requestFocus();
         keypadSwitchButton.setBackgroundResource(R.drawable.keyboard_hide_selector);
+    }
+
+    private void initFolder(View contentView) {
+        RecyclerView folderList = (RecyclerView) contentView.findViewById(R.id.folder_list);
+        mFolderList = folderList;
+
+        mFolderList.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false));
+
+
     }
 
     private void initFolderList(final View contentView) {
@@ -429,7 +694,7 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
             return super.onCreateDialog(savedInstanceState);
         }
         // All later view operation should relative to this content view, butterknife will failed
-        View contentView = createContentView(null);
+        View contentView = createContentView(null, savedInstanceState);
 
         return new AlertDialog.Builder(getActivity())
                 .setTitle(R.string.move_selected_files_to)

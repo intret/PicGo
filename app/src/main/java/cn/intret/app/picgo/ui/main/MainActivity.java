@@ -53,7 +53,6 @@ import com.annimon.stream.function.BiConsumer;
 import com.annimon.stream.function.Function;
 import com.annimon.stream.function.Supplier;
 import com.chad.library.adapter.base.BaseQuickAdapter;
-import com.chad.library.adapter.base.entity.MultiItemEntity;
 import com.f2prateek.rx.preferences2.Preference;
 import com.jakewharton.rxrelay2.BehaviorRelay;
 
@@ -96,17 +95,16 @@ import cn.intret.app.picgo.model.event.RenameDirectoryMessage;
 import cn.intret.app.picgo.model.event.RescanFolderListMessage;
 import cn.intret.app.picgo.model.event.RescanFolderThumbnailListMessage;
 import cn.intret.app.picgo.model.event.RescanImageDirectoryMessage;
-import cn.intret.app.picgo.ui.adapter.BaseImageAdapter;
-import cn.intret.app.picgo.ui.adapter.DefaultImageListAdapter;
-import cn.intret.app.picgo.ui.adapter.DetailImageAdapter;
-import cn.intret.app.picgo.ui.adapter.ExpandableFolderAdapter;
+import cn.intret.app.picgo.ui.adapter.brvah.BaseImageAdapter;
+import cn.intret.app.picgo.ui.adapter.brvah.DefaultImageListAdapter;
+import cn.intret.app.picgo.ui.adapter.brvah.DetailImageAdapter;
+import cn.intret.app.picgo.ui.adapter.brvah.ExpandableFolderAdapter;
 import cn.intret.app.picgo.ui.adapter.FlatFolderListAdapter;
-import cn.intret.app.picgo.ui.adapter.FolderListAdapter;
-import cn.intret.app.picgo.ui.adapter.FolderListAdapterUtils;
+import cn.intret.app.picgo.ui.adapter.brvah.FolderListAdapter;
+import cn.intret.app.picgo.ui.adapter.brvah.FolderListAdapterUtils;
 import cn.intret.app.picgo.ui.adapter.ImageTransitionNameGenerator;
-import cn.intret.app.picgo.ui.adapter.BaseSelectableAdapter;
-import cn.intret.app.picgo.ui.adapter.FolderItem;
-import cn.intret.app.picgo.ui.adapter.FolderSection;
+import cn.intret.app.picgo.ui.adapter.brvah.BaseSelectableAdapter;
+import cn.intret.app.picgo.ui.adapter.brvah.FolderItem;
 import cn.intret.app.picgo.ui.adapter.SectionFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedImageListAdapter;
@@ -1264,50 +1262,12 @@ public class MainActivity extends BaseAppCompatActivity {
 
     private void showExpandableFolderList(FolderModel model) {
 
-        List<MultiItemEntity> data = new LinkedList<>();
-        List<FolderModel.ContainerFolder> containerFolders = model.getContainerFolders();
-        for (int i = 0, containerFoldersSize = containerFolders.size(); i < containerFoldersSize; i++) {
-            FolderModel.ContainerFolder containerFolder = containerFolders.get(i);
+        mExpandableFolderAdapter = FolderListAdapterUtils.folderModelToExpandableFolderAdapter(model);
 
-            FolderSection folderSection = new FolderSection()
-                    .setTitle(containerFolder.getName())
-                    .setFile(containerFolder.getFile());
+        mExpandableFolderAdapter.setOnItemClickListener((baseQuickAdapter, view, i) ->
+                Log.d(TAG, "onItemClick() called with: baseQuickAdapter = [" + baseQuickAdapter + "], view = [" + view + "], i = [" + i + "]"));
+        mExpandableFolderAdapter.setOnInteractionListener(item -> showDirectoryImages(item.getFile(), false));
 
-            List<ImageFolder> folders = containerFolder.getFolders();
-            for (int i1 = 0, foldersSize = folders.size(); i1 < foldersSize; i1++) {
-                ImageFolder folder = folders.get(i1);
-
-                FolderItem folderItem = new FolderItem();
-                folderItem.setFile(folder.getFile());
-                folderItem.setCount(folder.getCount());
-                folderItem.setName(folder.getName());
-                folderItem.setTitle(folder.getName());
-                folderItem.setThumbList(folder.getThumbList());
-                folderItem.setMatchKeywords(folder.getMatchKeywords() == null ? null : folder.getMatchKeywords().toString());
-                folderItem.setMatchLength(folder.getMatchLength());
-                folderItem.setMatchStartIndex(folder.getMatchStartIndex());
-                folderItem.setMediaFiles(folder.getMediaFiles());
-                folderItem.setPinyinSearchUnit(folder.getPinyinSearchUnit());
-
-                folderSection.addSubItem(folderItem);
-            }
-
-            data.add(folderSection);
-        }
-
-        mExpandableFolderAdapter = new ExpandableFolderAdapter(data);
-        mExpandableFolderAdapter.setOnItemClickListener(new BaseQuickAdapter.OnItemClickListener() {
-            @Override
-            public void onItemClick(BaseQuickAdapter baseQuickAdapter, View view, int i) {
-                Log.d(TAG, "onItemClick() called with: baseQuickAdapter = [" + baseQuickAdapter + "], view = [" + view + "], i = [" + i + "]");
-            }
-        });
-        mExpandableFolderAdapter.setOnInteractionListener(new ExpandableFolderAdapter.OnInteractionListener() {
-            @Override
-            public void onItemClick(FolderItem item) {
-                showDirectoryImages(item.getFile(), false);
-            }
-        });
         final GridLayoutManager manager = new GridLayoutManager(this, 1);
         manager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
             @Override
@@ -2067,18 +2027,9 @@ public class MainActivity extends BaseAppCompatActivity {
     private void showFolders(List<ImageFolder> imageFolders) {
 
         List<FolderListAdapter.Item> items = Stream.of(imageFolders)
-                .map(this::folderInfoToFolderListAdapterItem)
+                .map(FolderListAdapterUtils::imageFolderToFolderListAdapterItem)
                 .toList();
         showFolderItems(items);
-    }
-
-    private FolderListAdapter.Item folderInfoToFolderListAdapterItem(ImageFolder imageFolder) {
-        return new FolderListAdapter.Item()
-                .setName(imageFolder.getName())
-                .setCount(imageFolder.getCount())
-                .setDirectory(imageFolder.getFile())
-                .setThumbList(imageFolder.getThumbList())
-                ;
     }
 
     @Deprecated

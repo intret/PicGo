@@ -1,4 +1,4 @@
-package cn.intret.app.picgo.ui.adapter;
+package cn.intret.app.picgo.ui.adapter.brvah;
 
 
 import android.support.annotation.LayoutRes;
@@ -15,6 +15,8 @@ import com.chad.library.adapter.base.BaseViewHolder;
 
 import java.util.LinkedList;
 import java.util.List;
+
+import cn.intret.app.picgo.ui.adapter.ItemSelectable;
 
 public abstract class BaseSelectableAdapter< T extends ItemSelectable, VH extends BaseViewHolder>
         extends BaseQuickAdapter<T, VH> implements IDragSelectAdapter, BaseQuickAdapter.OnItemClickListener, BaseQuickAdapter.OnItemLongClickListener {
@@ -202,7 +204,7 @@ public abstract class BaseSelectableAdapter< T extends ItemSelectable, VH extend
         void onSelectedCountChange(AdapterT adapter, int selectedCount);
     }
 
-    OnInteractionListener<BaseSelectableAdapter, T> mOnInteractionListener;
+    protected OnInteractionListener<BaseSelectableAdapter, T> mOnInteractionListener;
 
     public OnInteractionListener<BaseSelectableAdapter, T> getOnInteractionListener() {
         return mOnInteractionListener;

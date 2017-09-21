@@ -37,7 +37,7 @@ public class HorizontalImageListAdapter extends RecyclerView.Adapter<HorizontalI
         return this;
     }
 
-    static class Item {
+    public static class Item {
         File mFile;
 
         public File getFile() {

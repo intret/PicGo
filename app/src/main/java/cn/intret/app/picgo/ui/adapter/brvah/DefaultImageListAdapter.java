@@ -1,4 +1,4 @@
-package cn.intret.app.picgo.ui.adapter;
+package cn.intret.app.picgo.ui.adapter.brvah;
 
 import android.os.Bundle;
 import android.support.annotation.LayoutRes;
@@ -17,6 +17,8 @@ import java.io.File;
 import java.util.List;
 
 import cn.intret.app.picgo.R;
+import cn.intret.app.picgo.ui.adapter.BaseFileItem;
+import cn.intret.app.picgo.ui.adapter.ImageTransitionNameGenerator;
 import cn.intret.app.picgo.utils.PathUtils;
 
 /**

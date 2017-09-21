@@ -1,6 +1,5 @@
-package cn.intret.app.picgo.ui.adapter;
+package cn.intret.app.picgo.ui.adapter.brvah;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.Nullable;
@@ -25,6 +24,9 @@ import java.util.List;
 import java.util.Objects;
 
 import cn.intret.app.picgo.R;
+import cn.intret.app.picgo.ui.adapter.BaseFileItem;
+import cn.intret.app.picgo.ui.adapter.ContentEqual;
+import cn.intret.app.picgo.ui.adapter.ImageTransitionNameGenerator;
 import cn.intret.app.picgo.utils.DateTimeUtils;
 import cn.intret.app.picgo.utils.PathUtils;
 
@@ -378,7 +380,6 @@ public class DetailImageAdapter
         viewHolder.setText(R.id.desc, DateTimeUtils.formatDuration(new Duration(videoDuration)));
     }
 
-    @Override
     void onBindViewHolderSelected(BaseViewHolder vh, boolean selected, boolean isSelectionMode) {
         vh.setVisible(R.id.checkBox, isSelectionMode);
         vh.setChecked(R.id.checkBox, selected);

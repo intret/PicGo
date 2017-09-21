@@ -1,4 +1,4 @@
-package cn.intret.app.picgo.ui.adapter;
+package cn.intret.app.picgo.ui.adapter.brvah;
 
 import android.content.res.Resources;
 import android.support.annotation.NonNull;
@@ -18,11 +18,15 @@ import java.util.List;
 import java.util.Map;
 
 import cn.intret.app.picgo.R;
+import cn.intret.app.picgo.ui.adapter.HorizontalImageAdapterUils;
+import cn.intret.app.picgo.ui.adapter.HorizontalImageListAdapter;
 import q.rorbin.badgeview.Badge;
 import q.rorbin.badgeview.QBadgeView;
 
 
-public class ExpandableFolderAdapter extends BaseMultiItemQuickAdapter<MultiItemEntity,BaseViewHolder> implements BaseQuickAdapter.OnItemClickListener, BaseQuickAdapter.OnItemLongClickListener {
+public class ExpandableFolderAdapter
+        extends BaseMultiItemQuickAdapter<MultiItemEntity,BaseViewHolder>
+        implements BaseQuickAdapter.OnItemClickListener, BaseQuickAdapter.OnItemLongClickListener {
     private static final String TAG = ExpandableFolderAdapter.class.getSimpleName();
 
     public static class ItemViewHolder extends BaseViewHolder {

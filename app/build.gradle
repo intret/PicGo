@@ -176,6 +176,12 @@ dependencies {
     compile 'org.greenrobot:eventbus:3.0.0'
     compile 'pl.droidsonroids.gif:android-gif-drawable:1.2.8'
     compile 'q.rorbin:badgeview:1.1.2'
+//    compile 'com.mikepenz.thirdparty:stickyheadersrecyclerview:0.4.4-SNAPSHOT@aar'
+    compile('com.mikepenz:fastadapter:2.6.3@aar') {
+        transitive = false
+    }
+    compile 'com.mikepenz:fastadapter-commons:2.6.3@aar'
+    compile 'com.mikepenz:fastadapter-extensions:2.6.3@aar'
     annotationProcessor 'com.jakewharton:butterknife-compiler:8.7.0'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.0.0-RC1'
     compile('com.github.bumptech.glide:recyclerview-integration:4.0.0-RC1') {

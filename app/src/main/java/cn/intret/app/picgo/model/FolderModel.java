@@ -33,6 +33,9 @@ public class FolderModel implements Cloneable {
         List<ImageFolder> mFolders;
 
         public List<ImageFolder> getFolders() {
+            if (mFolders == null) {
+                return new LinkedList<>();
+            }
             return mFolders;
         }
 

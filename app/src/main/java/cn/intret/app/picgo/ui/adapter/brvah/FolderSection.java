@@ -1,8 +1,4 @@
-package cn.intret.app.picgo.ui.adapter;
-
-import android.content.Context;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
+package cn.intret.app.picgo.ui.adapter.brvah;
 
 import com.chad.library.adapter.base.entity.AbstractExpandableItem;
 import com.chad.library.adapter.base.entity.MultiItemEntity;

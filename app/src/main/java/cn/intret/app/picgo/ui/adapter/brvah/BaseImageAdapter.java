@@ -1,16 +1,18 @@
-package cn.intret.app.picgo.ui.adapter;
+package cn.intret.app.picgo.ui.adapter.brvah;
 
 import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import com.annimon.stream.Stream;
-import com.annimon.stream.function.Predicate;
 import com.chad.library.adapter.base.BaseViewHolder;
 
 import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
+
+import cn.intret.app.picgo.ui.adapter.BaseFileItem;
+import cn.intret.app.picgo.ui.adapter.ItemSelectable;
 
 public abstract class BaseImageAdapter<T extends BaseFileItem,VH extends BaseViewHolder>
         extends BaseSelectableAdapter<T,VH> {

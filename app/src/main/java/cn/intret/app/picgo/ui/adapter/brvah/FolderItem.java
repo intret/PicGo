@@ -1,4 +1,4 @@
-package cn.intret.app.picgo.ui.adapter;
+package cn.intret.app.picgo.ui.adapter.brvah;
 
 import android.content.Context;
 import android.support.v7.widget.LinearLayoutManager;
@@ -11,6 +11,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import cn.intret.app.picgo.model.ImageFolder;
+import cn.intret.app.picgo.ui.adapter.HorizontalImageListAdapter;
 
 
 public class FolderItem extends ImageFolder implements MultiItemEntity, Cloneable {

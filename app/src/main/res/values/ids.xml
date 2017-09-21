@@ -11,4 +11,6 @@
     <item name="menu_item_delete" type="id"/>
     <item name="menu_item_hide" type="id"/>
     <item name="menu_item_move_file_to_here" type="id"/>
+    <item name="fastadapter_sample_item_id" type="id"/>
+    <item name="parent_folder" type="id"/>
 </resources>

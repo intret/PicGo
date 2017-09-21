@@ -38,7 +38,7 @@ import cn.intret.app.picgo.app.CoreModule;
 import cn.intret.app.picgo.model.ConflictResolverDialogFragment;
 import cn.intret.app.picgo.model.ImageService;
 import cn.intret.app.picgo.model.UserDataService;
-import cn.intret.app.picgo.ui.adapter.FolderListAdapterUtils;
+import cn.intret.app.picgo.ui.adapter.brvah.FolderListAdapterUtils;
 import cn.intret.app.picgo.ui.adapter.SectionedFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedListItemClickDispatcher;
 import cn.intret.app.picgo.ui.adapter.SectionedListItemDispatchListener;

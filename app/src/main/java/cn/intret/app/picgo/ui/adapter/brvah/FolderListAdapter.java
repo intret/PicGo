@@ -1,4 +1,4 @@
-package cn.intret.app.picgo.ui.adapter;
+package cn.intret.app.picgo.ui.adapter.brvah;
 
 import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.RecyclerView;
@@ -23,7 +23,8 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
-import cn.intret.app.picgo.model.FolderModel;
+import cn.intret.app.picgo.ui.adapter.HorizontalImageListAdapter;
+import cn.intret.app.picgo.ui.adapter.SectionedFolderListAdapter;
 
 /**
  * 抽屉菜单列表

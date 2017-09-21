@@ -17,6 +17,7 @@
     <color name="transparent">#00FFFFFF</color>
     <color name="grey21_transparent">#D0363636</color>
     <color name="warning">#DC8900</color>
+    <color name="list_item_swipe_delete">@android:color/holo_red_dark</color>
     <color name="bg_list_item_section">#dFdFdF</color>
 
     <!-- 灰色-->
