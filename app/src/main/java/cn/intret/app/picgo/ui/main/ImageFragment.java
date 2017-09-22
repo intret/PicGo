@@ -47,7 +47,6 @@ import cn.intret.app.picgo.model.ImageService;
 import cn.intret.app.picgo.ui.event.CancelExitTransitionMessage;
 import cn.intret.app.picgo.ui.event.ImageFragmentSelectionChangeMessage;
 import cn.intret.app.picgo.utils.PathUtils;
-import cn.intret.app.picgo.utils.StatusBarUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageView;
@@ -74,7 +73,7 @@ public class ImageFragment extends Fragment {
     private OnFragmentInteractionListener mListener;
     private boolean mIsLoaded = false;
 
-    @BindView(R.id.image) PhotoView mImage;
+    @BindView(R.id.image) DragPhotoView mImage;
     @BindView(R.id.gif_image) GifImageView mGifImageView;
     @BindView(R.id.file_type) ImageView mFileType;
     @BindView(R.id.empty_view) View mEmptyView;
@@ -129,18 +128,18 @@ public class ImageFragment extends Fragment {
         tryToSetTransitionNameFromIntent();
         //}
 
-        mImage.setOnClickListener(v -> {
-            handleClickEvent();
-        });
+//        mImage.setOnClickListener(v -> {
+//            handleClickEvent();
+//        });
+//
+//        mRootLayout.setOnClickListener(v -> {
+//            handleClickEvent();
+//        });
 
-        mRootLayout.setOnClickListener(v -> {
-            handleClickEvent();
-        });
-
-        mImage.setOnLongClickListener(v -> {
-            showImageDialog();
-            return true;
-        });
+//        mImage.setOnLongClickListener(v -> {
+//            showImageDialog();
+//            return true;
+//        });
 
         SimpleTarget<Drawable> target = new SimpleTarget<Drawable>() {
             @Override
@@ -170,7 +169,21 @@ public class ImageFragment extends Fragment {
         }
 
         mImage.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        mImage.setOnExitListener(new DragPhotoView.OnExitListener() {
+            @Override
+            public void onExit(DragPhotoView view, float translateX, float translateY, float w, float h) {
+                Log.d(TAG, "onExit() called with: view = [" + view + "], translateX = [" + translateX + "], translateY = [" + translateY + "], w = [" + w + "], h = [" + h + "]");
+                EventBus.getDefault().post(new DragImageExitMessage());
+            }
+        });
+        //mImage.setMinScale(0.75f);
 
+        mImage.setOnTapListener(new DragPhotoView.OnTapListener() {
+            @Override
+            public void onTap(DragPhotoView view) {
+                Log.d(TAG, "onTap() called with: view = [" + view + "]");
+            }
+        });
 
         if (PathUtils.isGifFile(mFilePath)) {
             try {
@@ -198,6 +211,7 @@ public class ImageFragment extends Fragment {
             if (PathUtils.isStaticImageFile(mFilePath) || PathUtils.isVideoFile(mFilePath)) {
                 request.listener(new ImageRequestObserver(mPerformEnterTransition));
                 request.into(mImage);
+
             } else {
                 scheduleStartPostponedTransition(mImage);
                 request.into(mImage);

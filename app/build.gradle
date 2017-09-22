@@ -144,6 +144,7 @@ dependencies {
     compile 'com.android.support:recyclerview-v7:' + versions.supportLib
     compile 'com.android.support:support-v4:' + versions.supportLib
     compile 'com.afollestad:drag-select-recyclerview:1.0.0'
+    compile 'com.github.githubwing:DragPhotoView:1.0.1'
     compile 'com.andkulikov:transitionseverywhere:1.7.4'
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
     compile 'com.android.support:support-v4:25.3.1'

@@ -32,7 +32,6 @@ import com.annimon.stream.Stream;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.github.chrisbanes.photoview.PhotoView;
-import com.jaeger.library.StatusBarUtil;
 import com.orhanobut.logger.Logger;
 
 import org.apache.commons.io.FilenameUtils;
@@ -70,7 +69,6 @@ import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.utils.MediaUtils;
 import cn.intret.app.picgo.utils.PathUtils;
 import cn.intret.app.picgo.utils.RxUtils;
-import cn.intret.app.picgo.utils.StatusBarUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
 import cn.intret.app.picgo.utils.ViewUtils;
@@ -516,6 +514,11 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onEvent(DragImageExitMessage message) {
+        ActivityCompat.finishAfterTransition(this);
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(ImageAnimationStartMessage message) {
 //        View decorView = getWindow().getDecorView();
 
@@ -610,7 +613,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
                 mCurrentItem = position;
 
                 Image image = adapter.getImage(position);
-                showImageBrief(position);
+                showImageInfo(position);
 
                 EventBus.getDefault().post(new CurrentImageChangeMessage().setPosition(position));
             }
@@ -625,20 +628,22 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
             mCurrentItem = position;
             mViewPager.setCurrentItem(position);
 
-            showImageBrief(position);
+            showImageInfo(position);
         } else {
             mCurrentItem = 0;
             mViewPager.setCurrentItem(0);
-            showImageBrief(0);
+            showImageInfo(0);
         }
     }
 
-    private void showImageBrief(int position) {
+    private void showImageInfo(int position) {
         Image image = mPagerAdapter.getImage(position);
         int total = mPagerAdapter.getCount();
 
-        mBrief.setText(getString(R.string.percent_d_d, position, total));
+        String imagePosition = getString(R.string.percent_d_d, position, total);
+        mBrief.setText(imagePosition);
 
+        // Resolution
         ImageService.getInstance()
                 .loadImageInfo(image.getFile())
                 .compose(workAndShow())
@@ -654,9 +659,13 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
                     mResolution.setText("-");
                 });
 
+        // Title : file name
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setTitle(image.getFile().getName());
+
+            // Subtitle : index
+            actionBar.setSubtitle(imagePosition);
         }
     }
 
