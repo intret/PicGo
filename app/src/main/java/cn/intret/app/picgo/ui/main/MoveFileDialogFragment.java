@@ -9,21 +9,31 @@ import android.support.design.widget.BottomSheetDialogFragment;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.RecyclerView;
+import android.text.InputType;
+import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.afollestad.materialdialogs.DialogAction;
+import com.afollestad.materialdialogs.MaterialDialog;
+import com.afollestad.materialdialogs.internal.MDButton;
 import com.afollestad.sectionedrecyclerview.ItemCoord;
 import com.afollestad.sectionedrecyclerview.SectionedRecyclerViewAdapter;
 import com.annimon.stream.Stream;
+import com.jakewharton.rxbinding2.widget.RxTextView;
 
 import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -38,17 +48,20 @@ import cn.intret.app.picgo.app.CoreModule;
 import cn.intret.app.picgo.model.ConflictResolverDialogFragment;
 import cn.intret.app.picgo.model.ImageService;
 import cn.intret.app.picgo.model.UserDataService;
+import cn.intret.app.picgo.model.event.FolderModelChangeMessage;
 import cn.intret.app.picgo.ui.adapter.brvah.FolderListAdapterUtils;
 import cn.intret.app.picgo.ui.adapter.SectionedFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedListItemClickDispatcher;
 import cn.intret.app.picgo.ui.adapter.SectionedListItemDispatchListener;
 import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.utils.RxUtils;
+import cn.intret.app.picgo.utils.SystemUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
 import cn.intret.app.picgo.utils.ViewUtil;
 import cn.intret.app.picgo.utils.ViewUtils;
 import cn.intret.app.picgo.view.T9KeypadView;
 import cn.intret.app.picgo.widget.RecyclerItemTouchListener;
+import io.reactivex.Observable;
 import io.reactivex.ObservableTransformer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
@@ -76,6 +89,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
     @BindView(R.id.keyboard_switch_image_view) ImageView mKeyboardSwitchIv;
     private SectionedFolderListAdapter mListAdapter;
     private boolean mEnableDetectSelectedFolder = false;
+    private Observable<CharSequence> mDialogInputObservable;
 
 
     class DialogViews {
@@ -118,6 +132,8 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
                 mSelectedFiles = Stream.of(files).map(File::new).toList();
             }
         }
+
+        EventBus.getDefault().register(this);
     }
 
     @Override
@@ -134,36 +150,76 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
         super.onStart();
         Log.d(TAG, "onStart() called");
 
+        loadFolderList();
+    }
+
+    @Override
+    public void onDestroy() {
+        try {
+            EventBus.getDefault().unregister(this);
+        } catch (Throwable throwable) {
+            throwable.printStackTrace();
+        }
+        super.onDestroy();
+    }
+
+    private void loadFolderList() {
         ImageService.getInstance()
                 .loadFolderList(true)
                 .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
                 .map(this::setAdapterMoveFileSourceDir)
-                .doOnNext(adapter -> mListAdapter = adapter)
-                .subscribe(adapter -> {
-
-                    // Show loaded adapter
-                    mFolderList.setAdapter(mListAdapter);
-
-                    // Restore position
-                    int visibleItemPosition = UserDataService.getInstance().getMoveFileDialogFirstVisibleItemPosition();
-                    if (visibleItemPosition != RecyclerView.NO_POSITION) {
-                        mFolderList.scrollToPosition(visibleItemPosition);
-                    }
-
-                    ImageService.getInstance()
-                            .detectFileExistence(mSelectedFiles)
-                            .compose(workAndShow())
-                            .subscribe(detectFileExistenceResult -> {
-                                Log.w(TAG, "onStart: 文件冲突 " + detectFileExistenceResult );
-
-                                mListAdapter.updateConflictFiles(detectFileExistenceResult.getExistedFiles());
-
-                            }, RxUtils::unhandledThrowable);
-                }, throwable -> {
+                .map(this::addNewFolderItem)
+                .subscribe(this::showFolderListAdapter, throwable -> {
+                    throwable.printStackTrace();
                     ToastUtils.toastShort(MoveFileDialogFragment.this.getActivity(), R.string.load_folder_list_failed);
                 });
+    }
 
+    private void showFolderListAdapter(SectionedFolderListAdapter adapter) {
+        // Show loaded adapter
+        mListAdapter = adapter;
+        mListAdapter.setShowHeaderOptionButton(true);
 
+        mFolderList.setAdapter(mListAdapter);
+//        mListAdapter.setOnItemClickListener(new SectionedFolderListAdapter.OnItemClickListener() {
+//            @Override
+//            public void onSectionHeaderClick(SectionedFolderListAdapter.Section section, int sectionIndex, int adapterPosition) {
+//
+//            }
+//
+//            @Override
+//            public void onSectionHeaderOptionButtonClick(View v, SectionedFolderListAdapter.Section section, int sectionIndex) {
+//                showFolderSectionHeaderOptionPopupMenu(v, section, getActivity());
+//            }
+//
+//            @Override
+//            public void onItemClick(SectionedFolderListAdapter.Section sectionItem, int section, SectionedFolderListAdapter.Item item, int relativePos) {
+//
+//            }
+//
+//            @Override
+//            public void onItemLongClick(View v, SectionedFolderListAdapter.Section sectionItem, int section, SectionedFolderListAdapter.Item item, int relativePos) {
+//
+//            }
+//        });
+
+        // Restore position
+        int visibleItemPosition = UserDataService.getInstance()
+                .getMoveFileDialogFirstVisibleItemPosition();
+        if (visibleItemPosition != RecyclerView.NO_POSITION) {
+            mFolderList.scrollToPosition(visibleItemPosition);
+        }
+
+        // 文件冲突检测
+        ImageService.getInstance()
+                .detectFileExistence(mSelectedFiles)
+                .compose(workAndShow())
+                .subscribe(detectFileExistenceResult -> {
+                    Log.w(TAG, "onStart: 文件冲突 " + detectFileExistenceResult);
+
+                    mListAdapter.updateConflictFiles(detectFileExistenceResult.getExistedFiles());
+
+                }, RxUtils::unhandledThrowable);
     }
 
     private SectionedFolderListAdapter setAdapterMoveFileSourceDir(SectionedFolderListAdapter adapter) {
@@ -171,6 +227,59 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
             adapter.setMoveFileSourceDir(mSelectedFiles.get(0).getParentFile());
         }
         return adapter;
+    }
+
+    private void showFolderSectionHeaderOptionPopupMenu(View v, SectionedFolderListAdapter.Section section, Context context) {
+        PopupMenu popupMenu = new PopupMenu(v.getContext(), v);
+        popupMenu.inflate(R.menu.folder_header_option_menu);
+        popupMenu.setOnMenuItemClickListener(item -> {
+            switch (item.getItemId()) {
+                case R.id.create_folder: {
+                    new MaterialDialog.Builder(context)
+                            .title(R.string.create_folder)
+                            .input(R.string.input_new_folder_name, R.string.new_folder_prefill, false, new MaterialDialog.InputCallback() {
+                                @Override
+                                public void onInput(@NonNull MaterialDialog dialog, CharSequence input) {
+                                    boolean isValid = input.length() > 1 && input.length() <= 16;
+                                    MDButton actionButton = dialog.getActionButton(DialogAction.POSITIVE);
+                                    if (actionButton != null) {
+                                        actionButton.setClickable(isValid);
+                                    }
+                                }
+                            })
+                            .alwaysCallInputCallback()
+                            .inputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI)
+                            .positiveText(R.string.create_folder)
+                            .onPositive((dialog, which) -> {
+                                EditText inputEditText = dialog.getInputEditText();
+                                if (inputEditText != null) {
+                                    String folderName = inputEditText.getEditableText().toString();
+                                    File dir = new File(section.getFile(), folderName);
+                                    ImageService.getInstance()
+                                            .createFolder(dir)
+                                            .compose(workAndShow())
+                                            .subscribe(ok -> {
+                                                if (ok) {
+                                                    ToastUtils.toastLong(context, getString(R.string.created_folder_s, folderName));
+
+                                                }
+                                            }, throwable -> {
+                                                Log.d(TAG, "新建文件夹失败：" + throwable.getMessage());
+                                                ToastUtils.toastLong(context, R.string.create_folder_failed);
+                                            });
+                                }
+                            })
+                            .negativeText(R.string.cancel)
+                            .show();
+                }
+                break;
+                case R.id.folder_detail:
+                    ToastUtils.toastShort(context, R.string.unimplemented);
+                    break;
+            }
+            return false;
+        });
+        popupMenu.show();
     }
 
     @Override
@@ -248,7 +357,152 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
             moveFile(contentView);
             dismiss();
         });
+
+        Button btnCreateFolder = (Button) contentView.findViewById(R.id.btn_create_folder);
+        btnCreateFolder.setOnClickListener(v -> {
+            //createFolder(contentView);
+        });
     }
+
+    class FolderItem {
+        File file;
+        String name;
+
+        public File getFile() {
+            return file;
+        }
+
+        public FolderItem setFile(File file) {
+            this.file = file;
+            return this;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public FolderItem setName(String name) {
+            this.name = name;
+            return this;
+        }
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onEvent(FolderModelChangeMessage message) {
+
+    }
+
+    private void createFolder(File dir) {
+
+        List<FolderItem> items = new LinkedList<>();
+        File dcimDir = SystemUtils.getDCIMDir();
+        File picturesDir = SystemUtils.getPicturesDir();
+
+        items.add(new FolderItem().setFile(dcimDir).setName(dcimDir.getName()));
+        items.add(new FolderItem().setFile(picturesDir).setName(picturesDir.getName()));
+
+        List<String> menuItem = Stream.of(items).map(FolderItem::getName).toList();
+
+
+        sgowCreateFolderDialog(getContext(), dir);
+
+//        new MaterialDialog.Builder(getActivity())
+//                .title(R.string.create_folder)
+//                .items(menuItem)
+//                .itemsCallbackSingleChoice(-1, new MaterialDialog.ListCallbackSingleChoice() {
+//                    @Override
+//                    public boolean onSelection(MaterialDialog dialog, View view, int which, CharSequence text) {
+//                        /**
+//                         * If you use alwaysCallSingleChoiceCallback(), which is discussed below,
+//                         * returning false here won't allow the newly selected radio button to actually be selected.
+//                         **/
+//                        return true;
+//                    }
+//                })
+//                .input(getString(R.string.input_new_folder_name), getString(R.string.new_folder_prefill), new MaterialDialog.InputCallback() {
+//                    @Override
+//                    public void onInput(@NonNull MaterialDialog dialog, CharSequence input) {
+//
+//                    }
+//                })
+//                .positiveText(R.string.create_folder)
+//                .onPositive(new MaterialDialog.SingleButtonCallback() {
+//                    @Override
+//                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+//
+//                        FolderItem folderItem = items.get(dialog.getSelectedIndex());
+//
+//
+//                        dismiss();
+//                    }
+//                })
+//                .show();
+    }
+
+    private void sgowCreateFolderDialog(Context c, File targetDir) {
+
+        // TODO: 包含创建文件目标目录的 Dialog title
+        MaterialDialog md = new MaterialDialog.Builder(c)
+                .title(getString(R.string.input_new_folder_name))
+                .input(getString(R.string.input_new_folder_name), getString(R.string.new_folder_prefill), (dialog, input) -> {
+                    boolean isValid = input.length() > 1 && input.length() <= 16;
+
+                    MDButton actionButton = dialog.getActionButton(DialogAction.POSITIVE);
+                    if (actionButton != null) {
+                        actionButton.setEnabled(false);
+                    }
+                })
+                .inputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI)
+                .alwaysCallInputCallback()
+                .positiveText(R.string.create_folder)
+                .onPositive((dialog, which) -> {
+
+                    EditText inputEditText = dialog.getInputEditText();
+                    if (inputEditText != null) {
+                        String folderName = inputEditText.getEditableText().toString();
+
+                        File newFolder = new File(targetDir, folderName);
+                        ImageService.getInstance()
+                                .createFolder(newFolder)
+                                .compose(workAndShow())
+                                .subscribe(ok -> {
+                                    if (ok) {
+                                        // 在 FolderModelChangeMessage 消息中更新界面
+                                        filterFolderList(mFolderList, "", targetDir);
+                                    }
+                                }, throwable -> {
+                                    Log.d(TAG, "新建文件夹失败：" + throwable.getMessage());
+                                    ToastUtils.toastLong(MoveFileDialogFragment.this.getActivity(), R.string.create_folder_failed);
+                                });
+                    }
+                })
+                .negativeText(R.string.cancel)
+                .build();
+
+
+        EditText inputEditText = md.getInputEditText();
+        if (inputEditText != null) {
+            mDialogInputObservable = RxTextView.textChanges(inputEditText).debounce(500, TimeUnit.MILLISECONDS);
+
+            mDialogInputObservable.observeOn(AndroidSchedulers.mainThread()).subscribe(charSequence -> {
+                try {
+                    MDButton actionButton = md.getActionButton(DialogAction.POSITIVE);
+                    if (actionButton != null) {
+
+                        File newFolder = new File(targetDir, charSequence.toString());
+                        actionButton.setEnabled(!newFolder.exists());
+                    }
+                } catch (Throwable throwable) {
+                    throwable.printStackTrace();
+                }
+            })
+            ;
+        }
+
+        md.show();
+    }
+
+    boolean mShouldApplyT9Filter = false;
 
     private void initDialPad(View contentView) {
         ViewGroup keypadContainer = (ViewGroup) contentView.findViewById(R.id.t9_keypad_container);
@@ -263,22 +517,64 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
                 .subscribe(input -> {
                     Log.d(TAG, "initDialPad: dial");
                     String inputString = input.toString();
-                    ImageService.getInstance()
-                            .loadFolderList(true, inputString)
-                            .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
-                            .map(this::setAdapterMoveFileSourceDir)
-                            .compose(RxUtils.workAndShow())
-                            .subscribe(newAdapter -> {
 
-                                if (folderList != null) {
-                                    SectionedFolderListAdapter currAdapter = (SectionedFolderListAdapter) folderList.getAdapter();
+                    // 只要输入有一次不为空就开启过滤模式
+                    if (!TextUtils.isEmpty(inputString)) {
+                        if (!mShouldApplyT9Filter) {
+                            mShouldApplyT9Filter = true;
+                        }
+                    }
 
-                                    currAdapter.diffUpdate(newAdapter);
-                                }
-                            }, RxUtils::unhandledThrowable);
+                    if (!mShouldApplyT9Filter) {
+                        Log.w(TAG, "initDialPad: 不进行过滤");
+                        return;
+                    }
+
+                    filterFolderList(folderList, inputString, null);
                 });
 
 //        showKeyboard(keypadContainer, (ImageView) contentView.findViewById(R.id.keyboard_switch_image_view));
+    }
+
+    private void filterFolderList(RecyclerView folderList, String inputString, File scrollToDir) {
+        ImageService.getInstance()
+                .loadFolderList(true, inputString)
+                .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
+                .map(this::setAdapterMoveFileSourceDir)
+                .map(this::addNewFolderItem)
+                .compose(RxUtils.workAndShow())
+                .subscribe(newAdapter -> {
+
+                    if (folderList != null) {
+                        SectionedFolderListAdapter currAdapter = (SectionedFolderListAdapter) folderList.getAdapter();
+                        if (currAdapter != null) {
+                            currAdapter.diffUpdate(newAdapter);
+
+                            currAdapter.scrollToItem(scrollToDir);
+
+                        } else {
+                            folderList.setAdapter(newAdapter);
+                        }
+                    } else {
+                        Log.w(TAG, "initDialPad: show null adapter");
+                    }
+                }, RxUtils::unhandledThrowable);
+    }
+
+    private SectionedFolderListAdapter addNewFolderItem(SectionedFolderListAdapter adapter) {
+        for (int i = 0; i < adapter.getSections().size(); i++) {
+            List<SectionedFolderListAdapter.Section> sections = adapter.getSections();
+
+            SectionedFolderListAdapter.Section section = sections.get(i);
+            section.getItems()
+                    .add(0, new SectionedFolderListAdapter.Item()
+                            .setFile(section.getFile())
+                            .setItemSubType(SectionedFolderListAdapter.ItemSubType.ADD_ITEM)
+                            .setName(getString(R.string.create_folder))
+                            .setCount(-1)
+                    );
+        }
+        return adapter;
     }
 
     private void switchKeyboard(ViewGroup keypadContainer, ImageView kbSwitchIv) {
@@ -358,46 +654,55 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
     }
 
     private void onClickFolderListItem(SectionedFolderListAdapter.Item item, View contentView) {
-        String msg = getString(R.string.move_selected_images_to_directory_s, item.getFile().getName());
+        if (item.getItemSubType() == SectionedFolderListAdapter.ItemSubType.ADD_ITEM) {
 
-        // 移动文件描述信息
-        ViewUtils.setText(contentView, R.id.desc, msg);
+            createFolder(item.getFile());
 
-        setStatusDetecting(contentView);
+        } else {
+            String msg = getString(R.string.move_selected_images_to_directory_s, item.getFile().getName());
 
-        ImageService.getInstance()
-                .detectMoveFileConflict(item.getFile(), mSelectedFiles)
-                .compose(RxUtils.workAndShow())
-                .subscribe(moveFileDetectResult -> {
-                    int colorOk = MoveFileDialogFragment.this.getResources().getColor(android.R.color.holo_green_dark);
-                    int colorConflict = MoveFileDialogFragment.this.getResources().getColor(android.R.color.holo_red_dark);
+            // 移动文件描述信息
+            ViewUtils.setText(contentView, R.id.desc, msg);
 
-                    if (moveFileDetectResult != null) {
-                        List<Pair<File, File>> conflictFiles = moveFileDetectResult.getConflictFiles();
-                        List<Pair<File, File>> canMoveFiles = moveFileDetectResult.getCanMoveFiles();
-                        Button btnMoveFile = (Button) contentView.findViewById(R.id.btn_positive);
+            setStatusDetecting(contentView);
 
-                        if (conflictFiles.isEmpty()) {
-                            setDetectingResultText(contentView, getString(R.string.can_move_all_files, canMoveFiles.size()), colorOk);
+            // TODO: 直接从 adapter 中获取冲突文件信息就可以了
 
-                            btnMoveFile.setTextColor(getResources().getColor(R.color.colorAccent));
-                        } else {
+            ImageService.getInstance()
+                    .detectMoveFileConflict(item.getFile(), mSelectedFiles)
+                    .compose(RxUtils.workAndShow())
+                    .subscribe(moveFileDetectResult -> {
+                        int colorOk = MoveFileDialogFragment.this.getResources().getColor(android.R.color.holo_green_dark);
+                        int colorConflict = MoveFileDialogFragment.this.getResources().getColor(android.R.color.holo_red_dark);
 
-                            btnMoveFile.setText(getResources().getString(R.string.move_file_d_d,
-                                    mSelectedFiles.size() - conflictFiles.size(), mSelectedFiles.size()));
-                            btnMoveFile.setTextColor(getResources().getColor(R.color.warning));
+                        if (moveFileDetectResult != null) {
+                            List<Pair<File, File>> conflictFiles = moveFileDetectResult.getConflictFiles();
+                            List<Pair<File, File>> canMoveFiles = moveFileDetectResult.getCanMoveFiles();
+                            Button btnMoveFile = (Button) contentView.findViewById(R.id.btn_positive);
 
-                            setDetectingResultText(contentView,
-                                    getString(R.string.target_directory_exists__d_files_in_the_same_name,
-                                            item.getFile().getName(),
-                                            conflictFiles.size()), colorConflict);
+                            if (conflictFiles.isEmpty()) {
+                                setDetectingResultText(contentView, getString(R.string.can_move_all_files, canMoveFiles.size()), colorOk);
+
+                                btnMoveFile.setTextColor(getResources().getColor(R.color.colorAccent));
+                            } else {
+
+                                btnMoveFile.setText(getResources().getString(R.string.move_file_d_d,
+                                        mSelectedFiles.size() - conflictFiles.size(), mSelectedFiles.size()));
+                                btnMoveFile.setTextColor(getResources().getColor(R.color.warning));
+
+                                setDetectingResultText(contentView,
+                                        getString(R.string.target_directory_exists__d_files_in_the_same_name,
+                                                item.getFile().getName(),
+                                                conflictFiles.size()), colorConflict);
+                            }
                         }
-                    }
-                }, throwable -> {
-                    throwable.printStackTrace();
-                    setDetectingResultText(contentView, getString(R.string.detect_move_file_action_result_failed),
-                            MoveFileDialogFragment.this.getResources().getColor(android.R.color.holo_red_light));
-                });
+                    }, throwable -> {
+                        throwable.printStackTrace();
+                        setDetectingResultText(contentView, getString(R.string.detect_move_file_action_result_failed),
+                                MoveFileDialogFragment.this.getResources().getColor(android.R.color.holo_red_light));
+                    });
+        }
+
     }
 
     private void setDetectingResultText(View contentView, String resultText, int textColor) {

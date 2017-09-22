@@ -19,6 +19,7 @@ import com.f2prateek.rx.preferences2.Preference;
 import com.t9search.model.PinyinSearchUnit;
 import com.t9search.util.T9Util;
 
+import org.apache.commons.io.FileExistsException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -220,7 +221,13 @@ public class ImageService extends BaseService {
         }
     }
 
-    public Observable<FolderModel> loadFolderList(boolean fromCacheFirst, String t9NumberInput) {
+    /**
+     *
+     * @param fromCacheFirst
+     * @param t9NumberInput 为 null 或者空字符串时，获取的文件列表不进行 T9 过滤，并且是正常模式，并非过滤模式。
+     * @return
+     */
+    public Observable<FolderModel> loadFolderList(boolean fromCacheFirst, @Nullable String t9NumberInput) {
         return loadFolderList(fromCacheFirst)
                 .map(model -> {
                     if (StringUtils.isBlank(t9NumberInput)) {
@@ -741,7 +748,7 @@ public class ImageService extends BaseService {
      * @return
      */
     public Observable<List<MediaFile>> loadMediaFileList(File directory, LoadMediaFileParam param) {
-        return Observable.<List<MediaFile>>create(
+        return Observable.create(
                 e -> {
 
                     mSortWay = param.getSortWay();
@@ -1137,6 +1144,10 @@ public class ImageService extends BaseService {
         return Observable.create(e -> {
             if (dir == null) {
                 throw new IllegalArgumentException("dir must not be null.");
+            }
+
+            if (dir.exists()) {
+                throw new FileExistsException("File already exists : " + dir);
             }
 
             FileUtils.forceMkdir(dir);

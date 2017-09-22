@@ -1,5 +1,6 @@
 package cn.intret.app.picgo.ui.adapter;
 
+import android.content.Context;
 import android.content.res.Resources;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -32,6 +33,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -60,12 +62,15 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
     private static final String PAYLOAD_KEY_COUNT = "item_count";
     private static final String PAYLOAD_KEY_KEYWORD_LENGTH = "item_keyword_lenght";
     private static final String PAYLOAD_KEY_KEYWORD_START_INDEX = "item_keyword_start_index";
-    private static final String PAYLOAD_KEY_IS_SELECTION_SOURCE_DIR = "item_selection_source_dir";
+    private static final String PAYLOAD_KEY_SUB_TYPE = "item_selection_source_dir";
     /*
      * UI options
      */
     private boolean mShowHeaderOptionButton = false;
 
+    /**
+     * 过滤模式会高亮显示匹配关键字
+     */
     private boolean mShowInFilterMode = false;
     private boolean mEnableItemClick = true;
     private boolean mIsSelectable = false;
@@ -81,6 +86,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
     private boolean mShowConflictBadge;
     private File mMoveFileSourceDir;
     private boolean mShowSourceDirBadgeWhenEmpty = true;
+
 
     public Item getItem(ItemCoord relativePosition) {
         int section = relativePosition.section();
@@ -226,7 +232,10 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             List<Item> items = section.getItems();
             for (int ii = 0, itemsSize = items.size(); ii < itemsSize; ii++) {
                 Item item = items.get(ii);
-                if (item.getFile().equals(mMoveFileSourceDir)) {
+                if (item.getFile() == null) {
+                    continue;
+                }
+                if (Objects.equals(item.getFile(), mMoveFileSourceDir)) {
                     continue;
                 }
 
@@ -238,9 +247,9 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                         if (mRecyclerView != null) {
                             int absolutePosition = getAbsolutePosition(si, ii);
 
-                            Bundle playload = new Bundle();
-                            playload.putInt(PAYLOAD_KEY_CONFLICT_FILES, item.getConflictFiles().size());
-                            notifyItemChanged(absolutePosition, playload);
+                            Bundle payload = new Bundle();
+                            payload.putInt(PAYLOAD_KEY_CONFLICT_FILES, item.getConflictFiles().size());
+                            notifyItemChanged(absolutePosition, payload);
 
 //                        RecyclerView.ViewHolder vh = mRecyclerView.findViewHolderForAdapterPosition(absolutePosition);
 //                        if (vh != null && vh instanceof ItemViewHolder) {
@@ -338,7 +347,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                         Item oldItem = SectionedFolderListAdapter.this.getItem(oldCoord);
                         Item newItem = newAdapter.getItem(newCoord);
 
-                        boolean equals = oldItem.getFile().equals(newItem.getFile());
+                        boolean equals = Objects.equals(oldItem.getFile(), newItem.getFile());
 //                        if (!equals) {
 //                            Log.d(TAG, String.format("areItemsTheSame() called with: oldItemPosition = [%d], newItemPosition = [%d] equal = %s, diff : %s, %s",
 //                                    oldItemPosition, newItemPosition, equals, oldItem.getFile(), newItem.getFile()));
@@ -398,10 +407,10 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                 ItemCoord newCoord = newAdapter.getRelativePosition(newItemPosition);
 
                 ItemType oldItemType = getItemType(SectionedFolderListAdapter.this, oldItemPosition);
-                ItemType newItemType = getItemType(newAdapter , newItemPosition);
+                ItemType newItemType = getItemType(newAdapter, newItemPosition);
 
                 if (oldItemType != newItemType) {
-                    Log.w(TAG, "getChangePayload: not the same item type : old=" + oldItemCount + " new:" + newItemType );
+                    Log.w(TAG, "getChangePayload: not the same item type : old=" + oldItemCount + " new:" + newItemType);
                     return null;
                 }
                 switch (oldItemType) {
@@ -435,7 +444,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                         boolean isSameName = StringUtils.equals(oldItem.getName(), newItem.getName());
                         boolean isSameThumbList = ListUtils.isEqualList(oldItem.getThumbList(), newItem.getThumbList());
                         boolean isSameSelection = oldItem.isSelected() == newItem.isSelected();
-                        boolean isSameSelectionSourceDir = oldItem.isSelectionSourceDir() == newItem.isSelectionSourceDir();
+                        boolean isSameSubType = oldItem.getItemSubType() == newItem.getItemSubType();
 
                         boolean isSameCount = oldItem.getCount() == newItem.getCount();
                         boolean isSameKeywordLen = oldItem.getKeywordLength() == newItem.getKeywordLength();
@@ -481,8 +490,8 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                             payloadBundle.putInt(PAYLOAD_KEY_KEYWORD_START_INDEX, newItem.getKeywordStartIndex());
                         }
 
-                        if (!isSameSelectionSourceDir) {
-                            payloadBundle.putBoolean(PAYLOAD_KEY_IS_SELECTION_SOURCE_DIR, newItem.isSelectionSourceDir());
+                        if (!isSameSubType) {
+                            payloadBundle.putSerializable(PAYLOAD_KEY_SUB_TYPE, newItem.getItemSubType());
                         }
 
                         return payloadBundle;
@@ -598,7 +607,13 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         }
     }
 
-    public void scrollToItem(File dir) {
+    public void scrollToItem(@Nullable File dir) {
+
+        if (dir == null) {
+            Log.w(TAG, "scrollToItem: dir is null.");
+            return;
+        }
+
         for (int si = 0, mSectionsSize = mSections.size(); si < mSectionsSize; si++) {
             Section section = mSections.get(si);
             List<Item> items = section.getItems();
@@ -731,10 +746,18 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
     public static final int COUNT_NONE = -1;
 
+    public enum ItemSubType {
+        NORMAL,
+        ADD_ITEM,
+        CONFLICT_COUNT,
+        SELECTED_COUNT,
+        SOURCE_DIR,
+        NONE
+    }
+
     public static class Item implements Cloneable, ContentEqual {
 
         boolean mIsSelected;
-        boolean mIsSelectionSourceDir = false;
         File mFile;
         int mCount;
         int mSelectedCount = COUNT_NONE;
@@ -745,12 +768,14 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         private int mKeywordStartIndex;
         String mName;
 
-        public boolean isSelectionSourceDir() {
-            return mIsSelectionSourceDir;
+        ItemSubType mItemSubType = ItemSubType.NORMAL;
+
+        public ItemSubType getItemSubType() {
+            return mItemSubType;
         }
 
-        public Item setSelectionSourceDir(boolean selectionSourceDir) {
-            mIsSelectionSourceDir = selectionSourceDir;
+        public Item setItemSubType(ItemSubType itemSubType) {
+            mItemSubType = itemSubType;
             return this;
         }
 
@@ -848,21 +873,22 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
-            if (!(o instanceof Item)) return false;
+            if (o == null || getClass() != o.getClass()) return false;
 
             Item item = (Item) o;
 
-            if (mSelectedCount != item.mSelectedCount) return false;
-            if (mCount != item.mCount) return false;
             if (mIsSelected != item.mIsSelected) return false;
-            if (mIsSelectionSourceDir != item.mIsSelectionSourceDir) return false;
-            if (mKeywordStartIndex != item.mKeywordStartIndex) return false;
+            if (mCount != item.mCount) return false;
+            if (mSelectedCount != item.mSelectedCount) return false;
             if (mKeywordLength != item.mKeywordLength) return false;
-            if (mName != null ? !mName.equals(item.mName) : item.mName != null) return false;
+            if (mKeywordStartIndex != item.mKeywordStartIndex) return false;
             if (mFile != null ? !mFile.equals(item.mFile) : item.mFile != null) return false;
+            if (mConflictFiles != null ? !mConflictFiles.equals(item.mConflictFiles) : item.mConflictFiles != null)
+                return false;
             if (mThumbList != null ? !mThumbList.equals(item.mThumbList) : item.mThumbList != null)
                 return false;
-            return mConflictFiles != null ? mConflictFiles.equals(item.mConflictFiles) : item.mConflictFiles == null;
+            if (mName != null ? !mName.equals(item.mName) : item.mName != null) return false;
+            return mItemSubType == item.mItemSubType;
 
         }
 
@@ -900,15 +926,15 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         public String toString() {
             return "Item{" +
                     "mIsSelected=" + mIsSelected +
-                    ", mName='" + mName + '\'' +
                     ", mFile=" + mFile +
                     ", mCount=" + mCount +
-                    ", mKeywordLength=" + mKeywordLength +
-                    ", mKeywordStartIndex=" + mKeywordStartIndex +
                     ", mSelectedCount=" + mSelectedCount +
-                    ", mIsSelectionSourceDir=" + mIsSelectionSourceDir +
                     ", mConflictFiles=" + mConflictFiles +
                     ", mThumbList=" + mThumbList +
+                    ", mKeywordLength=" + mKeywordLength +
+                    ", mKeywordStartIndex=" + mKeywordStartIndex +
+                    ", mName='" + mName + '\'' +
+                    ", mItemSubType=" + mItemSubType +
                     '}';
         }
 
@@ -931,13 +957,17 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                     .append(mCount, rhs.mCount)
                     .append(mFile, rhs.mFile)
                     .append(mIsSelected, rhs.mIsSelected)
-                    .append(mIsSelectionSourceDir, rhs.mIsSelectionSourceDir)
                     .append(mKeywordLength, rhs.mKeywordLength)
                     .append(mKeywordStartIndex, rhs.mKeywordStartIndex)
                     .append(mSelectedCount, rhs.mSelectedCount)
+                    .append(mItemSubType, rhs.mItemSubType)
                     .append(mThumbList, rhs.mThumbList)
 
                     .isEquals();
+        }
+
+        public boolean isSourceDirType() {
+            return mItemSubType == ItemSubType.SOURCE_DIR;
         }
     }
 
@@ -954,7 +984,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
     /*
      * Event handler
      */
-    OnItemClickListener mOnItemClickListener;
+    private OnItemClickListener mOnItemClickListener;
 
      /*
      * Getter and setter
@@ -973,61 +1003,90 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         return mMoveFileSourceDir;
     }
 
+    /**
+     * @param moveFileSourceDir 指定文件则标记对应的项为'源目录'，指定 null 则清除任何标记为 '源目录' 的项；
+     * @return
+     */
     public SectionedFolderListAdapter setMoveFileSourceDir(File moveFileSourceDir) {
 
-        boolean clearOldDir = moveFileSourceDir != null;
+        boolean clearMark = moveFileSourceDir != null;
+
+        if (clearMark) {
+            // 清除标志
+
+            for (int si = 0, mSectionsSize = mSections.size(); si < mSectionsSize; si++) {
+                Section section = mSections.get(si);
+                List<Item> items = section.getItems();
+                for (int ii = 0, itemsSize = items.size(); ii < itemsSize; ii++) {
+                    Item item = items.get(ii);
+                    if (item.getItemSubType() == ItemSubType.SOURCE_DIR) {
+                        // 恢复为某一种模式
+                        if (mShowConflictBadge && mConflictFiles.containsKey(item.getFile())) {
+                            item.setItemSubType(ItemSubType.CONFLICT_COUNT);
+                        } else {
+                            // TODO
+                            item.setItemSubType(ItemSubType.NORMAL);
+                        }
+
+                        // 更新界面
+                        updateViewHolder(si, ii, item, (vh, it) -> {
+                            bindViewHolderBadge(vh, item);
+                        });
+                    }
+                }
+            }
+        } else {
+
+            // 设置标志
+
+
+        }
 
         for (int si = 0, mSectionsSize = mSections.size(); si < mSectionsSize; si++) {
             Section section = mSections.get(si);
             List<Item> items = section.getItems();
             for (int ii = 0, itemsSize = items.size(); ii < itemsSize; ii++) {
                 Item item = items.get(ii);
-                if (moveFileSourceDir == null) {
-                    // 清除标记为‘源目录’的项
-                    if (item.isSelectionSourceDir()) {
-                        item.setSelectionSourceDir(false);
 
-                        updateViewHolder(si, ii, item, (vh, it) -> {
-                            bindViewHolderBadge(vh, item);
-//                            vh.badge.hide(false);
-                        });
-                    }
-                } else {
+                // Clear old item's Badge label 'source file'
+                if (item.getItemSubType() == ItemSubType.SOURCE_DIR
+                        && !Objects.equals(item.getFile(), moveFileSourceDir)) {
 
-                    // Clear old item's Mark label 'source file'
-                    if (clearOldDir && item.getFile().equals(mMoveFileSourceDir)) {
-                        item.setSelectionSourceDir(false);
+                    // 恢复为某种 sub type
+                    if (mShowConflictBadge) {
+                        item.setItemSubType(ItemSubType.CONFLICT_COUNT);
 
-                        if (mShowConflictBadge) {
-                            int conflictCount = item.getConflictFiles() == null ? 0 : item.getConflictFiles().size();
-                            if (item.getConflictFiles() != null) {
-                                updateViewHolder(si, ii, item, (vh, it) -> {
-                                    bindViewHolderBadge(vh, item);
-//                                    vh.setConflictCount(conflictCount);
-                                });
-                            } else {
-                                updateViewHolder(si, ii, item, (vh, it) -> {
-                                    bindViewHolderBadge(vh, item);
-//                                    vh.badge.hide(false);
-                                });
-                            }
+                        if (item.getConflictFiles() != null) {
+                            updateViewHolder(si, ii, item, (vh, it) -> {
+                                bindViewHolderBadge(vh, item);
+                            });
                         } else {
                             updateViewHolder(si, ii, item, (vh, it) -> {
                                 bindViewHolderBadge(vh, item);
-//                                vh.setSelectedCount(item.getSelectedItemCount());
                             });
                         }
-                    }
-
-                    // 当前 item 是要设置为 ‘源目录’
-                    if (item.getFile().equals(moveFileSourceDir)) {
-                        item.setSelectionSourceDir(true);
+                    } else {
+                        if (item.getFile() == null) {
+                            item.setItemSubType(ItemSubType.ADD_ITEM);
+                        } else {
+                            // TODO
+                            item.setItemSubType(ItemSubType.NORMAL);
+                        }
 
                         updateViewHolder(si, ii, item, (vh, it) -> {
                             bindViewHolderBadge(vh, item);
-                            //vh.showSourceDirBadge(item.getSelectedItemCount());
                         });
                     }
+                }
+
+                // 当前 item 是要设置为 ‘源目录’
+                if (Objects.equals(item.getFile(), moveFileSourceDir)) {
+                    item.setItemSubType(ItemSubType.SOURCE_DIR);
+
+                    updateViewHolder(si, ii, item, (vh, it) -> {
+                        bindViewHolderBadge(vh, item);
+                        //vh.showSourceDirBadge(item.getSelectedItemCount());
+                    });
                 }
             }
         }
@@ -1114,7 +1173,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
     }
 
     /*
-     * Ctor an Dtor
+     * Constructor
      */
 
     SectionedFolderListAdapter() {
@@ -1235,6 +1294,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         Section section = mSections.get(sectionIndex);
         Item item = section.getItems().get(relativePosition);
 
+        Context context = vh.itemView.getContext();
         /*
          * Item click
          */
@@ -1252,32 +1312,36 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                 Item clickItem = mSections.get(coor.section()).getItems().get(coor.relativePos());
                 // Mark as 'selected'
                 {
-                    if (!clickItem.isSelected()) {
+                    if (clickItem.getItemSubType() == ItemSubType.ADD_ITEM) {
+                        Log.d(TAG, "onBindViewHolder: 点击添加项");
+                    } else {
 
-                        // Section loop : Find single selected item and mark it as 'unselected'
-                        for (int si = 0, mSectionsSize = mSections.size(); si < mSectionsSize; si++) {
+                        if (!clickItem.isSelected()) {
 
-                            Section currSec = mSections.get(si);
-                            List<Item> items = currSec.getItems();
+                            // Section loop : Find single selected item and mark it as 'unselected'
+                            for (int si = 0, mSectionsSize = mSections.size(); si < mSectionsSize; si++) {
 
-                            // Item loop : find current selected item index
-                            for (int ii = 0, itemsSize = items.size(); ii < itemsSize; ii++) {
-                                Item currItem = items.get(ii);
-                                if (currItem.isSelected()) {
-                                    // mark as 'unselected'
-                                    int absPos = getAbsolutePosition(si, ii);
-                                    currItem.setSelected(false);
-                                    updateItemViewHolderCheckStatus(absPos, currItem.isSelected());
+                                Section currSec = mSections.get(si);
+                                List<Item> items = currSec.getItems();
+
+                                // Item loop : find current selected item index
+                                for (int ii = 0, itemsSize = items.size(); ii < itemsSize; ii++) {
+                                    Item currItem = items.get(ii);
+                                    if (currItem.isSelected()) {
+                                        // mark as 'unselected'
+                                        int absPos = getAbsolutePosition(si, ii);
+                                        currItem.setSelected(false);
+                                        updateItemViewHolderCheckStatus(absPos, currItem.isSelected());
+                                    }
                                 }
                             }
 
+                            // Mark the current clicked item as 'selected'
+                            clickItem.setSelected(true);
+                            updateItemViewHolderCheckStatus(adapterPosition, clickItem.isSelected());
+                        } else {
+                            Log.w(TAG, "item view clicked: click a selected item at coor " + coor);
                         }
-
-                        // Mark the current clicked item as 'selected'
-                        clickItem.setSelected(true);
-                        updateItemViewHolderCheckStatus(adapterPosition, clickItem.isSelected());
-                    } else {
-                        Log.w(TAG, "item view clicked: click a selected item at coor " + coor);
                     }
                 }
 
@@ -1328,9 +1392,10 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
         vh.check.setVisibility(item.isSelected() ? View.VISIBLE : View.GONE);
 
-        // Folder name
+        // Title : Folder name
         String name = item.getName();
         if (mShowInFilterMode) {
+            // 高亮关键字
             int keywordStartIndex = item.getKeywordStartIndex();
             if (isValidKeyword(name, keywordStartIndex, item.getKeywordLength())) {
                 vh.setHighlightName(keywordStartIndex, item.getKeywordLength(), name);
@@ -1341,11 +1406,25 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             vh.name.setText(name);
         }
 
+        // Title : Text Color
+        vh.name.setTextColor(context.getResources()
+                .getColor(item.getItemSubType() == ItemSubType.ADD_ITEM
+                        ? R.color.list_item_title_text_highlight : R.color.list_item_title_text_normal));
+
         // Badge
         bindViewHolderBadge(vh, item);
 
-        // File total file count
-        vh.count.setText(String.valueOf(item.getCount()));
+        // Count
+        if (item.getItemSubType() == ItemSubType.ADD_ITEM) {
+            vh.count.setVisibility(View.GONE);
+        } else {
+            if (item.getCount() >= 0) {
+                vh.count.setVisibility(View.VISIBLE);
+                vh.count.setText(String.valueOf(item.getCount()));
+            } else {
+                vh.count.setVisibility(View.GONE);
+            }
+        }
 
 //        vh.setSelectedCountText(item.getSelectedItemCount(), item.getCount());
 
@@ -1414,6 +1493,11 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                                 }
                             }, Stream.of(thumbFilePathList).map(File::new).toList()));
 
+                    // Item sub type
+                    BundleUtils.<ItemSubType>readBundle(payload, PAYLOAD_KEY_SUB_TYPE, itemSubType -> {
+                        bindViewHolderBadge(vh, item);
+                    });
+
                     // conflict files
                     BundleUtils.<ArrayList<String>>readBundle(payload, PAYLOAD_KEY_CONFLICT_FILES, conflictFileList -> {
                         Log.w(TAG, "onBindViewHolder: do nothing for conflict file partial update : " + conflictFileList);
@@ -1430,7 +1514,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                     BundleUtils.<Integer>readBundle(payload, PAYLOAD_KEY_CONFLICT_FILES_COUNT, conflictFileCount -> {
                         if (conflictFileCount != -1) {
                             Log.d(TAG, String.format("onBindViewHolder: 目录更新文件冲突个数为 %d", conflictFileCount));
-                            vh.setConflictCount(conflictFileCount);
+                            vh.setBadgeConflictCount(conflictFileCount);
                         }
                     });
 
@@ -1459,33 +1543,37 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
     }
 
     private void bindViewHolderBadge(ItemViewHolder vh, Item item) {
-        if (item.isSelectionSourceDir()) {
+        switch (item.getItemSubType()) {
 
-            if (mShowSourceDirBadgeWhenEmpty) {
-                vh.showSourceDirBadge(item.getSelectedCount());
-            } else {
-                if (item.getSelectedCount() > 0) {
+            case ADD_ITEM: {
+                vh.badge.hide(false);
+            }
+                break;
+            case CONFLICT_COUNT:
+                vh.setBadgeConflictCount(cn.intret.app.picgo.utils.ListUtils.sizeOf(item.getConflictFiles()));
+                break;
+            case NORMAL:
+            case SELECTED_COUNT:
+                vh.setBadgeSelectedCount(item.getSelectedCount());
+                break;
+            case SOURCE_DIR:
+                if (mShowSourceDirBadgeWhenEmpty) {
                     vh.showSourceDirBadge(item.getSelectedCount());
                 } else {
-                    vh.badge.hide(false);
-                }
-            }
-
-        } else {
-
-            if (mShowConflictBadge) {
-                if (cn.intret.app.picgo.utils.ListUtils.isEmpty(item.getConflictFiles())) {
                     if (item.getSelectedCount() > 0) {
-                        vh.setSelectedCount(item.getSelectedCount());
+                        vh.showSourceDirBadge(item.getSelectedCount());
                     } else {
                         vh.badge.hide(false);
                     }
-                } else {
-                    vh.setConflictCount(item.getConflictFiles().size());
                 }
-            } else {
-                vh.setSelectedCount(item.getSelectedCount());
-            }
+                break;
+            case NONE:
+                vh.badge.hide(false);
+                break;
+        }
+
+        if (item.getItemSubType() != ItemSubType.ADD_ITEM) {
+            vh.count.setVisibility(View.VISIBLE);
         }
     }
 
@@ -1498,13 +1586,9 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
             vh.mAdapter = new HorizontalImageListAdapter(filesToItems(thumbList));
             vh.mAdapter.setOnClickListener(onItemClickListener);
-
-//            vh.thumbList.setClickable(false);
-
             vh.thumbList.setLayoutManager(vh.getLayout());
             vh.thumbList.setAdapter(vh.mAdapter);
         } else {
-//            vh.thumbList.setClickable(false);
             vh.thumbList.setLayoutManager(vh.getLayout());
             vh.thumbList.swapAdapter(vh.mAdapter, false);
         }
@@ -1563,7 +1647,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
     public void onViewRecycled(SectionedViewHolder holder) {
 
         if (holder instanceof ItemViewHolder) {
-            Object tag = ((ItemViewHolder) holder).itemView.getTag(R.id.item);
+            ((ItemViewHolder) holder).itemView.setTag(R.id.item, null);
 
             ((ItemViewHolder) holder).mAdapter = null;
             ((ItemViewHolder) holder).mLinearLayoutManager = null;
@@ -1660,7 +1744,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             return mLinearLayoutManager;
         }
 
-        public void setSelectedCount(int selectedCount) {
+        public void setBadgeSelectedCount(int selectedCount) {
             if (selectedCount > 0) {
                 badge.setBadgeBackgroundColor(itemView.getContext().getResources().getColor(R.color.colorAccent));
                 badge.setBadgeNumber(selectedCount);
@@ -1669,10 +1753,13 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             }
         }
 
-        void setConflictCount(int conflictCount) {
-            badge.setBadgeBackgroundColor(itemView.getContext().getResources().getColor(R.color.warning));
-//            badge.setBadgeNumber(conflictCount);
-            badge.setBadgeText(itemView.getContext().getResources().getString(R.string.conflict_d, conflictCount));
+        void setBadgeConflictCount(int conflictCount) {
+            if (conflictCount > 0) {
+                badge.setBadgeBackgroundColor(itemView.getContext().getResources().getColor(R.color.warning));
+                badge.setBadgeText(itemView.getContext().getResources().getString(R.string.conflict_d, conflictCount));
+            } else {
+                badge.hide(false);
+            }
         }
 
         void showSourceDirBadge() {

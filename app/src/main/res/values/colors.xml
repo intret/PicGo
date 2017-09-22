@@ -7,6 +7,8 @@
     <color name="image_list_item_bg_color">#DDDDDD</color>
     <color name="list_item_text_light">#777777</color>
     <color name="text_normal">#b1b1b1</color>
+    <color name="list_item_title_text_normal">@color/colorPrimaryDark</color>
+    <color name="list_item_title_text_highlight">@color/colorAccent</color>
     <color name="text_selected">#4d4d4d</color>
     <color name="translucent">#00000000</color>
     <color name="black_translucent">#88000000</color>

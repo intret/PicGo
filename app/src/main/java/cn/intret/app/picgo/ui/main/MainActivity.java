@@ -104,7 +104,6 @@ import cn.intret.app.picgo.ui.adapter.brvah.FolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.brvah.FolderListAdapterUtils;
 import cn.intret.app.picgo.ui.adapter.ImageTransitionNameGenerator;
 import cn.intret.app.picgo.ui.adapter.brvah.BaseSelectableAdapter;
-import cn.intret.app.picgo.ui.adapter.brvah.FolderItem;
 import cn.intret.app.picgo.ui.adapter.SectionFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedImageListAdapter;
@@ -1367,42 +1366,7 @@ public class MainActivity extends BaseAppCompatActivity {
         popupMenu.setOnMenuItemClickListener(item -> {
             switch (item.getItemId()) {
                 case R.id.create_folder: {
-                    new MaterialDialog.Builder(MainActivity.this)
-                            .title(R.string.create_folder)
-                            .input(R.string.input_new_folder_name, R.string.new_folder_prefill, false, new MaterialDialog.InputCallback() {
-                                @Override
-                                public void onInput(@NonNull MaterialDialog dialog, CharSequence input) {
-                                    boolean isValid = input.length() > 1 && input.length() <= 16;
-                                    MDButton actionButton = dialog.getActionButton(DialogAction.POSITIVE);
-                                    if (actionButton != null) {
-                                        actionButton.setClickable(isValid);
-                                    }
-                                }
-                            })
-                            .alwaysCallInputCallback()
-                            .inputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI)
-                            .positiveText(R.string.create_folder)
-                            .onPositive((dialog, which) -> {
-                                EditText inputEditText = dialog.getInputEditText();
-                                if (inputEditText != null) {
-                                    String folderName = inputEditText.getEditableText().toString();
-                                    File dir = new File(section.getFile(), folderName);
-                                    ImageService.getInstance()
-                                            .createFolder(dir)
-                                            .compose(workAndShow())
-                                            .subscribe(ok -> {
-                                                if (ok) {
-                                                    ToastUtils.toastLong(MainActivity.this, getString(R.string.created_folder_s, folderName));
-
-                                                }
-                                            }, throwable -> {
-                                                Log.d(TAG, "新建文件夹失败：" + throwable.getMessage());
-                                                ToastUtils.toastLong(MainActivity.this, R.string.create_folder_failed);
-                                            });
-                                }
-                            })
-                            .negativeText(R.string.cancel)
-                            .show();
+                    showCreateFolderDialog(section.getFile());
                 }
                 break;
                 case R.id.folder_detail:
@@ -1412,6 +1376,50 @@ public class MainActivity extends BaseAppCompatActivity {
             return false;
         });
         popupMenu.show();
+    }
+
+    /**
+     *
+     * @param targetDir 新建文件夹所在的目标目录
+     */
+    private void showCreateFolderDialog(File targetDir) {
+
+        new MaterialDialog.Builder(MainActivity.this)
+                .title(R.string.create_folder)
+                .input(R.string.input_new_folder_name,
+                        R.string.new_folder_prefill,
+                        false,
+                        (dialog, input) -> {
+                    boolean isValid = input.length() > 1 && input.length() <= 16;
+                    MDButton actionButton = dialog.getActionButton(DialogAction.POSITIVE);
+                    if (actionButton != null) {
+                        actionButton.setClickable(isValid);
+                    }
+                })
+                .alwaysCallInputCallback()
+                .inputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI)
+                .positiveText(R.string.create_folder)
+                .onPositive((dialog, which) -> {
+                    EditText inputEditText = dialog.getInputEditText();
+                    if (inputEditText != null) {
+                        String folderName = inputEditText.getEditableText().toString();
+                        File dir = new File(targetDir, folderName);
+                        ImageService.getInstance()
+                                .createFolder(dir)
+                                .compose(workAndShow())
+                                .subscribe(ok -> {
+                                    if (ok) {
+                                        ToastUtils.toastLong(MainActivity.this, getString(R.string.created_folder_s, folderName));
+
+                                    }
+                                }, throwable -> {
+                                    Log.d(TAG, "新建文件夹失败：" + throwable.getMessage());
+                                    ToastUtils.toastLong(MainActivity.this, R.string.create_folder_failed);
+                                });
+                    }
+                })
+                .negativeText(R.string.cancel)
+                .show();
     }
 
     private void onFolderListItemLongClick(View view, int position) {

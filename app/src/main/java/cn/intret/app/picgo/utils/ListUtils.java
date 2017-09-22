@@ -12,6 +12,9 @@ public class ListUtils {
         return list == null || list.isEmpty();
     }
 
+    public static <T> int sizeOf(List<T> list) {
+        return list == null ? 0 : list.size();
+    }
 
     public static <T> ArrayList<T> objectToArrayList(T object) {
         ArrayList<T> objects = new ArrayList<>();

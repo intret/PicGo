@@ -117,5 +117,6 @@
     <string name="close">关闭</string>
     <string name="exclude_folders">排除目录</string>
     <string name="exclude_folder_dialog_content_description">您可以删除下面的排除目录列表列表项，删除对应项对应目录将继续在主界面侧边栏中显示。</string>
+    <string name="new_folder_in_s">\'%1$s\' 中的新文件夹</string>
 
 </resources>
