@@ -589,7 +589,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
     private void hideKeyboard(ViewGroup t9TelephoneDialpadView, ImageView keyboardSwitchIv) {
         ViewUtil.invisibleView(t9TelephoneDialpadView);
         keyboardSwitchIv
-                .setBackgroundResource(R.drawable.keyboard_show_selector);
+                .setImageResource(R.drawable.keyboard_show_selector);
     }
 
     private void hideKeyboard() {
@@ -607,7 +607,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
 
         ViewUtil.showView(keypadContainer);
         keypadContainer.requestFocus();
-        keypadSwitchButton.setBackgroundResource(R.drawable.keyboard_hide_selector);
+        keypadSwitchButton.setImageResource(R.drawable.keyboard_hide_selector);
     }
 
     private void initFolderList(final View contentView) {

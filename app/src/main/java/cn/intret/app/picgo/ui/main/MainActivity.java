@@ -1345,9 +1345,9 @@ public class MainActivity extends BaseAppCompatActivity {
         mKeypadContainer.setVisibility(v);
 
         if (isVisible) {
-            mKeypadSwitch.setBackgroundResource(R.drawable.keyboard_show_selector);
+            mKeypadSwitch.setImageResource(R.drawable.keyboard_show_selector);
         } else {
-            mKeypadSwitch.setBackgroundResource(R.drawable.keyboard_hide_selector);
+            mKeypadSwitch.setImageResource(R.drawable.keyboard_hide_selector);
         }
     }
 

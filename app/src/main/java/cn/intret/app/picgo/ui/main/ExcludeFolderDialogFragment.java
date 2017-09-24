@@ -585,26 +585,24 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
 
     private void hideKeyboard(ViewGroup t9TelephoneDialpadView, ImageView keyboardSwitchIv) {
         ViewUtil.invisibleView(t9TelephoneDialpadView);
-        keyboardSwitchIv
-                .setBackgroundResource(R.drawable.keyboard_show_selector);
+        keyboardSwitchIv.setImageResource(R.drawable.keyboard_show_selector);
     }
 
     private void hideKeyboard() {
         ViewUtil.hideView(mT9KeypadView);
-        mKeyboardSwitchIv
-                .setBackgroundResource(R.drawable.keyboard_show_selector);
+        mKeyboardSwitchIv.setImageResource(R.drawable.keyboard_show_selector);
     }
 
     private void showKeyboard() {
         ViewUtil.showView(mT9KeypadView);
-        mKeyboardSwitchIv.setBackgroundResource(R.drawable.keyboard_hide_selector);
+        mKeyboardSwitchIv.setImageResource(R.drawable.keyboard_hide_selector);
     }
 
     private void showKeyboard(ViewGroup keypadContainer, ImageView keypadSwitchButton) {
 
         ViewUtil.showView(keypadContainer);
         keypadContainer.requestFocus();
-        keypadSwitchButton.setBackgroundResource(R.drawable.keyboard_hide_selector);
+        keypadSwitchButton.setImageResource(R.drawable.keyboard_hide_selector);
     }
 
     private void initFolder(View contentView) {

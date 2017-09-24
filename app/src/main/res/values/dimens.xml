@@ -8,6 +8,7 @@
     <dimen name="section_top">32dp</dimen>
     <dimen name="image_list_item_space">4dp</dimen>
     <dimen name="folder_list_section_header_text_size">14sp</dimen>
+    <dimen name="folder_list_section_header_height">44dp</dimen>
     <dimen name="folder_list_item_thumbnail_item_width">120dp</dimen>
     <dimen name="folder_list_item_thumbnail_item_height">40dp</dimen>
     <dimen name="fab_margin">16dp</dimen>

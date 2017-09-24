@@ -116,7 +116,7 @@
     <string name="view_exclude_folders">查看排除目录</string>
     <string name="close">关闭</string>
     <string name="exclude_folders">排除目录</string>
-    <string name="exclude_folder_dialog_content_description">您可以删除下面的排除目录列表列表项，删除对应项对应目录将继续在主界面侧边栏中显示。</string>
+    <string name="exclude_folder_dialog_content_description">点击 [删除按钮] 从列表中删除目录。</string>
     <string name="new_folder_in_s">\'%1$s\' 中的新文件夹</string>
     <string name="sort_by_date">按日期排序</string>
     <string name="sort_by_name">按名称排序</string>
