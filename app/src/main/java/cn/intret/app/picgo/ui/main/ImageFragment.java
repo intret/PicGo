@@ -176,7 +176,7 @@ public class ImageFragment extends Fragment {
                 EventBus.getDefault().post(new DragImageExitMessage());
             }
         });
-        //mImage.setMinScale(0.75f);
+        mImage.setMinScale(0.90f);
 
         mImage.setOnTapListener(new DragPhotoView.OnTapListener() {
             @Override

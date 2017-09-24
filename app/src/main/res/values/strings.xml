@@ -118,5 +118,16 @@
     <string name="exclude_folders">排除目录</string>
     <string name="exclude_folder_dialog_content_description">您可以删除下面的排除目录列表列表项，删除对应项对应目录将继续在主界面侧边栏中显示。</string>
     <string name="new_folder_in_s">\'%1$s\' 中的新文件夹</string>
+    <string name="sort_by_date">按日期排序</string>
+    <string name="sort_by_name">按名称排序</string>
+    <string name="order_by_asc">升序↑</string>
+    <string name="order_by_desc">降序↓</string>
+    <string name="directory_is_not_empty">目录不为空</string>
+    <string name="directory_s_is_not_empty__continue_will_delete_all_d_files_in_the_directory">目录 %1$s 不为空，继续将删除目录中的 %2$d 个文件？</string>
+    <string name="delete_all_files">删除所有文件</string>
+    <string name="force_to_delete_folder_s_failed">强制删除目录 %1$s 失败</string>
+    <string name="already_deleted_folder_s">已经删除目录 %1$s</string>
+    <string name="exclude_folder_failed">排序目录失败</string>
+    <string name="delete_item_failed">删除项目失败</string>
 
 </resources>

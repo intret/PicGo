@@ -17,6 +17,7 @@ import com.github.chrisbanes.photoview.PhotoView;
  */
 
 public class DragPhotoView extends PhotoView {
+    public static final float TRANSLATE_Y_VELOCITY = 0.45f;
     private Paint mPaint;
 
     // downX
@@ -31,7 +32,7 @@ public class DragPhotoView extends PhotoView {
     private int mHeight;
     private float mMinScale = 0.5f;
     private int mAlpha = 255;
-    private final static int MAX_TRANSLATE_Y = 300;
+    private final static int MAX_TRANSLATE_Y = 500;
 
     private final static long DURATION = 300;
     private boolean canFinish = false;
@@ -143,7 +144,7 @@ public class DragPhotoView extends PhotoView {
 
     private void onActionUp(MotionEvent event) {
 
-        if (mTranslateY > MAX_TRANSLATE_Y) {
+        if (mTranslateY > MAX_TRANSLATE_Y * TRANSLATE_Y_VELOCITY) {
             if (mExitListener != null) {
                 mExitListener.onExit(this, mTranslateX, mTranslateY, mWidth, mHeight);
             } else {
@@ -165,11 +166,12 @@ public class DragPhotoView extends PhotoView {
             mTranslateY = 0;
         }
 
-        float percent = mTranslateY / MAX_TRANSLATE_Y;
+        float percent = (mTranslateY * 0.45f) / MAX_TRANSLATE_Y;
         if (mScale >= mMinScale && mScale <= 1f) {
             mScale = 1 - percent;
 
-            mAlpha = (int) (255 * (1 - percent));
+//            mAlpha = (int) (255 * (1 - percent));
+            mAlpha = 255;
             if (mAlpha > 255) {
                 mAlpha = 255;
             } else if (mAlpha < 0) {

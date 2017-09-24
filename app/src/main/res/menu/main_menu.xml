@@ -26,7 +26,7 @@
         android:title="@string/search"
         app:showAsAction="ifRoom"
         />
-
+    
     <group android:id="@+id/options"
         >
 

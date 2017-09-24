@@ -24,4 +24,33 @@
             android:title="@string/list_view"
             />
     </group>
+
+    <group android:id="@+id/sort_way"
+           android:checkableBehavior="single"
+        >
+
+        <item android:id="@+id/sort_by_date"
+              android:checkable="true"
+              android:title="@string/sort_by_date"
+            />
+        <item android:id="@+id/sort_by_name"
+              android:checkable="true"
+              android:title="@string/sort_by_name"
+            />
+    </group>
+
+    <group android:id="@+id/sort_order"
+           android:checkableBehavior="single"
+        >
+
+        <item android:id="@+id/order_by_asc"
+              android:checkable="true"
+              android:title="@string/order_by_asc"
+            />
+        <item android:id="@+id/order_by_desc"
+              android:checkable="true"
+              android:title="@string/order_by_desc"
+            />
+    </group>
+
 </menu>

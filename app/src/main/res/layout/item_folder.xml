@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.constraint.ConstraintLayout
-    android:id="@+id/item_root"
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/item_root"
     android:layout_width="match_parent"
     android:layout_height="@dimen/folder_list_item_height"
     android:layout_marginBottom="1dp"
@@ -78,10 +78,28 @@
         android:layout_gravity="center_vertical"
         android:clickable="false"
         android:paddingLeft="30dp"
+        android:layout_marginRight="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintRight_toLeftOf="@+id/btn_close"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:background="@color/gray_95"
+        tools:ignore="RtlHardcoded"
+        tools:listitem="@layout/horizontal_image_list_item">
+
+    </android.support.v7.widget.RecyclerView>
+
+    <ImageView
+        android:id="@+id/btn_close"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:src="@drawable/ic_close_normal_18px"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        tools:ignore="RtlHardcoded"
-        tools:listitem="@layout/horizontal_image_list_item">
-    </android.support.v7.widget.RecyclerView>
+        android:visibility="gone"
+        tools:visibility="visible"
+        />
+
 </android.support.constraint.ConstraintLayout>

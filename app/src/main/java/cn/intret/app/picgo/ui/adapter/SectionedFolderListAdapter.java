@@ -67,6 +67,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
      * UI options
      */
     private boolean mShowHeaderOptionButton = false;
+    private boolean mShowCloseButton = false;
 
     /**
      * 过滤模式会高亮显示匹配关键字
@@ -194,6 +195,21 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             notifyItemRemoved(absolutePosition);
 
             return true;
+        }
+    }
+
+    public void removeFolderItem(int sectionIndex, int relativePosition) {
+        if (sectionIndex >= 0 && sectionIndex < mSections.size()) {
+            Section section = mSections.get(sectionIndex);
+            List<Item> items = section.getItems();
+
+            if (relativePosition >= 0 && relativePosition < items.size()) {
+                int absolutePosition = getAbsolutePosition(sectionIndex, relativePosition);
+                items.remove(relativePosition);
+                notifyItemRemoved(absolutePosition);
+            }
+        } else {
+            Log.w(TAG, "removeFolderItem: invalid argument" );
         }
     }
 
@@ -979,6 +995,8 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         void onItemClick(Section sectionItem, int section, Item item, int relativePos);
 
         void onItemLongClick(View v, Section sectionItem, int section, Item item, int relativePos);
+
+        void onItemCloseClick(View v, Section section, Item item, int sectionIndex, int relativePosition);
     }
 
     /*
@@ -989,6 +1007,15 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
      /*
      * Getter and setter
      */
+
+    public boolean isShowCloseButton() {
+        return mShowCloseButton;
+    }
+
+    public SectionedFolderListAdapter setShowCloseButton(boolean showCloseButton) {
+        mShowCloseButton = showCloseButton;
+        return this;
+    }
 
     public boolean isShowSourceDirBadgeWhenEmpty() {
         return mShowSourceDirBadgeWhenEmpty;
@@ -1390,6 +1417,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 */
         }
 
+        // Check
         vh.check.setVisibility(item.isSelected() ? View.VISIBLE : View.GONE);
 
         // Title : Folder name
@@ -1444,6 +1472,14 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                 }
             }
         }, item.getThumbList());
+
+        // Close button
+        vh.close.setVisibility(mShowCloseButton ? View.VISIBLE : View.GONE);
+        vh.close.setOnClickListener(v -> {
+            if (mOnItemClickListener != null) {
+                mOnItemClickListener.onItemCloseClick(v, section, item, sectionIndex, relativePosition);
+            }
+        });
     }
 
     @Override
@@ -1548,7 +1584,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             case ADD_ITEM: {
                 vh.badge.hide(false);
             }
-                break;
+            break;
             case CONFLICT_COUNT:
                 vh.setBadgeConflictCount(cn.intret.app.picgo.utils.ListUtils.sizeOf(item.getConflictFiles()));
                 break;
@@ -1637,7 +1673,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             default: {
 
                 View v = LayoutInflater.from(parent.getContext())
-                        .inflate(R.layout.folder_list_item, parent, false);
+                        .inflate(R.layout.item_folder, parent, false);
                 return new ItemViewHolder(v);
             }
         }
@@ -1688,9 +1724,11 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
 
         @BindView(R.id.check) ImageView check;
-        @BindView(R.id.name) TextView name;
+        @BindView(R.id.title) TextView name;
         @BindView(R.id.count) TextView count;
         @BindView(R.id.thumb_list) RecyclerView thumbList;
+        @BindView(R.id.btn_close) ImageView close;
+
         Badge badge;
 
         HorizontalImageListAdapter mAdapter;

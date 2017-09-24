@@ -29,6 +29,7 @@ import com.annimon.stream.Stream;
 import com.chad.library.adapter.base.BaseViewHolder;
 import com.chad.library.adapter.base.callback.ItemDragAndSwipeCallback;
 import com.chad.library.adapter.base.listener.OnItemSwipeListener;
+import com.jakewharton.rxbinding2.support.v7.widget.RxPopupMenu;
 import com.mikepenz.fastadapter.FastAdapter;
 import com.mikepenz.fastadapter.IAdapter;
 import com.mikepenz.fastadapter.IExpandable;
@@ -70,6 +71,7 @@ import cn.intret.app.picgo.utils.ViewUtils;
 import cn.intret.app.picgo.view.T9KeypadView;
 import cn.intret.app.picgo.widget.RecyclerItemTouchListener;
 import io.reactivex.ObservableTransformer;
+import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
 
@@ -139,6 +141,7 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
             }
         }
     }
+
     //save our FastAdapter
     private FastItemAdapter<IItem> mItemAdapter;
 
@@ -158,9 +161,9 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
         super.onStart();
         Log.d(TAG, "onStart() called");
 
-        //loadSectionFolderList();
+        loadSectionFolderList();
 
-        loadExpandableFolderList();
+        //loadExpandableFolderList();
     }
 
     private void loadExpandableFolderList() {
@@ -174,7 +177,7 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
 
         adapter.setOnItemClickListener((baseQuickAdapter, view, i) ->
                 Log.d(TAG, "onItemClick() called with: baseQuickAdapter = [" + baseQuickAdapter + "], view = [" + view + "], i = [" + i + "]"));
-        adapter.setOnInteractionListener(item ->  {
+        adapter.setOnInteractionListener(item -> {
 
         });
 
@@ -225,7 +228,62 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
     private void loadSectionFolderList() {
         ImageService.getInstance()
                 .loadHiddenFileListModel()
+                .compose(workAndShow())
                 .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
+                .map(adapter -> {
+                    adapter.setSelectable(false);
+                    adapter.setShowCloseButton(true);
+                    adapter.setOnItemClickListener(new SectionedFolderListAdapter.OnItemClickListener() {
+                        @Override
+                        public void onSectionHeaderClick(SectionedFolderListAdapter.Section section, int sectionIndex, int adapterPosition) {
+
+                        }
+
+                        @Override
+                        public void onSectionHeaderOptionButtonClick(View v, SectionedFolderListAdapter.Section section, int sectionIndex) {
+
+                        }
+
+                        @Override
+                        public void onItemClick(SectionedFolderListAdapter.Section sectionItem, int section, SectionedFolderListAdapter.Item item, int relativePos) {
+
+                        }
+
+                        @Override
+                        public void onItemLongClick(View v, SectionedFolderListAdapter.Section sectionItem, int section, SectionedFolderListAdapter.Item item, int relativePos) {
+
+                        }
+
+                        @Override
+                        public void onItemCloseClick(View v, SectionedFolderListAdapter.Section section, SectionedFolderListAdapter.Item item, int sectionIndex, int relativePosition) {
+
+                            UserDataService.getInstance()
+                                    .getExcludeFolderPreference()
+                                    .map(pref -> {
+                                        LinkedList<File> files = pref.get();
+                                        files.remove(item.getFile());
+                                        pref.set(files);
+
+                                        return true;
+                                    })
+                                    .compose(workAndShow())
+                                    .subscribe(ok -> {
+                                        if (ok) {
+
+                                            adapter.removeFolderItem(sectionIndex, relativePosition);
+                                        } else {
+                                            ToastUtils.toastShort(ExcludeFolderDialogFragment.this.getContext(), R.string.delete_item_failed);
+                                        }
+                                    }, throwable -> {
+                                        throwable.printStackTrace();
+                                        ToastUtils.toastShort(ExcludeFolderDialogFragment.this.getContext(), R.string.delete_item_failed);
+                                    });
+
+                        }
+                    });
+
+                    return adapter;
+                })
                 .doOnNext(adapter -> mListAdapter = adapter)
                 .subscribe(adapter -> {
 
@@ -405,7 +463,7 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
         RecyclerView folderList = (RecyclerView) contentView.findViewById(R.id.folder_list);
         folderList.setLayoutManager(new LinearLayoutManager(this.getActivity()));
         folderList.setItemAnimator(new DefaultItemAnimator());
-        folderList.setAdapter( mItemAdapter);
+        folderList.setAdapter(mItemAdapter);
 
 
 //        final StickyRecyclerHeadersDecoration decoration = new StickyRecyclerHeadersDecoration(stickyHeaderAdapter);

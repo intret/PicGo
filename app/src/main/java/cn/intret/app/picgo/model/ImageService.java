@@ -69,6 +69,7 @@ public class ImageService extends BaseService {
      * 文件列表项获取的缩略图个数
      */
     private static final int DEFAULT_THUMBNAIL_COUNT = 3;
+    public static final Comparator<File> FOLDER_LIST_NAME_ASC_COMPARATOR = (file1, file2) -> StringUtils.compare(file1.getName(), file2.getName());
 
     /**
      * Key : directory file
@@ -90,6 +91,7 @@ public class ImageService extends BaseService {
 
     FolderModel mFolderModel;
     ReadWriteLock mFolderModelRWLock = new ReentrantReadWriteLock();
+    private ObjectGuarder<Preference<LinkedList<File>>> mExlucdeFolderListPref;
 
     private class MediaFileList {
         List<MediaFile> mMediaFiles;
@@ -121,10 +123,11 @@ public class ImageService extends BaseService {
     private ImageService() {
         super();
 
-        loadUserHiddenFileList();
+        loadUserExcludeFileList();
     }
 
-    private void loadUserHiddenFileList() {
+
+    private void loadUserExcludeFileList() {
         Log.d(TAG, "loadHiddenFileList: before");
 
         // 是否显示隐藏目录
@@ -157,11 +160,35 @@ public class ImageService extends BaseService {
                 .subscribe(files -> {
                     mHiddenFolders.writeConsume(fileList -> {
                         Log.d(TAG, "loadHiddenFileList: save file list " + fileList);
+
                         fileList.clear();
                         fileList.addAll(files);
                     });
-                });
+
+                    //mBus.post(new ExcludeFolderListChangeMessage());
+
+                    rescanFolderList();
+
+                }, RxUtils::unhandledThrowable);
         Log.d(TAG, "loadHiddenFileList: after");
+
+        UserDataService.getInstance()
+                .getExcludeFolderPreference()
+                .subscribeOn(Schedulers.io())
+                .subscribe(linkedListPreference -> {
+                    mExlucdeFolderListPref = new ObjectGuarder<>(linkedListPreference);
+                    mExlucdeFolderListPref.readConsume(pref -> {
+                        pref.asObservable().subscribe(newFileLsit -> {
+                            mHiddenFolders.writeConsume(fileList -> {
+
+                                fileList.clear();
+                                fileList.addAll(newFileLsit);
+
+                                rescanFolderList();
+                            });
+                        });
+                    });
+                });
     }
 
 
@@ -222,9 +249,8 @@ public class ImageService extends BaseService {
     }
 
     /**
-     *
      * @param fromCacheFirst
-     * @param t9NumberInput 为 null 或者空字符串时，获取的文件列表不进行 T9 过滤，并且是正常模式，并非过滤模式。
+     * @param t9NumberInput  为 null 或者空字符串时，获取的文件列表不进行 T9 过滤，并且是正常模式，并非过滤模式。
      * @return
      */
     public Observable<FolderModel> loadFolderList(boolean fromCacheFirst, @Nullable String t9NumberInput) {
@@ -711,7 +737,7 @@ public class ImageService extends BaseService {
 
         // Long.compare(file2.lastModified(), file.lastModified())
         return Stream.of(allFileList)
-                .sorted((file1, file2) -> StringUtils.compare(file1.getName(), file2.getName()))
+                .sorted(FOLDER_LIST_NAME_ASC_COMPARATOR)
                 .toList();
     }
 
@@ -906,7 +932,7 @@ public class ImageService extends BaseService {
     }
 
     private void cacheImageList(@NonNull File dir, @NonNull List<MediaFile> mediaFiles, LoadMediaFileParam param) {
-        Log.d(TAG, "cacheImageList() called with: dir = [" + dir + "], mediaFiles = [" + mediaFiles + "], param = [" + param + "]");
+//        Log.d(TAG, "cacheImageList() called with: dir = [" + dir + "], mediaFiles = [" + mediaFiles + "], param = [" + param + "]");
 
         mMediaFileListMapGuard.writeConsume(object ->
                 object.put(dir, new MediaFileList().setMediaFiles(mediaFiles).setLoadedExtraInfo(param.isLoadMediaInfo())));
@@ -1152,6 +1178,7 @@ public class ImageService extends BaseService {
 
             FileUtils.forceMkdir(dir);
 
+            // 更新缓存
             List<FolderModel.ContainerFolder> containerFolders = Stream.of(mFolderModel.getContainerFolders())
                     .filter(value -> SystemUtils.isSameFile(value.getFile(), dir.getParentFile()))
                     .limit(1)
@@ -1159,10 +1186,18 @@ public class ImageService extends BaseService {
 
             if (!containerFolders.isEmpty()) {
                 FolderModel.ContainerFolder containerFolder = containerFolders.get(0);
-                containerFolder.getFolders().add(0, createImageFolder(dir));
+
+                List<ImageFolder> folders = containerFolder.getFolders();
+                folders.add(0, createImageFolder(dir));
+
+                containerFolder.setFolders(
+                        Stream.of(folders)
+                                .sorted((o1, o2) -> o1.getFile().compareTo(o2.getFile()))
+                                .toList());
 
                 mBus.post(new FolderModelChangeMessage());
             }
+
 
 //            loadFolderList(false)
 //                    .subscribeOn(Schedulers.io())
@@ -1178,19 +1213,36 @@ public class ImageService extends BaseService {
         });
     }
 
-    public Observable<Boolean> removeFolder(File dir) {
+    /**
+     * 删除目录，在操作成功后将产生 {@link FolderModelChangeMessage} EventBus 消息。
+     * @param dir
+     * @param forceDelete
+     * @return
+     * @see FolderModelChangeMessage
+     */
+    public Observable<Boolean> removeFolder(File dir, boolean forceDelete) {
 
         return Observable.create(e -> {
             if (dir == null) {
                 throw new IllegalArgumentException("dir must not be null");
             }
-            File[] files = dir.listFiles();
-            if (files != null && files.length > 0) {
-                Log.d(TAG, "removeFolder: 有文件不能移除");
+            if (!dir.isDirectory()) {
+                throw new IllegalArgumentException("Not a directory");
             }
 
+            if (!forceDelete) {
+                File[] files = dir.listFiles();
+                if (files != null && files.length > 0) {
+                    Log.d(TAG, "removeFolder: 有文件不能移除");
+                    throw new NotEmptyException("Directory is not empty.");
+                }
+            }
+
+            // 删除目录，包括里面的任何子目录
             FileUtils.deleteDirectory(dir);
 
+            // 通知目录删除
+            mBus.post(new DeleteFolderMessage(dir));
 
             try {
                 mFolderModelRWLock.writeLock().lock();

@@ -10,6 +10,7 @@ import com.f2prateek.rx.preferences2.Preference;
 import com.f2prateek.rx.preferences2.RxSharedPreferences;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.orhanobut.logger.Logger;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -364,7 +365,7 @@ public class UserDataService extends BaseService {
     /*
      * Hidden folders
      */
-    public Observable<Boolean> addHiddenFolder(File dir) {
+    public Observable<Boolean> addExcludeFolder(File dir) {
 
         return Observable.create(e -> {
 
@@ -374,7 +375,7 @@ public class UserDataService extends BaseService {
                 files.add(dir);
             }
 
-            Log.d(TAG, "addHiddenFolder: " + files);
+            Logger.d(files);
             hiddenFolderPref.set(files);
 
             e.onNext(true);
@@ -446,6 +447,14 @@ public class UserDataService extends BaseService {
                     }
                 });
         return object;
+    }
+
+    public Observable<Preference<LinkedList<File>>> getExcludeFolderPreference() {
+        return Observable.create(e -> {
+            Preference<LinkedList<File>> hiddenFolderPreference = getHiddenFolderPreference();
+            e.onNext(hiddenFolderPreference);
+            e.onComplete();
+        });
     }
 
     public Observable<List<File>> getHiddenFolder() {
