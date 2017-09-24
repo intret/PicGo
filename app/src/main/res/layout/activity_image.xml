@@ -5,9 +5,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true"
     android:clipToPadding="true"
-    tools:context="cn.intret.app.picgo.ui.main.ImageViewerActivity">
+    android:fitsSystemWindows="true"
+    android:background="@color/black"
+    tools:context="cn.intret.app.picgo.ui.main.ImageActivity">
 
 
     <!--Pager-->
@@ -26,7 +27,7 @@
             android:id="@+id/viewpager"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-             
+
             >
         </cn.intret.app.picgo.view.HackyViewPager>
 
@@ -46,17 +47,16 @@
 
         <!--brief-->
         <TextView
-            android:id="@+id/brief"
+            android:id="@+id/index"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginLeft="@dimen/dialog_standard_content_margin"
-            android:background="@color/translucent"
             android:lines="1"
             android:textColor="@android:color/white"
 
             android:visibility="visible"
-            app:layout_constraintBottom_toTopOf="@+id/resolution"
-            app:layout_constraintHorizontal_chainStyle="packed"
+            app:layout_constraintBottom_toBottomOf="parent"
+
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             tools:text="1/23"/>
@@ -67,13 +67,13 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
 
-            android:layout_marginLeft="@dimen/dialog_standard_content_margin"
+            android:layout_marginLeft="8dp"
             android:background="@color/translucent"
             android:textColor="@android:color/white"
             android:visibility="visible"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/brief"
+            app:layout_constraintLeft_toRightOf="@id/index"
+            app:layout_constraintTop_toTopOf="parent"
             tools:text="128x111"
             />
 
@@ -128,7 +128,7 @@
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.0"
-        tools:visibility="visible">
+        tools:visibility="gone">
 
         <!--模糊图层-->
         <ImageView
@@ -273,14 +273,14 @@
     <android.support.v7.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="0dp"
-        android:navigationIcon="@drawable/ic_arrow_back_white_24px"
         android:layout_height="?android:attr/actionBarSize"
-        app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
-        app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
-        app:titleTextAppearance="@style/ActionBarTitleText"
+        android:navigationIcon="@drawable/ic_arrow_back_white_24px"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
+        app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+        app:titleTextAppearance="@style/ActionBarTitleText"
         >
 
     </android.support.v7.widget.Toolbar>

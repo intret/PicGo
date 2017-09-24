@@ -18,7 +18,7 @@ import java.util.List;
 
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.ui.adapter.BaseFileItem;
-import cn.intret.app.picgo.ui.adapter.ImageTransitionNameGenerator;
+import cn.intret.app.picgo.ui.adapter.TransitionUtils;
 import cn.intret.app.picgo.utils.PathUtils;
 
 /**
@@ -259,7 +259,7 @@ public class DefaultImageListAdapter extends BaseImageAdapter<DefaultImageListAd
         // Image
         String absolutePath = item.getFile().getAbsolutePath();
         ImageView imageView = viewHolder.getView(R.id.image);
-        imageView.setTransitionName(ImageTransitionNameGenerator
+        imageView.setTransitionName(TransitionUtils
                 .generateTransitionName(absolutePath));
 
         Glide.with(viewHolder.itemView.getContext())
@@ -272,7 +272,7 @@ public class DefaultImageListAdapter extends BaseImageAdapter<DefaultImageListAd
 
         // File type
         View view = viewHolder.getView(R.id.file_type);
-        view.setTransitionName(ImageTransitionNameGenerator.generateTransitionName(ImageTransitionNameGenerator.TRANSITION_PREFIX_FILETYPE, absolutePath));
+        view.setTransitionName(TransitionUtils.generateTransitionName(TransitionUtils.TRANSITION_PREFIX_FILETYPE, absolutePath));
 
         boolean videoFile = PathUtils.isVideoFile(absolutePath);
         boolean gifFile = PathUtils.isGifFile(absolutePath);

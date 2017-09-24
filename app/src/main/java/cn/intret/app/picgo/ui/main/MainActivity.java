@@ -59,7 +59,6 @@ import com.jakewharton.rxrelay2.BehaviorRelay;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.reflect.TypeUtils;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
@@ -107,7 +106,7 @@ import cn.intret.app.picgo.ui.adapter.brvah.ExpandableFolderAdapter;
 import cn.intret.app.picgo.ui.adapter.FlatFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.brvah.FolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.brvah.FolderListAdapterUtils;
-import cn.intret.app.picgo.ui.adapter.ImageTransitionNameGenerator;
+import cn.intret.app.picgo.ui.adapter.TransitionUtils;
 import cn.intret.app.picgo.ui.adapter.brvah.BaseSelectableAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedFolderListAdapter;
@@ -410,9 +409,9 @@ public class MainActivity extends BaseAppCompatActivity {
 
                         if (file != null) {
                             String filePath = file.getAbsolutePath();
-                            String transitionName = ImageTransitionNameGenerator.generateTransitionName(filePath);
-                            String fileTypeTransitionName = ImageTransitionNameGenerator.generateTransitionName(
-                                    ImageTransitionNameGenerator.TRANSITION_PREFIX_FILETYPE, filePath);
+                            String transitionName = TransitionUtils.generateTransitionName(filePath);
+                            String fileTypeTransitionName = TransitionUtils.generateTransitionName(
+                                    TransitionUtils.TRANSITION_PREFIX_FILETYPE, filePath);
 
                             boolean addFileTypeTransitionName = PathUtils.isVideoFile(filePath);
 
@@ -894,7 +893,7 @@ public class MainActivity extends BaseAppCompatActivity {
     private void startTestDetailActivity(Context context, File file, View view) {
 
         // Construct an Intent as normal
-        Intent intent = ImageViewerActivity.newIntentViewFile(this, file);
+        Intent intent = ImageActivity.newIntentViewFile(this, file);
 
         // BEGIN_INCLUDE(start_activity)
         ActivityOptionsCompat activityOptions = ActivityOptionsCompat.makeSceneTransitionAnimation(
@@ -930,7 +929,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
     private void switchToViewMode(GroupMode mode) {
         mGroupMode = mode;
-        showDirectoryImages(mCurrentFolder, true, false);
+        showImageList(mCurrentFolder, true, false);
     }
 
     @Override
@@ -1150,7 +1149,7 @@ public class MainActivity extends BaseAppCompatActivity {
                     Log.d(TAG, "showViewModeMenu: 切换显示网格视图");
                     setToolbarViewModeIcon(R.drawable.ic_grid_on_black_24px);
                     if (mCurrentFolder != null) {
-                        showDirectoryImages(mCurrentFolder, false, mViewMode, ViewMode.GRID_VIEW, false);
+                        showImageList(mCurrentFolder, false, mViewMode, ViewMode.GRID_VIEW, false);
                     } else {
                         Log.w(TAG, "showViewModeMenu: mCurrentFolder is null");
                     }
@@ -1165,7 +1164,7 @@ public class MainActivity extends BaseAppCompatActivity {
                     setToolbarViewModeIcon(R.drawable.ic_list_black_24px);
 
                     if (mCurrentFolder != null) {
-                        showDirectoryImages(mCurrentFolder, false, mViewMode, ViewMode.LIST_VIEW, false);
+                        showImageList(mCurrentFolder, false, mViewMode, ViewMode.LIST_VIEW, false);
                     } else {
                         Log.w(TAG, "showViewModeMenu: mCurrentFolder is null");
                     }
@@ -1179,22 +1178,22 @@ public class MainActivity extends BaseAppCompatActivity {
                 case R.id.sort_by_name:
                     mSortWay = SortWay.NAME;
                     UserDataService.getInstance().getSortWay().set(mSortWay);
-                    showDirectoryImages(mCurrentFolder, false, true);
+                    reloadCurrentImageList();
                     break;
                 case R.id.sort_by_date:
                     mSortWay = SortWay.DATE;
                     UserDataService.getInstance().getSortWay().set(mSortWay);
-                    showDirectoryImages(mCurrentFolder, false, true);
+                    reloadCurrentImageList();
                     break;
                 case R.id.order_by_asc:
                     mSortOrder = SortOrder.ASC;
                     UserDataService.getInstance().getSortOrder().set(mSortOrder);
-                    showDirectoryImages(mCurrentFolder, false, true);
+                    reloadCurrentImageList();
                     break;
                 case R.id.order_by_desc:
                     mSortOrder = SortOrder.DESC;
                     UserDataService.getInstance().getSortOrder().set(mSortOrder);
-                    showDirectoryImages(mCurrentFolder, false, true);
+                    reloadCurrentImageList();
                     break;
             }
             return false;
@@ -1215,7 +1214,7 @@ public class MainActivity extends BaseAppCompatActivity {
             menuItem.setIcon(R.drawable.ic_move_to_folder);
             menuItem.setOnMenuItemClickListener(item -> {
 
-                showDirectoryImages(dir, true, false);
+                showImageList(dir, true, false);
                 return true;
             });
         }
@@ -1376,7 +1375,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
         mExpandableFolderAdapter.setOnItemClickListener((baseQuickAdapter, view, i) ->
                 Log.d(TAG, "onItemClick() called with: baseQuickAdapter = [" + baseQuickAdapter + "], view = [" + view + "], i = [" + i + "]"));
-        mExpandableFolderAdapter.setOnInteractionListener(item -> showDirectoryImages(item.getFile(), false, false));
+        mExpandableFolderAdapter.setOnInteractionListener(item -> showImageList(item.getFile(), false, false));
 
         final GridLayoutManager manager = new GridLayoutManager(this, 1);
         manager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
@@ -1421,7 +1420,7 @@ public class MainActivity extends BaseAppCompatActivity {
             public void onItemClick(SectionedFolderListAdapter.Section sectionItem, int section, SectionedFolderListAdapter.Item item, int relativePos) {
                 Log.d(TAG, "onItemClick: 显示目录图片 " + item.getFile());
                 mDrawerLayout.closeDrawers();
-                showDirectoryImages(item.getFile(), true, false);
+                showImageList(item.getFile(), true, false);
             }
 
             @Override
@@ -1471,7 +1470,7 @@ public class MainActivity extends BaseAppCompatActivity {
         if (sectionItem != null) {
             SectionedFolderListAdapter.Item item = ListUtils.firstOf(sectionItem.getItems());
             if (item != null) {
-                showDirectoryImages(item.getFile());
+                showImageList(item.getFile());
             }
         }*/
     }
@@ -1996,7 +1995,7 @@ public class MainActivity extends BaseAppCompatActivity {
                     } else {
                         Log.d(TAG, "onItemClick: 显示 " + item.getFile());
                         adapter.selectItem(item.getFile());
-                        showDirectoryImages(item.getFile(), false, false);
+                        showImageList(item.getFile(), false, false);
 //                    mDrawerLayout.closeDrawers();
                     }
                 });
@@ -2151,7 +2150,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
         listAdapter.setOnItemClickListener((sectionItem, item) -> {
             mDrawerLayout.closeDrawers();
-            showDirectoryImages(item.getFile(), true, false);
+            showImageList(item.getFile(), true, false);
         });
         mFolderList.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         mFolderList.setAdapter(listAdapter);
@@ -2168,7 +2167,7 @@ public class MainActivity extends BaseAppCompatActivity {
         if (sectionItem != null) {
             SectionFolderListAdapter.Item item = ListUtils.firstOf(sectionItem.getItems());
             if (item != null) {
-                showDirectoryImages(item.getFile(), true, false);
+                showImageList(item.getFile(), true, false);
             }
         }
 //        // show firstOf folder's images in activity content field.
@@ -2177,7 +2176,7 @@ public class MainActivity extends BaseAppCompatActivity {
 //            SectionFolderListAdapter.Section item = sectionItems.get(0);
 //            List<SectionFolderListAdapter.Item> items = item.getItems();
 //            if (items != null && !items.isEmpty()) {
-//                showDirectoryImages(items.get(0).getFile());
+//                showImageList(items.get(0).getFile());
 //            }
 //        }
     }
@@ -2217,7 +2216,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
             mDrawerLayout.closeDrawers();
 
-            showDirectoryImages(item.getDirectory(), true, false);
+            showImageList(item.getDirectory(), true, false);
 
         });
         mFolderList.addItemDecoration(new SectionDecoration(this, new SectionDecoration.DecorationCallback() {
@@ -2238,7 +2237,7 @@ public class MainActivity extends BaseAppCompatActivity {
 //        if (items != null && items.size() > 0) {
 //
 //            FolderListAdapter.Item item = items.get(0);
-//            showDirectoryImages(item.getDirectory());
+//            showImageList(item.getDirectory());
 //        }
     }
 
@@ -2257,18 +2256,21 @@ public class MainActivity extends BaseAppCompatActivity {
      * Image list
      */
 
-
-    @MainThread
-    private void showDirectoryImages(File directory, boolean selectFolderListItem, boolean showRefreshing) {
-        showDirectoryImages(directory, selectFolderListItem, mViewMode, mViewMode, showRefreshing);
+    private void reloadCurrentImageList() {
+        showImageList(mCurrentFolder, false, true);
     }
 
     @MainThread
-    private void showDirectoryImages(File directory, boolean updateFolderListSelectItem,
-                                     ViewMode fromViewMode,
-                                     ViewMode toViewMode, boolean showRefreshing) {
+    private void showImageList(File directory, boolean selectFolderListItem, boolean showRefreshing) {
+        showImageList(directory, selectFolderListItem, mViewMode, mViewMode, showRefreshing);
+    }
 
-        Log.d(TAG, "showDirectoryImages() called with: directory = [" + directory + "], updateFolderListSelectItem = [" + updateFolderListSelectItem + "], fromViewMode = [" + fromViewMode + "], toViewMode = [" + toViewMode + "]");
+    @MainThread
+    private void showImageList(File directory, boolean updateFolderListSelectItem,
+                               ViewMode fromViewMode,
+                               ViewMode toViewMode, boolean showRefreshing) {
+
+        Log.d(TAG, "showImageList() called with: directory = [" + directory + "], updateFolderListSelectItem = [" + updateFolderListSelectItem + "], fromViewMode = [" + fromViewMode + "], toViewMode = [" + toViewMode + "]");
 
 
         if (directory == null) {
@@ -2283,7 +2285,7 @@ public class MainActivity extends BaseAppCompatActivity {
 //
 //                    if (mCurrentImageAdapter != null) {
 //                        if (mCurrentImageAdapter.getDirectory().equals(directory)) {
-//                            Log.w(TAG, "showDirectoryImages: 目录已经显示在 " + toViewMode + " 模式下");
+//                            Log.w(TAG, "showImageList: 目录已经显示在 " + toViewMode + " 模式下");
 //                            return;
 //                        }
 //                    }
@@ -2294,7 +2296,7 @@ public class MainActivity extends BaseAppCompatActivity {
 //                        && mCurrentDetailImageAdapter != null
 //                        && mCurrentDetailImageAdapter.getDirectory().equals(directory)) {
 //
-//                    Log.w(TAG, "showDirectoryImages: 目录已经显示在 " + toViewMode + " 模式下");
+//                    Log.w(TAG, "showImageList: 目录已经显示在 " + toViewMode + " 模式下");
 //                    return;
 //                }
 //                break;
@@ -2327,7 +2329,7 @@ public class MainActivity extends BaseAppCompatActivity {
             }
             break;
             default:
-                Log.w(TAG, "showDirectoryImages: 没有显示图片目录，未知视图模式：" + toViewMode);
+                Log.w(TAG, "showImageList: 没有显示图片目录，未知视图模式：" + toViewMode);
                 break;
         }
     }
@@ -3089,12 +3091,12 @@ public class MainActivity extends BaseAppCompatActivity {
 
                         if (ListUtils.isEmpty(mRecentHistory)) {
                             Log.w(TAG, "reloadImageList: 最近访问目录列表为空，加载相机相册");
-                            showDirectoryImages(SystemUtils.getCameraDir(), true, false);
+                            showImageList(SystemUtils.getCameraDir(), true, false);
                         } else {
                             File recentDir = ListUtils.firstOf(mRecentHistory);
 
                             Log.d(TAG, "reloadImageList: 显示最近显示目录 : " + recentDir);
-                            showDirectoryImages(recentDir, true, false);
+                            showImageList(recentDir, true, false);
                         }
                     }, throwable -> {
                         ToastUtils.toastShort(this, R.string.failed_to_load_preference);
@@ -3129,13 +3131,13 @@ public class MainActivity extends BaseAppCompatActivity {
 //
 //
 //                        if (ListUtils.isEmpty(recentRecords)) {
-//                            showDirectoryImages(SystemUtils.getCameraDir(), true);
+//                            showImageList(SystemUtils.getCameraDir(), true);
 //                        } else {
 //                            RecentRecord recentRecord = ListUtils.firstOf(recentRecords);
 //
 //                            File directory = new File(recentRecord.getFilePath());
 //                            Log.d(TAG, "reloadImageList: show recent access folder : " + directory);
-//                            showDirectoryImages(directory, true);
+//                            showImageList(directory, true);
 //                        }
 //
 //                    }, RxUtils::unhandledThrowable);
@@ -3313,7 +3315,7 @@ public class MainActivity extends BaseAppCompatActivity {
         }
 
         // Construct an Intent as normal
-        Intent intent = ImageViewerActivity.newIntentViewFileList(this, directory.getAbsolutePath(),
+        Intent intent = ImageActivity.newIntentViewFileList(this, directory.getAbsolutePath(),
                 position, mSortOrder, mSortWay);
 
         // BEGIN_INCLUDE(start_activity)
@@ -3327,7 +3329,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
                 // Now we provide a list of Pair items which contain the view we can transitioning
                 // from, and the name of the view it is transitioning to, in the launched activity
-                new Pair<View, String>(imageView, ImageTransitionNameGenerator.generateTransitionName(file.getAbsolutePath())));
+                new Pair<View, String>(imageView, TransitionUtils.generateTransitionName(file.getAbsolutePath())));
         // Now we can start the Activity, providing the activity options as a bundle
         ActivityCompat.startActivity(this, intent, activityOptions.toBundle());
         // END_INCLUDE(start_activity)

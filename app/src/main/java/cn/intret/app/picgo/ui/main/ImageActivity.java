@@ -3,6 +3,7 @@ package cn.intret.app.picgo.ui.main;
 import android.animation.Animator;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -65,7 +66,7 @@ import cn.intret.app.picgo.model.SortWay;
 import cn.intret.app.picgo.model.ViewMode;
 import cn.intret.app.picgo.model.event.RemoveFileMessage;
 import cn.intret.app.picgo.ui.adapter.brvah.DefaultImageListAdapter;
-import cn.intret.app.picgo.ui.adapter.ImageTransitionNameGenerator;
+import cn.intret.app.picgo.ui.adapter.TransitionUtils;
 import cn.intret.app.picgo.ui.event.CurrentImageChangeMessage;
 import cn.intret.app.picgo.utils.FileSizeUtils;
 import cn.intret.app.picgo.utils.ListUtils;
@@ -85,9 +86,9 @@ import pl.droidsonroids.gif.GifDrawable;
  *
  * @implNote FIXED problems at : https://stackoverflow.com/questions/30628543/fragment-shared-element-transitions-dont-work-with-viewpager
  */
-public class ImageViewerActivity extends BaseAppCompatActivity implements ImageFragment.OnFragmentInteractionListener {
+public class ImageActivity extends BaseAppCompatActivity implements ImageFragment.OnFragmentInteractionListener {
 
-    private static final String TAG = ImageViewerActivity.class.getSimpleName();
+    private static final String TAG = ImageActivity.class.getSimpleName();
     private static final String EXTRA_IMAGE_FILE_PATH = "extra:file_name";
     private static final String EXTRA_IMAGE_DIR_PATH = "extra:dir_path";
     private static final String EXTRA_IMAGE_ITEM_POSITION = "extra:image_item_position";
@@ -102,7 +103,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
     @BindView(R.id.viewpager) ViewPager mViewPager;
     @BindView(R.id.bottom_toolbar) ViewGroup mBottomToolbar;
 
-    @BindView(R.id.brief) TextView mBrief;
+    @BindView(R.id.index) TextView mBrief;
     @BindView(R.id.resolution) TextView mResolution;
     @BindView(R.id.btn_delete) ImageView mBtnDelete;
     @BindView(R.id.btn_detail) ImageView mBtnDetail;
@@ -139,7 +140,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
         View decorView = getWindow().getDecorView();
 
-        setContentView(R.layout.activity_image_viewer);
+        setContentView(R.layout.activity_image);
 
         ButterKnife.bind(this);
 
@@ -147,8 +148,9 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
         initToolbar();
 
-        loadImageFiles();
         initImageTransition();
+
+        loadImageFiles();
     }
 
     private void initToolbar() {
@@ -162,6 +164,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
             actionBar.setDisplayShowHomeEnabled(true);
             actionBar.setDisplayHomeAsUpEnabled(true);
             actionBar.setHomeButtonEnabled(true);
+            actionBar.hide();
         }
 
         initStatusBar();
@@ -218,8 +221,8 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
                     ImageFragment fragment = mPagerAdapter.getRegisteredFragment(mCurrentItem);
 
                     String absolutePath = item.getFile().getAbsolutePath();
-                    String transitionName = ImageTransitionNameGenerator.generateTransitionName(absolutePath);
-                    String fileTypeTransitionName = ImageTransitionNameGenerator.generateTransitionName(ImageTransitionNameGenerator.TRANSITION_PREFIX_FILETYPE, absolutePath);
+                    String transitionName = TransitionUtils.generateTransitionName(absolutePath);
+                    String fileTypeTransitionName = TransitionUtils.generateTransitionName(TransitionUtils.TRANSITION_PREFIX_FILETYPE, absolutePath);
 
                     names.clear();
                     names.add(transitionName);
@@ -273,8 +276,8 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
                 if (currentItem != -1) {
                     Image item = mPagerAdapter.getImage(currentItem);
                     sharedElements.clear();
-                    String transitionName = ImageTransitionNameGenerator.generateTransitionName(item.getFile().getAbsolutePath());
-                    String fileTypeTransitionName = ImageTransitionNameGenerator.generateTransitionName(ImageTransitionNameGenerator.TRANSITION_PREFIX_FILETYPE, item.getFile().getAbsolutePath());
+                    String transitionName = TransitionUtils.generateTransitionName(item.getFile().getAbsolutePath());
+                    String fileTypeTransitionName = TransitionUtils.generateTransitionName(TransitionUtils.TRANSITION_PREFIX_FILETYPE, item.getFile().getAbsolutePath());
 
                     sharedElements.put(transitionName, ((ImageFragment) mPagerAdapter.getItem(currentItem)).getImage());
                     sharedElements.put(fileTypeTransitionName, ((ImageFragment) mPagerAdapter.getItem(currentItem)).getFileType());
@@ -469,7 +472,6 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
     }
 
 
-
     @Override
     protected void onStart() {
         super.onStart();
@@ -504,14 +506,14 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
     }
 
     public static Intent newIntentViewFile(Context context, File file) {
-        Intent intent = new Intent(context, ImageViewerActivity.class);
+        Intent intent = new Intent(context, ImageActivity.class);
         intent.setAction(Intent.ACTION_VIEW);
         intent.putExtra(EXTRA_IMAGE_FILE_PATH, file.getAbsolutePath());
         return intent;
     }
 
     public static Intent newIntentViewFileList(Context context, String dirAbsolutePath, int itemModelPosition, SortOrder sortOrder, SortWay sortWay) {
-        Intent intent = new Intent(context, ImageViewerActivity.class);
+        Intent intent = new Intent(context, ImageActivity.class);
         intent.setAction(Intent.ACTION_VIEW);
         intent.putExtra(EXTRA_IMAGE_DIR_PATH, dirAbsolutePath);
         intent.putExtra(EXTRA_IMAGE_ITEM_POSITION, itemModelPosition);
@@ -523,26 +525,28 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(TapImageMessage message) {
-        switchFullscreen();
+        ActivityCompat.finishAfterTransition(this);
+//        switchFullscreen();
     }
 
     private void switchFullscreen() {
 
-        ActionBar ab = getSupportActionBar();
-        if (ab != null) {
-            if (ab.isShowing()) {
-                ab.hide();
-            } else {
-                ab.show();
-            }
-        }
+//        ActionBar ab = getSupportActionBar();
+//        if (ab != null) {
+//            if (ab.isShowing()) {
+//                ab.hide();
+//            } else {
+//                ab.show();
+//            }
+//        }
 
-        switchFullScreenMode(null);
+        //switchFullScreenMode(null);
     }
-        /**
-         * 在全屏模式和正常模式之间切换显示
-         */
-    private void switchFullScreenMode(List< Animator > amList) {
+
+    /**
+     * 在全屏模式和正常模式之间切换显示
+     */
+    private void switchFullScreenMode(List<Animator> amList) {
 
         mCurrentFullscreen = isCurrentFullscreen();
 
@@ -551,7 +555,14 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
         if (mAnimationType == AnimationType.FADE_IN_FADE_OUT) {
 
-            animators.add(alphaAnimatorOfView(mBottomToolbar));
+            ObjectAnimator e = alphaAnimatorOfView(mBottomToolbar);
+            e.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator animation) {
+
+                }
+            });
+            animators.add(e);
 
         } else if (mAnimationType == AnimationType.SLIDE_IN_SLIDE_OUT) {
             animators.add(animatorOfBottomToolbar()); // Actionbar animation
@@ -578,6 +589,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
             @Override
             public void onAnimationEnd(Animator animation) {
+//                mBottomToolbar.setEnabled(false);
             }
 
             @Override
@@ -601,6 +613,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
     // 保存动画过程中的值
     float mBottomToolbarTranslationY = 0;
+
     boolean isCurrentFullscreen() {
         if (mAnimationType == AnimationType.SLIDE_IN_SLIDE_OUT) {
             return mBottomToolbar.getTranslationY() == mBottomToolbar.getHeight();
@@ -613,6 +626,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
     public static final float VIEW_FULL_SCREEN_ALPHA = 0.0f; // View 全屏模式下的 Alpha
     public static final float VIEW_NORMAL_ALPHA = 1.0f; // View 正常模式下的 Alpha
+
     private ObjectAnimator alphaAnimatorOfView(View v) {
         float alphaStart = v.getAlpha();
         float alphaEnd = isCurrentFullscreen() ? VIEW_NORMAL_ALPHA : VIEW_FULL_SCREEN_ALPHA;
@@ -655,7 +669,6 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
         //        StatusBarUtils.hideStatusBar(this);
     }
-
 
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -739,7 +752,6 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
                 mCurrentItem = position;
 
-                Image image = adapter.getImage(position);
                 showImageInfo(position);
 
                 EventBus.getDefault().post(new CurrentImageChangeMessage().setPosition(position));
@@ -750,6 +762,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
             }
         });
+
 
         if (position != -1) {
             mCurrentItem = position;
@@ -767,7 +780,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
         Image image = mPagerAdapter.getImage(position);
         int total = mPagerAdapter.getCount();
 
-        String imagePosition = getString(R.string.percent_d_d, position, total);
+        String imagePosition = getString(R.string.percent_d_d, position + 1, total);
         mBrief.setText(imagePosition);
 
         // Resolution
@@ -777,7 +790,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
                 .subscribe(imageFileInformation -> {
                     Size mediaResolution = imageFileInformation.getMediaResolution();
                     if (MediaUtils.isValidSize(mediaResolution)) {
-                        mResolution.setText(getString(R.string.image_size_d_d, mediaResolution.getWidth(), mediaResolution.getHeight()));
+                        mResolution.setText(getString(R.string.image_size_d_d_compact, mediaResolution.getWidth(), mediaResolution.getHeight()));
                     } else {
                         mResolution.setText("-");
                     }
@@ -1184,8 +1197,8 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
             Log.d(TAG, "get fragment item for file " + image.getFile());
 
             String absolutePath = image.getFile().getAbsolutePath();
-            String transitionName = ImageTransitionNameGenerator.generateTransitionName(absolutePath);
-            String fileTypeTransitionName = ImageTransitionNameGenerator.generateTransitionName(ImageTransitionNameGenerator.TRANSITION_PREFIX_FILETYPE, absolutePath);
+            String transitionName = TransitionUtils.generateTransitionName(absolutePath);
+            String fileTypeTransitionName = TransitionUtils.generateTransitionName(TransitionUtils.TRANSITION_PREFIX_FILETYPE, absolutePath);
 
             boolean performEnterTransition = position == mAnimatedItemPosition;
             if (performEnterTransition) {

@@ -26,7 +26,7 @@ import java.util.Objects;
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.ui.adapter.BaseFileItem;
 import cn.intret.app.picgo.ui.adapter.ContentEqual;
-import cn.intret.app.picgo.ui.adapter.ImageTransitionNameGenerator;
+import cn.intret.app.picgo.ui.adapter.TransitionUtils;
 import cn.intret.app.picgo.utils.DateTimeUtils;
 import cn.intret.app.picgo.utils.PathUtils;
 
@@ -343,7 +343,7 @@ public class DetailImageAdapter
 
         // Transition name
         RoundedImageView imageView = viewHolder.getView(R.id.image);
-        imageView.setTransitionName(ImageTransitionNameGenerator.generateTransitionName(item.getFile().getAbsolutePath()));
+        imageView.setTransitionName(TransitionUtils.generateTransitionName(item.getFile().getAbsolutePath()));
 
         // Check
         onBindViewHolderSelected(viewHolder, item.isSelected(), mIsSelectionMode);

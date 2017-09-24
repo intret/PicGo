@@ -33,7 +33,7 @@
         </service>
 
         <activity
-            android:name=".ui.main.ImageViewerActivity"
+            android:name=".ui.main.ImageActivity"
             android:theme="@style/AppTheme.ImageViewer">
         </activity>
         <activity

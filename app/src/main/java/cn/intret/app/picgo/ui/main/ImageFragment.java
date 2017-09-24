@@ -296,13 +296,14 @@ public class ImageFragment extends Fragment {
         @Override
         public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
 
-            Log.d(TAG, "onResourceReady: 图片加载成功，启动进入动画");
+
             starEnterAnimation();
             return false;
         }
 
         private void starEnterAnimation() {
             if (mPerformEnterTransition) {
+                Log.d(TAG, "starEnterAnimation() called 启动进入动画");
                 FragmentActivity activity = ImageFragment.this.getActivity();
                 if (activity != null) {
                     ActivityCompat.startPostponedEnterTransition(activity);
