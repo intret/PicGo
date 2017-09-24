@@ -1,5 +1,8 @@
 package cn.intret.app.picgo.ui.main;
 
+import android.animation.Animator;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -97,6 +100,8 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
     @BindView(R.id.toolbar) Toolbar mToolbar;
     @BindView(R.id.viewpager) ViewPager mViewPager;
+    @BindView(R.id.bottom_toolbar) ViewGroup mBottomToolbar;
+
     @BindView(R.id.brief) TextView mBrief;
     @BindView(R.id.resolution) TextView mResolution;
     @BindView(R.id.btn_delete) ImageView mBtnDelete;
@@ -122,6 +127,9 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
     private ViewMode mViewMode;
     private SortWay mSortWay;
     private SortOrder mSortOrder;
+    private AnimationType mAnimationType = AnimationType.FADE_IN_FADE_OUT;
+    private boolean mCurrentFullscreen;
+    private AnimatorSet mFullscreenAnimatorSet;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -514,6 +522,123 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onEvent(TapImageMessage message) {
+        switchFullscreen();
+    }
+
+    private void switchFullscreen() {
+
+        ActionBar ab = getSupportActionBar();
+        if (ab != null) {
+            if (ab.isShowing()) {
+                ab.hide();
+            } else {
+                ab.show();
+            }
+        }
+
+        switchFullScreenMode(null);
+    }
+        /**
+         * 在全屏模式和正常模式之间切换显示
+         */
+    private void switchFullScreenMode(List< Animator > amList) {
+
+        mCurrentFullscreen = isCurrentFullscreen();
+
+        // 全屏切换动画
+        List<Animator> animators = new LinkedList<>(org.apache.commons.collections4.ListUtils.emptyIfNull(amList));
+
+        if (mAnimationType == AnimationType.FADE_IN_FADE_OUT) {
+
+            animators.add(alphaAnimatorOfView(mBottomToolbar));
+
+        } else if (mAnimationType == AnimationType.SLIDE_IN_SLIDE_OUT) {
+            animators.add(animatorOfBottomToolbar()); // Actionbar animation
+        }
+
+        // Cancel previous animation
+        if (mFullscreenAnimatorSet != null) {
+            if (mFullscreenAnimatorSet.isRunning()) {
+                return;
+            }
+        }
+
+        Log.d(TAG, "switchFullScreenMode: start animation");
+
+        // Start new animation
+        mFullscreenAnimatorSet = new AnimatorSet();
+        mFullscreenAnimatorSet.setDuration(200);
+        mFullscreenAnimatorSet.playTogether(animators);
+        mFullscreenAnimatorSet.addListener(new Animator.AnimatorListener() {
+            @Override
+            public void onAnimationStart(Animator animation) {
+//                mBottomToolbar.setEnabled(false);
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+
+            }
+
+            @Override
+            public void onAnimationRepeat(Animator animation) {
+
+            }
+        });
+        mFullscreenAnimatorSet.start();
+
+    }
+
+    private enum AnimationType {
+        FADE_IN_FADE_OUT,
+        SLIDE_IN_SLIDE_OUT
+    }
+
+    // 保存动画过程中的值
+    float mBottomToolbarTranslationY = 0;
+    boolean isCurrentFullscreen() {
+        if (mAnimationType == AnimationType.SLIDE_IN_SLIDE_OUT) {
+            return mBottomToolbar.getTranslationY() == mBottomToolbar.getHeight();
+        } else if (mAnimationType == AnimationType.FADE_IN_FADE_OUT) {
+            return mBottomToolbar.getAlpha() == 0;
+        }
+        return false;
+    }
+
+
+    public static final float VIEW_FULL_SCREEN_ALPHA = 0.0f; // View 全屏模式下的 Alpha
+    public static final float VIEW_NORMAL_ALPHA = 1.0f; // View 正常模式下的 Alpha
+    private ObjectAnimator alphaAnimatorOfView(View v) {
+        float alphaStart = v.getAlpha();
+        float alphaEnd = isCurrentFullscreen() ? VIEW_NORMAL_ALPHA : VIEW_FULL_SCREEN_ALPHA;
+        return ObjectAnimator.ofFloat(v, "alpha", alphaStart, alphaEnd);
+    }
+
+
+    @NonNull
+    private ObjectAnimator animatorOfBottomToolbar() {
+
+        View target = mBottomToolbar;
+        float targetHeight = target.getHeight();
+        float animateStartTy = target.getTranslationY();
+        float animateEndTy = isCurrentFullscreen() ? 0 : targetHeight;
+
+        ObjectAnimator abAnimator = ObjectAnimator.ofFloat(target, "translationY", animateStartTy, animateEndTy);
+
+        abAnimator.addUpdateListener(animation -> {
+            mBottomToolbarTranslationY = (float) animation.getAnimatedValue();
+        });
+
+        return abAnimator;
+    }
+
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(DragImageExitMessage message) {
         ActivityCompat.finishAfterTransition(this);
     }
@@ -530,6 +655,8 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
 
         //        StatusBarUtils.hideStatusBar(this);
     }
+
+
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(RemoveFileMessage message) {
@@ -665,7 +792,7 @@ public class ImageViewerActivity extends BaseAppCompatActivity implements ImageF
             actionBar.setTitle(image.getFile().getName());
 
             // Subtitle : index
-            actionBar.setSubtitle(imagePosition);
+            //actionBar.setSubtitle(imagePosition);
         }
     }
 

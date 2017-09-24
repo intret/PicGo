@@ -178,11 +178,10 @@ public class ImageFragment extends Fragment {
         });
         mImage.setMinScale(0.90f);
 
-        mImage.setOnTapListener(new DragPhotoView.OnTapListener() {
-            @Override
-            public void onTap(DragPhotoView view) {
-                Log.d(TAG, "onTap() called with: view = [" + view + "]");
-            }
+        mImage.setOnTapListener(view -> {
+            Log.d(TAG, "onTap() called with: view = [" + view + "]");
+
+            EventBus.getDefault().post(new TapImageMessage());
         });
 
         if (PathUtils.isGifFile(mFilePath)) {

@@ -59,6 +59,7 @@ import com.jakewharton.rxrelay2.BehaviorRelay;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.reflect.TypeUtils;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
@@ -125,6 +126,7 @@ import cn.intret.app.picgo.utils.PopupUtils;
 import cn.intret.app.picgo.utils.RxUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
+import cn.intret.app.picgo.utils.Watch;
 import cn.intret.app.picgo.view.T9KeypadView;
 import cn.intret.app.picgo.widget.EmptyRecyclerView;
 import cn.intret.app.picgo.widget.RecyclerItemTouchListener;
@@ -237,17 +239,21 @@ public class MainActivity extends BaseAppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        Watch watch = Watch.now();
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
+
+        watch.logGlanceMS(TAG, "ButterKnife");
 
         initToolBar();
         initDrawer();
         initImageList();
 
-
         initTransition();
 
         EventBus.getDefault().register(this);
+
+        watch.logTotalMS(TAG, "onCreate");
         //showFloatingWindow();
     }
 
@@ -302,8 +308,11 @@ public class MainActivity extends BaseAppCompatActivity {
 
         super.onStart();
 
+        Watch watch = Watch.now();
         loadFolderList();
         reloadImageList(false);
+
+        watch.logTotalMS(TAG, "onStart");
     }
 
     @Override
@@ -991,7 +1000,8 @@ public class MainActivity extends BaseAppCompatActivity {
                     break;
             }
         } else {
-           // backToLauncher(this);
+            finish();
+            //backToLauncher(this);
         }
     }
 

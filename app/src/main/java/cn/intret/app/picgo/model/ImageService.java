@@ -56,6 +56,7 @@ import cn.intret.app.picgo.utils.ObjectGuarder;
 import cn.intret.app.picgo.utils.PathUtils;
 import cn.intret.app.picgo.utils.RxUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
+import cn.intret.app.picgo.utils.Watch;
 import io.reactivex.Observable;
 import io.reactivex.schedulers.Schedulers;
 
@@ -133,8 +134,10 @@ public class ImageService extends BaseService {
         // 是否显示隐藏目录
         Observable.<Preference<Boolean>>create(
                 e -> {
+                    Watch watch = Watch.now();
                     Preference<Boolean> showHiddenFolder = UserDataService.getInstance().getShowHiddenFilePreference();
 
+                    watch.logGlanceMS(TAG, "Load user initial preference");
                     e.onNext(showHiddenFolder);
                     e.onComplete();
                 })
@@ -362,6 +365,7 @@ public class ImageService extends BaseService {
                         }
                     }
 
+                    Watch watch = Watch.now();
                     FolderModel folderModel = new FolderModel();
 
                     // SDCard/DCIM directory images
@@ -374,6 +378,7 @@ public class ImageService extends BaseService {
                     List<File> pictureSubFolders = getSortedSubDirectories(picturesDir);
                     addContainerFolder(folderModel, picturesDir, pictureSubFolders);
 
+                    watch.logGlanceMS(TAG, "Load folder list");
                     FolderModel cloneModel;
                     try {
                         mFolderModelRWLock.writeLock().lock();
@@ -382,6 +387,8 @@ public class ImageService extends BaseService {
                     } finally {
                         mFolderModelRWLock.writeLock().unlock();
                     }
+
+                    watch.logGlanceMS(TAG, "Cache folder list");
 
                     emitter.onNext(cloneModel);
                     emitter.onComplete();
@@ -448,7 +455,7 @@ public class ImageService extends BaseService {
                     if (!fileList.contains(folder)) {
                         subFolders.add(createImageFolder(folder));
                     } else {
-                        Log.d(TAG, "addContainerFolder: ignore folder [" + folder + "]");
+//                        Log.d(TAG, "addContainerFolder: ignore folder [" + folder + "]");
                     }
                 });
             } else {
@@ -818,6 +825,7 @@ public class ImageService extends BaseService {
                         }
                     }
 
+                    Watch watch = Watch.now();
                     // Get media file(image/video) list and sort
                     List<File> imageFiles = ImageService.getInstance().listMediaFiles(directory);
 
@@ -852,6 +860,8 @@ public class ImageService extends BaseService {
                                 })
                                 .sorted(comparator)
                                 .toList();
+
+                        watch.logGlanceMS(TAG, "Load media files details");
                     } else {
 
                         sortedMediaFiles = Stream.of(imageFiles)
@@ -864,6 +874,8 @@ public class ImageService extends BaseService {
                                 })
                                 .sorted(comparator)
                                 .toList();
+
+                        watch.logGlanceMS(TAG, "Load media files basic information");
                     }
 
                     // Cache media file list
@@ -935,7 +947,9 @@ public class ImageService extends BaseService {
 //        Log.d(TAG, "cacheImageList() called with: dir = [" + dir + "], mediaFiles = [" + mediaFiles + "], param = [" + param + "]");
 
         mMediaFileListMapGuard.writeConsume(object ->
-                object.put(dir, new MediaFileList().setMediaFiles(mediaFiles).setLoadedExtraInfo(param.isLoadMediaInfo())));
+                object.put(dir, new MediaFileList()
+                        .setMediaFiles(mediaFiles)
+                        .setLoadedExtraInfo(param.isLoadMediaInfo())));
     }
 
     public List<File> listMediaFiles(File dir) {

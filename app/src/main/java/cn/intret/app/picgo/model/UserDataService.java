@@ -27,6 +27,7 @@ import cn.intret.app.picgo.model.event.RenameDirectoryMessage;
 import cn.intret.app.picgo.utils.Modifier;
 import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.utils.MapAction1;
+import cn.intret.app.picgo.utils.Watch;
 import io.reactivex.Observable;
 import io.reactivex.schedulers.Schedulers;
 
@@ -228,6 +229,7 @@ public class UserDataService extends BaseService {
     public Observable<UserInitialPreferences> loadInitialPreference(boolean detectFileExistence) {
         return Observable.create(e -> {
 
+            Watch watch = Watch.now();
             UserInitialPreferences pref = new UserInitialPreferences();
 
             // 最近访问文件列表
@@ -274,6 +276,8 @@ public class UserDataService extends BaseService {
                 }
             }
             pref.setSortOrder(sortOrder.get());
+
+            watch.logTotalMS(TAG, "Load user initial preferences");
 
             e.onNext(pref);
             e.onComplete();
@@ -392,7 +396,7 @@ public class UserDataService extends BaseService {
                     @Override
                     public LinkedList<RecentRecord> deserialize(@NonNull String serialized) {
                         //serialized = "[]";
-                        Log.d(TAG, "deserialize() called with: serialized = [" + serialized + "]");
+//                        Log.d(TAG, "deserialize() called with: serialized = [" + serialized + "]");
 
                         Type listType = new TypeToken<ArrayList<RecentRecord>>() {
                         }.getType();
@@ -408,7 +412,7 @@ public class UserDataService extends BaseService {
                         }.getType();
 
                         String json = new Gson().toJson(value, listType);
-                        Log.d(TAG, "serialize() called with: value = [" + value + "]" + " result = [" + json + "]");
+//                        Log.d(TAG, "serialize() called with: value = [" + value + "]" + " result = [" + json + "]");
                         return json;
                     }
                 });
@@ -424,7 +428,7 @@ public class UserDataService extends BaseService {
                     @Override
                     public LinkedList<File> deserialize(@NonNull String serialized) {
                         //serialized = "[]";
-                        Log.d(TAG, "deserialize() called with: serialized = [" + serialized + "]");
+//                        Log.d(TAG, "deserialize() called with: serialized = [" + serialized + "]");
 
                         Type listType = new TypeToken<ArrayList<String>>() {
                         }.getType();
@@ -442,7 +446,7 @@ public class UserDataService extends BaseService {
 
                         List<String> filePathList = Stream.of(value).map(File::getAbsolutePath).toList();
                         String json = new Gson().toJson(filePathList, listType);
-                        Log.d(TAG, "serialize() called with: value = [" + value + "]" + " result = [" + json + "]");
+//                        Log.d(TAG, "serialize() called with: value = [" + value + "]" + " result = [" + json + "]");
                         return json;
                     }
                 });
