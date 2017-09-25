@@ -23,6 +23,7 @@ import com.afollestad.sectionedrecyclerview.ItemCoord;
 import com.afollestad.sectionedrecyclerview.SectionedRecyclerViewAdapter;
 import com.afollestad.sectionedrecyclerview.SectionedViewHolder;
 import com.annimon.stream.Stream;
+import com.annimon.stream.function.Predicate;
 
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -69,14 +70,17 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
     private boolean mShowHeaderOptionButton = false;
     private boolean mShowCloseButton = false;
 
-    /**
-     * 过滤模式会高亮显示匹配关键字
-     */
-    private boolean mShowInFilterMode = false;
+
+    // 过滤模式会高亮显示匹配关键字
+    private boolean mHighlightItemName = false;
     private boolean mEnableItemClick = true;
     private boolean mIsSelectable = false;
     private boolean mIsCollapsable = true;
     private boolean mIsMultiSelect = false;
+    // 是否显示冲突微标
+    private boolean mShowConflictBadge;
+    private boolean mShowSourceDirBadgeWhenEmpty = true;
+    private boolean mFiltering = false;
 
     /*
      * Data
@@ -84,9 +88,8 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
     private List<Section> mSections = new LinkedList<>();
     private RecyclerView mRecyclerView;
     private Map<File, List<File>> mConflictFiles;
-    private boolean mShowConflictBadge;
     private File mMoveFileSourceDir;
-    private boolean mShowSourceDirBadgeWhenEmpty = true;
+    private List<Section> mSectionsBeforeFilter;
 
 
     public Item getItem(ItemCoord relativePosition) {
@@ -209,7 +212,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                 notifyItemRemoved(absolutePosition);
             }
         } else {
-            Log.w(TAG, "removeFolderItem: invalid argument" );
+            Log.w(TAG, "removeFolderItem: invalid argument");
         }
     }
 
@@ -260,11 +263,12 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                     if (item.clearConflictFiles()) {
 
                         // TODO replaced with notifyItem
+
                         if (mRecyclerView != null) {
                             int absolutePosition = getAbsolutePosition(si, ii);
 
                             Bundle payload = new Bundle();
-                            payload.putInt(PAYLOAD_KEY_CONFLICT_FILES, item.getConflictFiles().size());
+                            payload.putStringArrayList(PAYLOAD_KEY_CONFLICT_FILES, PathUtils.fileListToPathArrayList(item.getConflictFiles()));
                             notifyItemChanged(absolutePosition, payload);
 
 //                        RecyclerView.ViewHolder vh = mRecyclerView.findViewHolderForAdapterPosition(absolutePosition);
@@ -281,6 +285,12 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                     if (folderConflictFiles.containsKey(item.getFile())) {
                         List<File> conflictFiles = folderConflictFiles.get(item.getFile());
                         item.setConflictFiles(conflictFiles);
+                        if (mShowConflictBadge) {
+                            item.setItemSubType(ItemSubType.CONFLICT_COUNT);
+                        } else {
+                            Log.w(TAG, "updateConflictFiles: 设置了conflict 文件列表但是配置为不显示 conflict badge");
+                            item.setItemSubType(ItemSubType.NORMAL);
+                        }
 
                         // TODO replaced with notifyDataSetChanged
                         if (mRecyclerView != null) {
@@ -306,15 +316,10 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         int oldItemCount = getItemCount();
         int newItemCount = newAdapter.getItemCount();
 
-        // 将旧 adapter 冲突文件列表转移至新的
-        if (mShowConflictBadge) {
-            newAdapter.updateConflictFiles(getConflictFiles());
-        }
-
         // 应用新的过滤模式
-        setShowInFilterMode(newAdapter.isShowInFilterMode());
+        setHighlightItemName(newAdapter.isHighlightItemName());
 
-        // 转移选中状态
+        // 更新新 item 中的选中状态
         File selectedItem = getSelectedItem();
         if (selectedItem != null) {
             newAdapter.selectItem(selectedItem);
@@ -517,7 +522,6 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
             }
         });
 
-
         mSections.clear();
         for (int i = 0; i < newAdapter.getSections().size(); i++) {
             Section section = newAdapter.getSections().get(i);
@@ -704,6 +708,61 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
         }
     }
+
+    /**
+     * Filter
+     *
+     * @param filter 过滤
+     */
+    public void filter(Predicate<? super Item> filter) {
+
+        List<Section> filteredSections = new LinkedList<>();
+
+        // 保存现在的数据
+        mSectionsBeforeFilter = new LinkedList<>();
+        for (int i = 0, mSectionsSize = mSections.size(); i < mSectionsSize; i++) {
+            Section section = mSections.get(i);
+            mSectionsBeforeFilter.add((Section) section.clone());
+        }
+
+        // 根据现在的数据进行过滤
+        for (int i = 0, mSectionsSize = mSections.size(); i < mSectionsSize; i++) {
+            Section section = (Section) mSections.get(i).clone();
+            filteredSections.add(section);
+
+            List<Item> items = Stream.of(section.getItems())
+                    .filter(filter)
+                    .toList();
+            section.setItems(items);
+        }
+
+        // 显示过滤后的数据
+        mFiltering = true;
+        filter(filteredSections);
+    }
+
+    public void filter(List<Section> sections) {
+        if (sections == null) {
+            Log.w(TAG, "filter: 参数为空" );
+            return;
+        }
+
+        SectionedFolderListAdapter adapter = new SectionedFolderListAdapter(sections);
+        adapter.setHighlightItemName(mHighlightItemName);
+
+        diffUpdate(adapter);
+    }
+
+    public void leaveFilterMode() {
+        if (!mFiltering) {
+            Log.w(TAG, "leaveFilterMode: 没有在过滤模式" );
+            return;
+        }
+
+        mFiltering = false;
+        filter(mSectionsBeforeFilter);
+    }
+
 
     /*
      * Interfaces and Classes
@@ -1008,6 +1067,15 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
      * Getter and setter
      */
 
+    public boolean isFiltering() {
+        return mFiltering;
+    }
+
+    public SectionedFolderListAdapter setFiltering(boolean filtering) {
+        mFiltering = filtering;
+        return this;
+    }
+
     public boolean isShowCloseButton() {
         return mShowCloseButton;
     }
@@ -1141,12 +1209,12 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         return this;
     }
 
-    public boolean isShowInFilterMode() {
-        return mShowInFilterMode;
+    public boolean isHighlightItemName() {
+        return mHighlightItemName;
     }
 
-    public SectionedFolderListAdapter setShowInFilterMode(boolean showInFilterMode) {
-        mShowInFilterMode = showInFilterMode;
+    public SectionedFolderListAdapter setHighlightItemName(boolean highlightItemName) {
+        mHighlightItemName = highlightItemName;
         return this;
     }
 
@@ -1210,13 +1278,13 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
     public SectionedFolderListAdapter(List<Section> sections) {
         if (sections != null) {
             mSections = sections;
-            notifyDataSetChanged();
         }
     }
 
     SectionedFolderListAdapter setSections(List<Section> sections) {
         if (sections != null) {
             this.mSections = sections;
+//            notifyDataSetChanged();
         }
         return this;
     }
@@ -1422,7 +1490,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
         // Title : Folder name
         String name = item.getName();
-        if (mShowInFilterMode) {
+        if (mHighlightItemName) {
             // 高亮关键字
             int keywordStartIndex = item.getKeywordStartIndex();
             if (isValidKeyword(name, keywordStartIndex, item.getKeywordLength())) {

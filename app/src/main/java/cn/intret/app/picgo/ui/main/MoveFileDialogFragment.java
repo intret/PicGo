@@ -86,7 +86,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
     @BindView(R.id.t9_keypad) T9KeypadView mT9KeypadView;
 
     @BindView(R.id.keyboard_switch_layout) View mKeyboardSwitchLayout;
-    @BindView(R.id.keyboard_switch_image_view) ImageView mKeyboardSwitchIv;
+    @BindView(R.id.keyboard_switch) ImageView mKeyboardSwitchIv;
     private SectionedFolderListAdapter mListAdapter;
     private boolean mEnableDetectSelectedFolder = false;
     private Observable<CharSequence> mDialogInputObservable;
@@ -322,7 +322,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
         });
         T9KeypadView keypadView = ((T9KeypadView) contentView.findViewById(R.id.t9_keypad));
 
-        ImageView btnKeypadSwitch = (ImageView) contentView.findViewById(R.id.keyboard_switch_image_view);
+        ImageView btnKeypadSwitch = (ImageView) contentView.findViewById(R.id.keyboard_switch);
         View keypadSwitchLayout = contentView.findViewById(R.id.keyboard_switch_layout);
 
         keypadSwitchLayout.setOnClickListener(v -> switchKeyboard(keypadContainer, btnKeypadSwitch));
@@ -886,8 +886,13 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
             return;
         }
 
-        List<String> strings = Stream.of(conflictFiles).map(fileFilePair -> fileFilePair.second.getAbsolutePath()).toList();
-        ConflictResolverDialogFragment fragment = ConflictResolverDialogFragment.newInstance(destDir.getAbsolutePath(), new ArrayList<>(strings));
+        List<String> strings = Stream.of(conflictFiles)
+                .map(fileFilePair -> fileFilePair.second.getAbsolutePath())
+                .toList();
+
+        ConflictResolverDialogFragment fragment =
+                ConflictResolverDialogFragment.newInstance(destDir.getAbsolutePath(), new ArrayList<>(strings));
+
         fragment.show(getActivity().getSupportFragmentManager(), "Conflict Resolver Dialog");
     }
 

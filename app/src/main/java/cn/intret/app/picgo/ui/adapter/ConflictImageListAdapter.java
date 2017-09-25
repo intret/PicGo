@@ -142,15 +142,9 @@ public class ConflictImageListAdapter extends RecyclerView.Adapter<ConflictImage
 
             // Update item checked data
             item.setResolveResult(ResolveResult.RESOLVE_RESULT_SOURCE);
-
-            // Update item checked status
-            if (mRecyclerView != null) {
-                RecyclerView.ViewHolder vh = mRecyclerView.findViewHolderForAdapterPosition(i);
-                if (vh != null && vh instanceof ViewHolder) {
-                    ((ViewHolder) vh).selectSource();
-                }
-            }
         }
+
+        notifyDataSetChanged();
     }
 
     public void selectAllTargetItems() {
@@ -162,15 +156,9 @@ public class ConflictImageListAdapter extends RecyclerView.Adapter<ConflictImage
 
             // Update item checked data
             item.setResolveResult(ResolveResult.RESOLVE_RESULT_TARGET);
-
-            // Update item checked status
-            if (mRecyclerView != null) {
-                RecyclerView.ViewHolder vh = mRecyclerView.findViewHolderForAdapterPosition(i);
-                if (vh != null && vh instanceof ViewHolder) {
-                    ((ViewHolder) vh).selectTarget();
-                }
-            }
         }
+
+        notifyDataSetChanged();
     }
 
     public void selectBothItems() {
@@ -182,15 +170,9 @@ public class ConflictImageListAdapter extends RecyclerView.Adapter<ConflictImage
 
             // Update item checked data
             item.setResolveResult(ResolveResult.RESOLVE_RESULT_BOTH);
-
-            // Update item checked status
-            if (mRecyclerView != null) {
-                RecyclerView.ViewHolder vh = mRecyclerView.findViewHolderForAdapterPosition(i);
-                if (vh != null && vh instanceof ViewHolder) {
-                    ((ViewHolder) vh).selectBoth();
-                }
-            }
         }
+
+        notifyDataSetChanged();
     }
 
     /*
@@ -325,7 +307,9 @@ public class ConflictImageListAdapter extends RecyclerView.Adapter<ConflictImage
 
         public void selectBoth() {
             targetCheckBox.setVisibility(View.VISIBLE);
+            targetCheckBox.setChecked(true);
             sourceCheckBox.setVisibility(View.VISIBLE);
+            targetCheckBox.setChecked(true);
         }
     }
 }

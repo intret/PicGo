@@ -3,7 +3,7 @@
                android:duration="300"
                android:interpolator="@android:interpolator/fast_out_linear_in"
     >
-    <changeClipBounds/>
+
     <changeBounds>
     </changeBounds>
 

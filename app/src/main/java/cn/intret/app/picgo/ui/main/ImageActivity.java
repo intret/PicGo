@@ -136,7 +136,8 @@ public class ImageActivity extends BaseAppCompatActivity implements ImageFragmen
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        supportPostponeEnterTransition();
+        ActivityCompat.postponeEnterTransition(this);
+//        supportPostponeEnterTransition();
 
         View decorView = getWindow().getDecorView();
 
@@ -148,9 +149,9 @@ public class ImageActivity extends BaseAppCompatActivity implements ImageFragmen
 
         initToolbar();
 
-        initImageTransition();
-
         loadImageFiles();
+
+        initImageTransition();
     }
 
     private void initToolbar() {
@@ -226,7 +227,7 @@ public class ImageActivity extends BaseAppCompatActivity implements ImageFragmen
 
                     names.clear();
                     names.add(transitionName);
-                    names.add(fileTypeTransitionName);
+                    //names.add(fileTypeTransitionName);
 
                     sharedElements.clear();
                     PhotoView image = fragment.getImage();
@@ -246,22 +247,22 @@ public class ImageActivity extends BaseAppCompatActivity implements ImageFragmen
                         }
                     }
 
-                    ImageView fileType = fragment.getFileType();
-                    if (fileType != null) {
-                        sharedElements.put(fileTypeTransitionName, fragment.getFileType());
-                    } else {
-                        View iv = null;
-                        View root = fragment.getView();
-                        if (root != null) {
-                            iv = root.findViewById(R.id.file_type);
-                        }
-
-                        if (iv != null) {
-                            sharedElements.put(fileTypeTransitionName, iv);
-                        } else {
-                            Log.e(TAG, "imageView enter onMapSharedElements: cannot get FileType ImageView instance.");
-                        }
-                    }
+//                    ImageView fileType = fragment.getFileType();
+//                    if (fileType != null) {
+//                        sharedElements.put(fileTypeTransitionName, fragment.getFileType());
+//                    } else {
+//                        View iv = null;
+//                        View root = fragment.getView();
+//                        if (root != null) {
+//                            iv = root.findViewById(R.id.file_type);
+//                        }
+//
+//                        if (iv != null) {
+//                            sharedElements.put(fileTypeTransitionName, iv);
+//                        } else {
+//                            Log.e(TAG, "imageView enter onMapSharedElements: cannot get FileType ImageView instance.");
+//                        }
+//                    }
                 }
                 Log.d(TAG, "imageView enter after onMapSharedElements() called with: names = [" + names + "], sharedElements = [" + sharedElements + "]");
                 super.onMapSharedElements(names, sharedElements);

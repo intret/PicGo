@@ -152,7 +152,7 @@
 
 
         <ImageView
-            android:id="@+id/keyboard_switch_image_view"
+            android:id="@+id/keyboard_switch"
             android:layout_width="@dimen/folder_list_item_height"
             android:layout_height="@dimen/folder_list_item_height"
             android:scaleType="centerInside"

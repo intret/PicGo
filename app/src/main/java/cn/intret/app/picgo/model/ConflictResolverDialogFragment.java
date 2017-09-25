@@ -4,6 +4,7 @@ package cn.intret.app.picgo.model;
 import android.app.Dialog;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.design.widget.BottomSheetDialogFragment;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
@@ -32,7 +33,7 @@ import cn.intret.app.picgo.utils.ToastUtils;
  * Use the {@link ConflictResolverDialogFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class ConflictResolverDialogFragment extends DialogFragment {
+public class ConflictResolverDialogFragment extends BottomSheetDialogFragment {
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_DEST_DIR = "dest_dir";
@@ -84,7 +85,12 @@ public class ConflictResolverDialogFragment extends DialogFragment {
         return createContentView(container);
     }
 
-    @NonNull
+    @Override
+    public void onStart() {
+        super.onStart();
+
+    }
+/*@NonNull
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
 
@@ -119,7 +125,7 @@ public class ConflictResolverDialogFragment extends DialogFragment {
 
                 })
                 .create();
-    }
+    }*/
 
     private View createContentView(ViewGroup container) {
         View contentView = LayoutInflater.from(getActivity())
@@ -133,7 +139,7 @@ public class ConflictResolverDialogFragment extends DialogFragment {
 
     private void initContentView(View contentView) {
 
-        RecyclerView rv = (RecyclerView) contentView.findViewById(R.id.conflict_image_list);
+
         List<ConflictImageListAdapter.Item> items = Stream.of(mConflictFiles)
                 .map(File::new)
                 .map(file -> new ConflictImageListAdapter.Item()
@@ -144,8 +150,8 @@ public class ConflictResolverDialogFragment extends DialogFragment {
 
         // Image List
         ConflictImageListAdapter adapter = new ConflictImageListAdapter(items);
-        rv.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false));
-        rv.setAdapter(adapter);
+        mImageList.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false));
+        mImageList.setAdapter(adapter);
 
         // Radio
         mRadioGroup.setOnCheckedChangeListener((group, checkedId) -> {

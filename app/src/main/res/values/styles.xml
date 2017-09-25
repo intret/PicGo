@@ -24,13 +24,14 @@
 
     <style name="AppTheme.ImageViewer" parent="AppTheme">
         <!-- Customize your theme here. -->
-        <item name="android:windowContentTransitions">false</item>
+        <item name="android:windowContentTransitions">true</item>
         <item name="android:windowActivityTransitions">true</item>
         <item name="android:windowIsTranslucent">true</item>
-        <item name="android:windowBackground">@android:color/transparent</item>
-        <item name="android:windowTranslucentStatus">true</item>
+
+        <!--<item name="android:windowTranslucentStatus">true</item>-->
         <item name="android:immersive">true</item>
         <item name="android:windowFullscreen">true</item>
+        <item name="android:windowBackground">@color/transparent</item>
 
         <item name="android:toolbarStyle">@style/MyActionBar</item>
         <!--<item name="android:windowActionBarOverlay">true</item>-->
@@ -121,7 +122,7 @@
     </style>
 
     <style name="DialpadItemLayout">
-        <item name="android:backgroundTint">@drawable/bg_dialpad_item_selector</item>
+        <item name="android:background">@drawable/bg_dialpad_item_selector</item>
         <item name="android:paddingTop">4dp</item>
         <item name="android:paddingBottom">4dp</item>
         <item name="android:minWidth">60dp</item>

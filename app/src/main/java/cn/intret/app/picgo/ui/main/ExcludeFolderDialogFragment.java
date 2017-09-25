@@ -29,7 +29,6 @@ import com.annimon.stream.Stream;
 import com.chad.library.adapter.base.BaseViewHolder;
 import com.chad.library.adapter.base.callback.ItemDragAndSwipeCallback;
 import com.chad.library.adapter.base.listener.OnItemSwipeListener;
-import com.jakewharton.rxbinding2.support.v7.widget.RxPopupMenu;
 import com.mikepenz.fastadapter.FastAdapter;
 import com.mikepenz.fastadapter.IAdapter;
 import com.mikepenz.fastadapter.IExpandable;
@@ -50,7 +49,6 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.app.CoreModule;
-import cn.intret.app.picgo.model.ConflictResolverDialogFragment;
 import cn.intret.app.picgo.model.FolderModel;
 import cn.intret.app.picgo.model.ImageFolder;
 import cn.intret.app.picgo.model.ImageService;
@@ -71,7 +69,6 @@ import cn.intret.app.picgo.utils.ViewUtils;
 import cn.intret.app.picgo.view.T9KeypadView;
 import cn.intret.app.picgo.widget.RecyclerItemTouchListener;
 import io.reactivex.ObservableTransformer;
-import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
 
@@ -95,7 +92,7 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
     @BindView(R.id.t9_keypad) T9KeypadView mT9KeypadView;
 
     @BindView(R.id.keyboard_switch_layout) View mKeyboardSwitchLayout;
-    @BindView(R.id.keyboard_switch_image_view) ImageView mKeyboardSwitchIv;
+    @BindView(R.id.keyboard_switch) ImageView mKeyboardSwitchIv;
     private SectionedFolderListAdapter mListAdapter;
     private FolderListAdapter mAdapter;
 
@@ -348,7 +345,7 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
         });
         T9KeypadView keypadView = ((T9KeypadView) contentView.findViewById(R.id.t9_keypad));
 
-        ImageView btnKeypadSwitch = (ImageView) contentView.findViewById(R.id.keyboard_switch_image_view);
+        ImageView btnKeypadSwitch = (ImageView) contentView.findViewById(R.id.keyboard_switch);
         View keypadSwitchLayout = contentView.findViewById(R.id.keyboard_switch_layout);
 
         keypadSwitchLayout.setOnClickListener(v -> switchKeyboard(keypadContainer, btnKeypadSwitch));
@@ -877,21 +874,6 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
         }
     }
 
-    private void showConflictDialog(File destDir, List<Pair<File, File>> conflictFiles) {
-
-        if (conflictFiles.isEmpty()) {
-            return;
-        }
-
-        List<String> strings = Stream.of(conflictFiles).map(fileFilePair -> fileFilePair.second.getAbsolutePath()).toList();
-        ConflictResolverDialogFragment fragment = ConflictResolverDialogFragment.newInstance(destDir.getAbsolutePath(), new ArrayList<>(strings));
-        fragment.show(getActivity().getSupportFragmentManager(), "Conflict Resolver Dialog");
-    }
-
-    private View createConflictDialogContentView() {
-
-        return null;
-    }
 
     protected <T> ObservableTransformer<T, T> workAndShow() {
         return observable -> observable.subscribeOn(Schedulers.io())

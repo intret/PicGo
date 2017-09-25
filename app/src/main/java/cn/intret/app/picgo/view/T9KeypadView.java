@@ -353,6 +353,7 @@ public class T9KeypadView extends LinearLayout implements
 
     public void clearT9Input() {
         mT9InputEt.setText("");
+        mDialDeleteBtn.setVisibility(INVISIBLE);
     }
 
 }

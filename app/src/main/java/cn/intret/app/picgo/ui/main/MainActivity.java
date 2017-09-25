@@ -28,6 +28,7 @@ import android.text.Editable;
 import android.text.InputType;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
+import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.Gravity;
@@ -47,6 +48,8 @@ import com.afollestad.materialdialogs.MaterialDialog;
 import com.afollestad.materialdialogs.internal.MDButton;
 import com.afollestad.sectionedrecyclerview.ItemCoord;
 import com.afollestad.sectionedrecyclerview.SectionedRecyclerViewAdapter;
+import com.allenliu.badgeview.BadgeFactory;
+import com.allenliu.badgeview.BadgeView;
 import com.annimon.stream.Collector;
 import com.annimon.stream.Stream;
 import com.annimon.stream.function.BiConsumer;
@@ -77,6 +80,7 @@ import java.util.concurrent.TimeUnit;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import butterknife.OnLongClick;
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.model.ConflictResolverDialogFragment;
 import cn.intret.app.picgo.model.DeleteFolderMessage;
@@ -132,8 +136,10 @@ import cn.intret.app.picgo.widget.RecyclerItemTouchListener;
 import cn.intret.app.picgo.widget.SectionDecoration;
 import cn.intret.app.picgo.widget.SuperRecyclerView;
 import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 
 public class MainActivity extends BaseAppCompatActivity {
 
@@ -157,8 +163,10 @@ public class MainActivity extends BaseAppCompatActivity {
     @BindView(R.id.t9_keypad_container) ViewGroup mKeypadContainer;
     @BindView(R.id.t9_keypad) T9KeypadView mKeypad;
     @BindView(R.id.keyboard_switch_layout) ViewGroup mKeypadSwitchLayout;
-    @BindView(R.id.keyboard_switch_image_view) ImageView mKeypadSwitch;
+    @BindView(R.id.keyboard_switch) ImageView mKeypadSwitch;
+    @BindView(R.id.keyboard_switch_badge)View mKeypadSwitchBadge;
 
+    private BadgeView mDialpadSwitchBadge;
 
     /*
      * ActionBar/Toolbar
@@ -228,10 +236,16 @@ public class MainActivity extends BaseAppCompatActivity {
     private ExpandableFolderAdapter mExpandableFolderAdapter;
     private Disposable mUpdateImageConflictFileDisposable;
     private Disposable mUpdateDetailImageListConflictDisposable;
+
+    // 图片列表显示状态
     private ListPopupWindow mFolderItemContextMenu;
     private SortWay mSortWay = SortWay.UNKNOWN;
     private SortOrder mSortOrder = SortOrder.UNKNOWN;
+
+    // 拨号盘状态
     private boolean mEnableT9Filter = false;
+    private String mCurrentT9Number;
+
 
 
     @Override
@@ -1257,39 +1271,101 @@ public class MainActivity extends BaseAppCompatActivity {
         //mTitle = mDrawerTitle = getTitle();
 
 
+        // 文件夹列表工具栏
+        mDialpadSwitchBadge = BadgeFactory
+                .createDot(this)
+                .setBadgeGravity(Gravity.TOP | Gravity.RIGHT)
+                .setWidthAndHeight(8,8)
+                .setBadgeBackground(getResources().getColor(R.color.colorAccent))
+                .setBadgeCount(-1)
+                .setSpace(8,16)
+                .bind(mKeypadSwitchBadge);
+
+        mDialpadSwitchBadge.setVisibility(View.GONE);
+
+
         // DialPad
         mKeypad.getDialpadInputObservable()
                 .debounce(300, TimeUnit.MILLISECONDS)
                 .subscribe(input -> {
                     if (mEnableT9Filter) {
-
-                        ImageService.getInstance()
-                                .loadFolderList(true, input.toString())
-                                .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
-                                .compose(RxUtils.workAndShow())
-                                .subscribe(newAdapter -> {
-
-                                    RecyclerView.Adapter adapter = mFolderList.getAdapter();
-                                    if (adapter instanceof SectionedFolderListAdapter) {
-                                        SectionedFolderListAdapter currAdapter = (SectionedFolderListAdapter) adapter;
-                                        currAdapter.diffUpdate(newAdapter);
-                                    } else {
-                                        Log.w(TAG, "initDrawer:  没处理 dialpad 输入变更更新");
-                                    }
-
-                                }, RxUtils::unhandledThrowable);
+                        updateFolderList(input.toString());
                     }
                 });
+
+    }
+
+    private void updateFolderList(String t9NumberInput) {
+        Single.just(t9NumberInput)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(s -> {
+                    if (StringUtils.isEmpty(t9NumberInput)) {
+                        mDialpadSwitchBadge.setBadgeCount(0);
+                        mDialpadSwitchBadge.setVisibility(View.INVISIBLE);
+                    } else {
+                        mDialpadSwitchBadge.setBadgeCount(t9NumberInput.length());
+                        mDialpadSwitchBadge.setVisibility(View.VISIBLE);
+                    }
+                });
+
+        ImageService.getInstance()
+                .loadFolderList(true, t9NumberInput)
+                .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
+                .compose(RxUtils.workAndShow())
+                .subscribe(newAdapter -> {
+
+                    RecyclerView.Adapter adapter = mFolderList.getAdapter();
+                    if (adapter instanceof SectionedFolderListAdapter) {
+                        SectionedFolderListAdapter currAdapter = (SectionedFolderListAdapter) adapter;
+                        currAdapter.diffUpdate(newAdapter);
+                        mCurrentT9Number = t9NumberInput;
+                    } else {
+                        Log.w(TAG, "initDrawer:  没处理 dialpad 输入变更更新");
+                    }
+
+                }, RxUtils::unhandledThrowable);
     }
 
     @OnClick(R.id.keyboard_switch_layout)
     public void onButtonClickKeypadLayout(View view) {
+//        switchKeyboard();
+    }
+
+    @OnLongClick(R.id.keyboard_switch_layout)
+    public boolean onLongClickFolderListToolKeypadLayout(View view) {
+//        switchKeyboard();
+        return true;
+    }
+
+
+
+    @OnClick(R.id.keyboard_switch)
+    public void onClickButtonDialpadSwitch(View view) {
         switchKeyboard();
     }
 
-    @OnClick(R.id.keyboard_switch_image_view)
-    public void onButtonClickKeypadSwitch(View view) {
-        switchKeyboard();
+    @OnLongClick(R.id.keyboard_switch)
+    public boolean onLongClickButtonDialpadSwitch(View view) {
+        if (!TextUtils.isEmpty(mCurrentT9Number)) {
+//            updateFolderList("");
+            mKeypad.clearT9Input();
+            mKeypadContainer.setVisibility(View.INVISIBLE);
+        }
+        return true;
+    }
+
+    @OnClick(R.id.conflict_filter_switch)
+    public void onClickButtonFolderToolFilterMode() {
+        if (mFolderAdapter != null) {
+            if (mFolderAdapter.isFiltering()) {
+                mFolderAdapter.leaveFilterMode();
+            } else {
+                mFolderAdapter.filter(value ->
+                        value.getItemSubType() == SectionedFolderListAdapter.ItemSubType.CONFLICT_COUNT
+                        || value.getItemSubType() == SectionedFolderListAdapter.ItemSubType.SOURCE_DIR
+                );
+            }
+        }
     }
 
     @OnClick(R.id.btn_paste)

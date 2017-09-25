@@ -34,4 +34,5 @@
     <dimen name="folder_list_item_height">44dp</dimen>
     <dimen name="pop_menu_width">180dp</dimen>
     <dimen name="pop_menu_margin">32dp</dimen>
+    <dimen name="list_tool_icon_horizontal_margin">8dp</dimen>
 </resources>

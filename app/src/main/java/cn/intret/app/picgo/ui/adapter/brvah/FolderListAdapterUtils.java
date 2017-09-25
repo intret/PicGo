@@ -11,7 +11,6 @@ import java.util.List;
 import cn.intret.app.picgo.model.FolderModel;
 import cn.intret.app.picgo.model.ImageFolder;
 import cn.intret.app.picgo.ui.adapter.SectionedFolderListAdapter;
-import cn.intret.app.picgo.ui.adapter.brvah.FolderListAdapter;
 
 public class FolderListAdapterUtils {
 
@@ -24,7 +23,7 @@ public class FolderListAdapterUtils {
             sections.add(parentFolderToItem(containerFolders.get(i)));
         }
 
-        return new SectionedFolderListAdapter(sections).setShowInFilterMode(model.isT9FilterMode());
+        return new SectionedFolderListAdapter(sections).setHighlightItemName(model.isT9FilterMode());
     }
 
     private static SectionedFolderListAdapter.Section parentFolderToItem(FolderModel.ContainerFolder containerFolder) {

@@ -51,4 +51,5 @@
     <color name="black_alpha_95">#F2000000</color>
     <color name="black">#000000</color>
     <color name="action_bar_title_color">@color/white</color>
+    <color name="badge_color">@color/colorAccent</color>
 </resources>

@@ -209,6 +209,7 @@ public class ImageFragment extends Fragment {
 
             if (PathUtils.isStaticImageFile(mFilePath) || PathUtils.isVideoFile(mFilePath)) {
                 request.listener(new ImageRequestObserver(mPerformEnterTransition));
+//                scheduleStartPostponedTransition(mImage);
                 request.into(mImage);
 
             } else {
@@ -296,7 +297,6 @@ public class ImageFragment extends Fragment {
         @Override
         public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
 
-
             starEnterAnimation();
             return false;
         }
@@ -308,6 +308,7 @@ public class ImageFragment extends Fragment {
                 if (activity != null) {
                     ActivityCompat.startPostponedEnterTransition(activity);
 
+//                    startPostponedEnterTransition();
                     EventBus.getDefault().post(new ImageAnimationStartMessage());
 //                    StatusBarUtils.hideStatusBar(getActivity());
                 } else {
@@ -322,19 +323,6 @@ public class ImageFragment extends Fragment {
     public void onEvent(CancelExitTransitionMessage message) {
 //        mPerformExitTransition = false;
     }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onEvent(ImageFragmentSelectionChangeMessage message) {
-        // Clear transition name
-        if (StringUtils.equals(message.getTransitionName(), mImageTransitionName)) {
-            Log.d(TAG, "onEvent() 设置 transition name:" + mFilePath);
-            //tryToSetTransitionNameFromIntent();
-        } else {
-            Log.d(TAG, "onEvent() 清理 transition name:" + mFilePath);
-            //mImage.setTransitionName(null);
-        }
-    }
-
 
     private void tryToSetTransitionNameFromIntent() {
         if (mImageTransitionName != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -477,7 +465,7 @@ public class ImageFragment extends Fragment {
         } else {
             mImage.setTransitionName(mImageTransitionName);
         }
-        mFileType.setTransitionName(mFileTypeTransitionName);
+//        mFileType.setTransitionName(mFileTypeTransitionName);
     }
 
     /**
