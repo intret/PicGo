@@ -669,7 +669,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
             // TODO: 直接从 adapter 中获取冲突文件信息就可以了
 
             ImageService.getInstance()
-                    .detectMoveFileConflict(item.getFile(), mSelectedFiles)
+                    .detectFileConflict(item.getFile(), mSelectedFiles)
                     .compose(RxUtils.workAndShow())
                     .subscribe(moveFileDetectResult -> {
                         int colorOk = MoveFileDialogFragment.this.getResources().getColor(android.R.color.holo_green_dark);
@@ -886,12 +886,12 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
             return;
         }
 
-        List<String> strings = Stream.of(conflictFiles)
+        List<String> conflictFilePath = Stream.of(conflictFiles)
                 .map(fileFilePair -> fileFilePair.second.getAbsolutePath())
                 .toList();
 
         ConflictResolverDialogFragment fragment =
-                ConflictResolverDialogFragment.newInstance(destDir.getAbsolutePath(), new ArrayList<>(strings));
+                ConflictResolverDialogFragment.newInstance(destDir.getAbsolutePath(), new ArrayList<>(conflictFilePath));
 
         fragment.show(getActivity().getSupportFragmentManager(), "Conflict Resolver Dialog");
     }

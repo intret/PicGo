@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    >
+
+    <android.support.constraint.Guideline
+        android:id="@+id/guideline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.5"/>
+
+    <!--target image-->
+    <ImageView
+        android:id="@+id/target_image"
+        style="@style/ConflictListItemImage"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_gravity="center"
+        android:layout_marginBottom="8dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginTop="8dp"
+        android:background="@color/black"
+        android:contentDescription="First Image"
+        android:foreground="@drawable/image_foreground_selector"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toLeftOf="@id/guideline"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0"
+        tools:ignore="HardcodedText"
+        tools:scaleType="centerCrop"
+        tools:src="@drawable/img_bowl"/>
+
+    <!--target image info-->
+    <RelativeLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@color/white_alpha_23"
+        android:paddingBottom="4dp"
+        android:paddingTop="4dp"
+        app:layout_constraintBottom_toBottomOf="@id/target_image"
+        app:layout_constraintLeft_toLeftOf="@id/target_image"
+        app:layout_constraintRight_toRightOf="@id/target_image">
+
+        <TextView
+            android:id="@+id/target_image_resolution"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_marginLeft="4dp"
+            android:layout_toLeftOf="@+id/target_file_size"
+            android:textColor="@color/white"
+            tools:text="@string/tools_image_size"
+            />
+
+        <TextView
+            android:id="@+id/target_file_size"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_marginLeft="4dp"
+            android:layout_marginRight="4dp"
+            android:textColor="@color/white"
+            tools:text="@string/tools_image_file_size"
+            />
+
+    </RelativeLayout>
+
+    <!--target check-->
+    <TextView
+        android:id="@+id/target_check"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginLeft="8dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/ic_image_text_badge"
+        android:alpha=".9"
+        android:textSize="12sp"
+        android:checked="true"
+        android:paddingBottom="2dp"
+        android:paddingLeft="4dp"
+        android:paddingRight="4dp"
+        android:paddingTop="2dp"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_checkbox_circle_selector"
+        android:text="@string/keep"
+        android:textColor="@color/white"
+        app:layout_constraintLeft_toLeftOf="@id/target_image"
+        app:layout_constraintTop_toTopOf="@id/target_image"/>
+
+
+    <!--source image-->
+    <ImageView
+        android:id="@+id/source_image"
+        style="@style/ConflictListItemImage"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginLeft="8dp"
+        android:background="@color/black"
+        android:contentDescription="Second Image"
+        android:foreground="@drawable/image_foreground_selector"
+        app:layout_constraintBottom_toBottomOf="@id/target_image"
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintLeft_toRightOf="@id/guideline"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="@id/target_image"
+        tools:ignore="HardcodedText"
+        tools:scaleType="centerCrop"
+
+        tools:src="@drawable/img_bowl"
+        />
+
+    <!--源文件信息-->
+    <RelativeLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@color/white_alpha_23"
+        android:paddingBottom="4dp"
+        android:paddingTop="4dp"
+        app:layout_constraintBottom_toBottomOf="@id/source_image"
+        app:layout_constraintLeft_toLeftOf="@id/source_image"
+        app:layout_constraintRight_toRightOf="@id/source_image">
+
+        <!--分辨率-->
+        <TextView
+            android:id="@+id/source_image_resolution"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_marginLeft="4dp"
+            android:layout_toLeftOf="@+id/source_file_size"
+            android:textColor="@color/white"
+            tools:text="@string/tools_image_size"
+            />
+
+        <!--文件大小-->
+        <TextView
+            android:id="@+id/source_file_size"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_marginLeft="4dp"
+            android:layout_marginRight="4dp"
+            android:textColor="@color/white"
+            tools:text="@string/tools_image_file_size"
+            />
+
+    </RelativeLayout>
+
+
+    <!--source check-->
+    <TextView
+        android:id="@+id/source_check"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginLeft="8dp"
+        android:layout_marginTop="8dp"
+        android:textSize="12sp"
+        android:background="@drawable/ic_image_text_badge"
+        android:alpha=".9"
+        android:checked="true"
+        android:paddingBottom="2dp"
+        android:paddingLeft="4dp"
+        android:paddingRight="4dp"
+        android:paddingTop="2dp"
+        android:src="@drawable/ic_checkbox_circle_selector"
+        android:text="@string/keep"
+        android:textColor="@color/white"
+        app:layout_constraintLeft_toLeftOf="@id/source_image"
+        app:layout_constraintTop_toTopOf="@id/source_image"/>
+
+
+    <!--冲突解决办法-->
+    <ImageView
+        android:id="@+id/resolve_result_indicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="@id/target_image"
+        app:layout_constraintLeft_toLeftOf="@id/target_image"
+        app:layout_constraintRight_toRightOf="@id/source_image"
+        app:layout_constraintTop_toTopOf="@id/target_image"
+        tools:src="@drawable/ic_compare_arrow_left_black_18px"
+        />
+
+</android.support.constraint.ConstraintLayout>

@@ -58,6 +58,7 @@ import cn.intret.app.picgo.utils.RxUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
 import cn.intret.app.picgo.utils.Watch;
 import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.reactivex.schedulers.Schedulers;
 
 public class ImageService extends BaseService {
@@ -170,7 +171,7 @@ public class ImageService extends BaseService {
 
                     //mBus.post(new ExcludeFolderListChangeMessage());
 
-                    rescanFolderList();
+//                    rescanFolderList("loaded hidden folder list ");
 
                 }, RxUtils::unhandledThrowable);
         Log.d(TAG, "loadHiddenFileList: after");
@@ -181,13 +182,13 @@ public class ImageService extends BaseService {
                 .subscribe(linkedListPreference -> {
                     mExlucdeFolderListPref = new ObjectGuarder<>(linkedListPreference);
                     mExlucdeFolderListPref.readConsume(pref -> {
-                        pref.asObservable().subscribe(newFileLsit -> {
+                        pref.asObservable().subscribe(newFileList -> {
                             mHiddenFolders.writeConsume(fileList -> {
 
                                 fileList.clear();
-                                fileList.addAll(newFileLsit);
+                                fileList.addAll(newFileList);
 
-                                rescanFolderList();
+                                rescanFolderList("updated hidden folder list");
                             });
                         });
                     });
@@ -719,11 +720,12 @@ public class ImageService extends BaseService {
                 });*/
     }
 
-    private void rescanFolderList() {
+    private void rescanFolderList(String actionDesc) {
+
         loadFolderList(false)
                 .subscribeOn(Schedulers.io())
                 .subscribe(model -> {
-                    mBus.post(new RescanFolderListMessage());
+                    mBus.post(new RescanFolderListMessage(actionDesc));
                 }, throwable -> {
                     Log.d(TAG, "rescanFolderList: " + throwable);
                 });
@@ -800,6 +802,7 @@ public class ImageService extends BaseService {
                     if (param.isFromCacheFirst()) {
 
                         try {
+                            Watch watch = Watch.now();
                             mMediaFileListMapGuard.readLock();
                             MediaFileList mediaFileList = mMediaFileListMap.get(directory);
                             if (mediaFileList != null) {
@@ -816,6 +819,7 @@ public class ImageService extends BaseService {
                                         //Log.d(TAG, "loadMediaFileList: return media file list with comparator : " );
                                         e.onNext(mediaFiles);
                                         e.onComplete();
+                                        watch.logGlanceMS(TAG, "load media files from cache and sort it");
                                         return;
                                     }
                                 }
@@ -830,8 +834,6 @@ public class ImageService extends BaseService {
                     List<File> imageFiles = ImageService.getInstance().listMediaFiles(directory);
 
                     Comparator<MediaFile> comparator = getMediaFileComparator(param);
-
-                    Log.d(TAG, "loadMediaFileList: comparator = " + comparator);
 
                     List<MediaFile> sortedMediaFiles;
                     if (param.isLoadMediaInfo()) {
@@ -1047,7 +1049,7 @@ public class ImageService extends BaseService {
                             rescanImageDirectory(new File(dir), false);
 
                             // 扫描文件夹列表
-                            rescanFolderList();
+                            rescanFolderList("remove files");
                         }
                     });
 
@@ -1116,7 +1118,7 @@ public class ImageService extends BaseService {
                                 .toList();
                         containerFolder.setFolders(sortedImageFolderList);
 
-                        mBus.post(new RescanFolderListMessage());
+                        mBus.post(new RescanFolderListMessage("renameDirectory"));
                     }
                 }
 
@@ -1229,6 +1231,7 @@ public class ImageService extends BaseService {
 
     /**
      * 删除目录，在操作成功后将产生 {@link FolderModelChangeMessage} EventBus 消息。
+     *
      * @param dir
      * @param forceDelete
      * @return
@@ -1256,7 +1259,7 @@ public class ImageService extends BaseService {
             FileUtils.deleteDirectory(dir);
 
             // 通知目录删除
-            mBus.post(new DeleteFolderMessage(dir));
+            mBus.post(new cn.intret.app.picgo.model.event.DeleteFolderMessage(dir));
 
             try {
                 mFolderModelRWLock.writeLock().lock();
@@ -1338,7 +1341,7 @@ public class ImageService extends BaseService {
         });
     }
 
-    public Observable<MoveFileDetectResult> detectMoveFileConflict(File destDir, List<File> sourceFiles) {
+    public Observable<MoveFileDetectResult> detectFileConflict(File destDir, List<File> sourceFiles) {
         return Observable.create(e -> {
 
             if (sourceFiles.isEmpty()) {
@@ -1346,7 +1349,7 @@ public class ImageService extends BaseService {
             }
 
             List<Pair<File, File>> canMoveFiles = new LinkedList<Pair<File, File>>();
-            List<Pair<File, File>> conflictFiles = detectMoveFileConflict(destDir, sourceFiles, canMoveFiles);
+            List<Pair<File, File>> conflictFiles = detectFileConflict(destDir, sourceFiles, canMoveFiles);
 
             MoveFileDetectResult moveFileDetectResult = new MoveFileDetectResult()
                     .setCanMoveFiles(canMoveFiles)
@@ -1358,7 +1361,12 @@ public class ImageService extends BaseService {
         });
     }
 
-    public Observable<DetectFileExistenceResult> detectFileExistence(List<File> selectedFiles) {
+    /**
+     * 检测源文件列表在别的目录中是否出现
+     * @param sourceFiles
+     * @return
+     */
+    public Observable<DetectFileExistenceResult> detectFileExistence(List<File> sourceFiles) {
         return Observable.create(e -> {
             DetectFileExistenceResult result = new DetectFileExistenceResult();
             try {
@@ -1370,7 +1378,7 @@ public class ImageService extends BaseService {
                     for (ImageFolder imageFolder : containerFolder.getFolders()) {
                         List<Pair<File, File>> conflictFiles = intersectMoveFiles(
                                 imageFolder.getFile(),
-                                Arrays.asList(imageFolder.getMediaFiles()), selectedFiles, null);
+                                Arrays.asList(imageFolder.getMediaFiles()), sourceFiles, null);
                         if (!conflictFiles.isEmpty()) {
                             result.getExistedFiles()
                                     .put(imageFolder.getFile(),
@@ -1460,7 +1468,7 @@ public class ImageService extends BaseService {
         List<Pair<File, File>> canMoveFiles = new LinkedList<>();
         List<Pair<File, File>> conflictFiles;
         if (detectConflict) {
-            conflictFiles = detectMoveFileConflict(destDir, sourceFiles, canMoveFiles);
+            conflictFiles = detectFileConflict(destDir, sourceFiles, canMoveFiles);
             outResult.setConflictFiles(conflictFiles);
         }
 
@@ -1530,12 +1538,147 @@ public class ImageService extends BaseService {
     /*
      * @return Conflict files
      */
-    private List<Pair<File, File>> detectMoveFileConflict(File destDir, List<File> sourceFiles,
-                                                          List<Pair<File, File>> outCanMoveFiles) {
+    private List<Pair<File, File>> detectFileConflict(File destDir, List<File> sourceFiles,
+                                                      List<Pair<File, File>> outCanMoveFiles) {
         return intersectMoveFiles(destDir, Stream.of(destDir.listFiles()).toList(),
                 sourceFiles, outCanMoveFiles);
 
     }
+
+    public Observable<CompareItemResolveResult> resolveFileNameConflict(final List<CompareItem> compareItems) {
+        return Observable.create(e -> {
+            if (ListUtils.isEmpty(compareItems)) {
+                throw new IllegalArgumentException("Argument 'compareItems' shouldn't be null/empty.");
+            }
+
+            List<File> deletedFiles = new LinkedList<>();
+
+            for (CompareItem compareItem : compareItems) {
+
+                switch (compareItem.getResult()) {
+
+                    case KEEP_SOURCE: {
+                        File targetFile = compareItem.getTargetFile();
+                        if (targetFile == null) {
+                            e.onError(new IllegalStateException("Cannot remove 'null' target file for " + compareItem.getResult()));
+                            continue;
+                        } else {
+                            if (!targetFile.exists()) {
+                                e.onError(new FileNotFoundException("File not found : " + targetFile));
+                                continue;
+                            }
+                            if (targetFile.isDirectory()) {
+                                e.onError(new IllegalStateException("File shouldn't be a directory : " + targetFile));
+                                continue;
+                            } else {
+                                boolean delete = targetFile.delete();
+                                if (delete) {
+                                    deletedFiles.add(targetFile);
+                                }
+                                e.onNext(new CompareItemResolveResult()
+                                        .setCompareItem(compareItem)
+                                        .setResolved(delete)
+                                );
+                            }
+                        }
+                    }
+                    break;
+                    case KEEP_TARGET: {
+                        File sourceFile = compareItem.getSourceFile();
+                        if (sourceFile == null) {
+                            e.onError(new IllegalStateException("Cannot remove 'null' source file for " + compareItem.getResult()));
+                            continue;
+                        }
+
+                        if (!sourceFile.exists()) {
+                            e.onError(new FileNotFoundException("File not found : " + sourceFile));
+                            continue;
+                        }
+
+                        if (sourceFile.isDirectory()) {
+                            e.onError(new IllegalStateException("Cannot remove a directory for  : " + compareItem.getResult()));
+                            continue;
+                        }
+
+                        boolean delete = sourceFile.delete();
+                        if (delete) {
+                            deletedFiles.add(sourceFile);
+                        }
+                        e.onNext(new CompareItemResolveResult()
+                                .setCompareItem(compareItem)
+                                .setResolved(delete)
+                        );
+                    }
+                    break;
+                    case KEEP_BOTH: {
+                        e.onNext(new CompareItemResolveResult()
+                                .setCompareItem(compareItem)
+                                .setResolved(true));
+                    }
+                    break;
+                    case NONE:
+                        e.onNext(new CompareItemResolveResult()
+                                .setCompareItem(compareItem)
+                                .setResolved(false)
+                        );
+                        break;
+                }
+            } // END of for
+
+            Stream.of(deletedFiles)
+                    .groupBy(File::getParentFile)
+                    .forEach(fileListEntry -> {
+                        File dir = fileListEntry.getKey();
+                        rescanImageDirectory(dir, false);
+                    });
+            e.onComplete();
+        });
+    }
+
+    public Single<List<ImageFileInformation>> loadImageFilesInfo(@NonNull List<File> files) {
+        return Single.create(e -> {
+            if (files == null) {
+                throw new IllegalArgumentException("参数为空");
+            }
+
+
+            List<ImageFileInformation> fileInformationList = Stream.of(files)
+                    .map(file -> {
+                        try {
+                            return getImageFileInformation(file);
+                        } catch (IOException e1) {
+                            e1.printStackTrace();
+                        }
+                        return null;
+                    })
+                    .filter(cn.intret.app.picgo.utils.Objects::nonNull)
+                    .toList();
+
+            e.onSuccess(fileInformationList);
+        });
+    }
+
+    public Single<Map<File, ImageFileInformation>> loadImageFilesInfoMap(@NonNull List<File> files) {
+        return Single.create(e -> {
+            if (files == null) {
+                throw new IllegalArgumentException("参数为空");
+            }
+
+            Map<File, ImageFileInformation> map = new LinkedHashMap<File, ImageFileInformation>();
+
+
+            Stream.of(files).forEach(file -> {
+                try {
+                    map.put(file, getImageFileInformation(file));
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+            });
+
+            e.onSuccess(map);
+        });
+    }
+
 
     /**
      * @implNote https://developer.android.com/reference/android/media/ExifInterface.html
@@ -1549,39 +1692,46 @@ public class ImageService extends BaseService {
                 throw new IllegalArgumentException("File should not be a directory.");
             }
 
-            ImageFileInformation info = new ImageFileInformation();
-
-            String fileAbsPath = mediaFile.getAbsolutePath();
-            boolean staticImageFile = PathUtils.isStaticImageFile(fileAbsPath);
-            boolean videoFile = PathUtils.isVideoFile(fileAbsPath);
-            if (staticImageFile) {
-                Size imageResolution = MediaUtils.getImageResolution(mediaFile);
-                info.setMediaResolution(imageResolution);
-
-            } else {
-                if (videoFile) {
-                    Size videoResolution = MediaUtils.getVideoResolution(mContext, mediaFile);
-
-                    info.setMediaResolution(videoResolution);
-                    info.setVideoDuration(MediaUtils.getVideoFileDuration(mContext, mediaFile));
-                } else {
-                    Log.w(TAG, "loadImageInfo: don't load media file information : " + mediaFile);
-                }
-            }
-
-            info.setLastModified(mediaFile.lastModified());
-            info.setFileLength(mediaFile.length());
-
-
-            // Exif
-            if (PathUtils.isExifFile(fileAbsPath)) {
-                ExifInterface exifInterface = new ExifInterface(fileAbsPath);
-                info.setExif(exifInterface);
-            }
+            ImageFileInformation info = getImageFileInformation(mediaFile);
 
             e.onNext(info);
             e.onComplete();
         });
+    }
+
+    @NonNull
+    private ImageFileInformation getImageFileInformation(File mediaFile) throws IOException {
+        ImageFileInformation info;
+        info = new ImageFileInformation();
+
+        String fileAbsPath = mediaFile.getAbsolutePath();
+        boolean staticImageFile = PathUtils.isStaticImageFile(fileAbsPath);
+        boolean videoFile = PathUtils.isVideoFile(fileAbsPath);
+        if (staticImageFile) {
+            Size imageResolution = MediaUtils.getImageResolution(mediaFile);
+            info.setMediaResolution(imageResolution);
+
+        } else {
+            if (videoFile) {
+                Size videoResolution = MediaUtils.getVideoResolution(mContext, mediaFile);
+
+                info.setMediaResolution(videoResolution);
+                info.setVideoDuration(MediaUtils.getVideoFileDuration(mContext, mediaFile));
+            } else {
+                Log.w(TAG, "loadImageInfo: don't load media file information : " + mediaFile);
+            }
+        }
+
+        info.setLastModified(mediaFile.lastModified());
+        info.setFileLength(mediaFile.length());
+
+
+        // Exif
+        if (PathUtils.isExifFile(fileAbsPath)) {
+            ExifInterface exifInterface = new ExifInterface(fileAbsPath);
+            info.setExif(exifInterface);
+        }
+        return info;
     }
 
     public Observable<Boolean> hiddenFolder(File selectedDir) {

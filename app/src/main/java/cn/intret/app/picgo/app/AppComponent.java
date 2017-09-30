@@ -19,6 +19,7 @@ import java.util.List;
 import cn.intret.app.picgo.BuildConfig;
 import cn.intret.app.picgo.model.ImageService;
 import cn.intret.app.picgo.model.UserDataService;
+import cn.intret.app.picgo.utils.Watch;
 import io.reactivex.plugins.RxJavaPlugins;
 
 /**
@@ -28,6 +29,7 @@ import io.reactivex.plugins.RxJavaPlugins;
 public class AppComponent extends Application {
     static AppComponent instance;
 
+    public final static String TAG = "AppComponent";
 
     public AppComponent() {
         instance = this;
@@ -114,25 +116,28 @@ public class AppComponent extends Application {
         super.onCreate();
         //LeakCanary.install(this);
 
-//        Watch watch = Watch.now();
+        Watch watch = Watch.now();
         try {
             // 主进程才加载核心业务, 消息推送进程不需要加载业务
             if (isMainProcess()) {
                 CoreModule.getInstance().init(getApplicationContext());
 
+                watch.logGlanceMS(TAG, "init core module");
                 UserDataService.getInstance();
+
+                watch.logGlanceMS(TAG, "init user module");
                 ImageService.getInstance();
 
-//                initCore();
+                watch.logGlanceMS(TAG, "init image module");
+
                 initLibraries();
-//                startTVServer();
-//                startApp();
+                watch.logGlanceMS(TAG, "init libraries");
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-//        watch.logdGlanceMS(TAG, "onCreate()");
+        watch.logTotalMS(TAG, "onCreate()");
     }
 
     private void initLibraries() {

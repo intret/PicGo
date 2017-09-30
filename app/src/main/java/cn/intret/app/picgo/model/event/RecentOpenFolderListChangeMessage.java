@@ -4,8 +4,20 @@ import java.util.List;
 
 import cn.intret.app.picgo.model.RecentRecord;
 
-public class RecentOpenFolderListChangeMessage {
+public class RecentOpenFolderListChangeMessage extends BaseMessage {
     private List<RecentRecord> mRecentRecord;
+
+    public RecentOpenFolderListChangeMessage(String desc, List<RecentRecord> recentRecord) {
+        super(desc);
+        mRecentRecord = recentRecord;
+    }
+
+    public RecentOpenFolderListChangeMessage() {
+    }
+
+    public RecentOpenFolderListChangeMessage(List<RecentRecord> recentRecord) {
+        mRecentRecord = recentRecord;
+    }
 
     public RecentOpenFolderListChangeMessage setRecentRecord(List<RecentRecord> recentRecord) {
         mRecentRecord = recentRecord;
@@ -20,6 +32,6 @@ public class RecentOpenFolderListChangeMessage {
     public String toString() {
         return "RecentOpenFolderListChangeMessage{" +
                 "mRecentRecord=" + mRecentRecord +
-                '}';
+                "} " + super.toString();
     }
 }

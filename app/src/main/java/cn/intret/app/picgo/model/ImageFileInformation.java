@@ -4,7 +4,10 @@ package cn.intret.app.picgo.model;
 import android.media.ExifInterface;
 import android.util.Size;
 
+import java.io.File;
+
 public class ImageFileInformation {
+    private File mFile;
     private ExifInterface mExif;
     private long mLastModified;
     private long mFileLength;
@@ -39,6 +42,15 @@ public class ImageFileInformation {
 
     public ImageFileInformation setFileLength(long fileLength) {
         mFileLength = fileLength;
+        return this;
+    }
+
+    public File getFile() {
+        return mFile;
+    }
+
+    public ImageFileInformation setFile(File file) {
+        mFile = file;
         return this;
     }
 

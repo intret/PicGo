@@ -65,6 +65,39 @@ public abstract class BaseImageAdapter<T extends BaseFileItem,VH extends BaseVie
         return files;
     }
 
+    public void selectAll() {
+        for (int i = 0, mDataSize = mData.size(); i < mDataSize; i++) {
+            T item = mData.get(i);
+            item.setSelected(true);
+        }
+
+        if (!mIsSelectionMode) {
+            mIsSelectionMode = true;
+            if (mOnInteractionListener != null) {
+                mOnInteractionListener.onSelectionModeChange(this, true);
+            }
+        }
+
+        notifyDataSetChanged();
+
+        if (mOnInteractionListener != null) {
+            mOnInteractionListener.onSelectedCountChange(this, mData.size());
+        }
+    }
+
+    public void deselectAll() {
+        for (int i = 0, mDataSize = mData.size(); i < mDataSize; i++) {
+            T item = mData.get(i);
+            item.setSelected(false);
+        }
+
+        notifyDataSetChanged();
+
+        if (mOnInteractionListener != null) {
+            mOnInteractionListener.onSelectedCountChange(this, 0);
+        }
+    }
+
     /*
      * Constructor
      */

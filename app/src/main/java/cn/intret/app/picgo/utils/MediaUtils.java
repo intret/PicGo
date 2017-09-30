@@ -5,9 +5,12 @@ import android.graphics.BitmapFactory;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.support.annotation.NonNull;
 import android.util.Size;
 
 import java.io.File;
+
+import cn.intret.app.picgo.R;
 
 
 public class MediaUtils {
@@ -55,5 +58,16 @@ public class MediaUtils {
             return false;
         }
         return imageSize.getWidth() > 0 && imageSize.getHeight() > 0;
+    }
+
+    @NonNull
+    public static String getResolutionString(@NonNull Context context, @NonNull Size mediaResolution) {
+        String resText;
+        if (isValidSize(mediaResolution)) {
+            resText = context.getString(R.string.image_size_d_d_compact, mediaResolution.getWidth(), mediaResolution.getHeight());
+        } else {
+            resText = "-";
+        }
+        return resText;
     }
 }

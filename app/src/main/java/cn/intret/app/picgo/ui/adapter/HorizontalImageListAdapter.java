@@ -73,14 +73,11 @@ public class HorizontalImageListAdapter extends RecyclerView.Adapter<HorizontalI
 //            }
 //        });
 
-        holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-                if (mClickListener != null) {
-                    mClickListener.onItemLongClick(v, item, position);
-                }
-                return true;
+        holder.itemView.setOnLongClickListener(v -> {
+            if (mClickListener != null) {
+                mClickListener.onItemLongClick(v, item, position);
             }
+            return true;
         });
 
         if (item.getFile() != null) {

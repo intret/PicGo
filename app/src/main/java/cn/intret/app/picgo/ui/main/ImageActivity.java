@@ -683,11 +683,11 @@ public class ImageActivity extends BaseAppCompatActivity implements ImageFragmen
 //                mPagerAdapter.removeItem(currentItem);
 //                mPagerAdapter.notifyDataSetChanged();
 //
-//                ToastUtils.toastLong(this, getString(R.string.already_removed_d_files, 1));
+//                ToastUtils.toastLong(this, getResolutionString(R.string.already_removed_d_files, 1));
 //
 //            } catch (Throwable throwable) {
 //
-//                ToastUtils.toastLong(this, getString(R.string.remove_file_failed));
+//                ToastUtils.toastLong(this, getResolutionString(R.string.remove_file_failed));
 //            }
 //
 //        }
@@ -789,12 +789,12 @@ public class ImageActivity extends BaseAppCompatActivity implements ImageFragmen
                 .loadImageInfo(image.getFile())
                 .compose(workAndShow())
                 .subscribe(imageFileInformation -> {
+                    String resText = null;
+
                     Size mediaResolution = imageFileInformation.getMediaResolution();
-                    if (MediaUtils.isValidSize(mediaResolution)) {
-                        mResolution.setText(getString(R.string.image_size_d_d_compact, mediaResolution.getWidth(), mediaResolution.getHeight()));
-                    } else {
-                        mResolution.setText("-");
-                    }
+                    resText = MediaUtils.getResolutionString(this, mediaResolution);
+
+                    mResolution.setText(resText);
 
                 }, throwable -> {
                     mResolution.setText("-");
@@ -835,7 +835,7 @@ public class ImageActivity extends BaseAppCompatActivity implements ImageFragmen
 
     private void loadItem() {
         // Set the title TextView to the item's name and author
-        //mHeaderTitle.setText(getString(R.string.image_header, mItem.getName(), mItem.getAuthor()));
+        //mHeaderTitle.setText(getResolutionString(R.string.image_header, mItem.getName(), mItem.getAuthor()));
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && addTransitionListener()) {
             // If we're running on Lollipop and we have added a listener to the shared element

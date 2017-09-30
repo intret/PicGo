@@ -159,10 +159,12 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
                     if (currItem.getFile().equals(dir)) {
                         currItem.setSelected(true);
 
-
                         if (mRecyclerView != null) {
-                            int absPos = getAbsolutePosition(si, ii);
-                            updateItemViewHolderCheckStatus(absPos, currItem.isSelected());
+                            RecyclerView.LayoutManager lm = mRecyclerView.getLayoutManager();
+                            if (lm != null) {
+                                int absPos = getAbsolutePosition(si, ii);
+                                updateItemViewHolderCheckStatus(absPos, currItem.isSelected());
+                            }
                         }
                     }
                 }
@@ -240,12 +242,18 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
 
     public void updateConflictFiles(@NonNull Map<File, List<File>> folderConflictFiles) {
 
+
+
         mShowConflictBadge = true;
         mConflictFiles = folderConflictFiles;
 
         Log.d(TAG, "updateConflictFiles() called with: folderConflictFiles = [" + folderConflictFiles + "]");
 
         boolean clearConflictCount = folderConflictFiles.isEmpty();
+        if (mMoveFileSourceDir != null && folderConflictFiles.size() == 1 && folderConflictFiles.containsKey(mMoveFileSourceDir)) {
+            clearConflictCount = true;
+        }
+
         for (int si = 0, ss = mSections.size(); si < ss; si++) {
             Section section = mSections.get(si);
             List<Item> items = section.getItems();
@@ -531,7 +539,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         diffResult.dispatchUpdatesTo(this);
     }
 
-    private File getSelectedItem() {
+    public File getSelectedItem() {
         for (int i = 0; i < mSections.size(); i++) {
             Section section = mSections.get(i);
             List<Item> items = section.getItems();
@@ -1375,6 +1383,7 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
     public void onAttachedToRecyclerView(RecyclerView recyclerView) {
         super.onAttachedToRecyclerView(recyclerView);
         mRecyclerView = recyclerView;
+        Log.d(TAG, "onAttachedToRecyclerView() called with: recyclerView = [" + recyclerView + "]");
     }
 
     @Override

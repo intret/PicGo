@@ -334,7 +334,7 @@ public class DetailImageAdapter
                 viewHolder.setVisible(R.id.file_type, true);
             }
             if (gifFile) {
-                viewHolder.setImageResource(R.id.file_type, R.drawable.ic_gif);
+                viewHolder.setImageResource(R.id.file_type, R.drawable.ic_gif_black_24px);
                 viewHolder.setVisible(R.id.file_type, true);
             }
         } else {
@@ -383,31 +383,5 @@ public class DetailImageAdapter
     void onBindViewHolderSelected(BaseViewHolder vh, boolean selected, boolean isSelectionMode) {
         vh.setVisible(R.id.checkBox, isSelectionMode);
         vh.setChecked(R.id.checkBox, selected);
-    }
-
-    public void selectAll() {
-        for (int i = 0, mDataSize = mData.size(); i < mDataSize; i++) {
-            Item item = mData.get(i);
-            item.setSelected(true);
-        }
-
-        notifyDataSetChanged();
-
-        if (mOnInteractionListener != null) {
-            mOnInteractionListener.onSelectedCountChange(this, mData.size());
-        }
-    }
-
-    public void unselectAll() {
-        for (int i = 0, mDataSize = mData.size(); i < mDataSize; i++) {
-            Item item = mData.get(i);
-            item.setSelected(false);
-        }
-
-        notifyDataSetChanged();
-
-        if (mOnInteractionListener != null) {
-            mOnInteractionListener.onSelectedCountChange(this, 0);
-        }
     }
 }

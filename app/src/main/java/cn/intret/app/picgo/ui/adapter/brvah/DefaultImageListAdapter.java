@@ -11,6 +11,7 @@ import android.widget.ImageView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.BitmapTransitionOptions;
 import com.bumptech.glide.request.RequestOptions;
+import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.chad.library.adapter.base.BaseViewHolder;
 
 import java.io.File;
@@ -91,6 +92,44 @@ public class DefaultImageListAdapter extends BaseImageAdapter<DefaultImageListAd
         }
     }
 
+    static class DefaultImageListDiffCallback extends BaseQuickAdapter.DiffUtilCallback<DefaultImageListAdapter.Item> {
+
+        @Override
+        public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+            DefaultImageListAdapter.Item oldItem = getOldItem(oldItemPosition);
+            DefaultImageListAdapter.Item newItem = getNewItem(newItemPosition);
+            return oldItem.getFile().equals(newItem.getFile());
+        }
+
+        @Override
+        public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+            DefaultImageListAdapter.Item oldItem = getOldItem(oldItemPosition);
+            DefaultImageListAdapter.Item newItem = getNewItem(newItemPosition);
+
+            boolean isSameSelected = (oldItem.isSelected() == newItem.isSelected());
+            if (!isSameSelected) {
+
+                Log.d(TAG, String.format("areContentsTheSame false: old item at %d : %s, new item at %d : %s",
+                        oldItemPosition, oldItem.getFile(), newItemPosition, newItem.getFile()));
+            }
+            return isSameSelected;
+        }
+
+        @Nullable
+        @Override
+        public Object getChangePayload(int oldItemPosition, int newItemPosition) {
+            DefaultImageListAdapter.Item oldItem = getOldItem(oldItemPosition);
+            DefaultImageListAdapter.Item newItem = getNewItem(newItemPosition);
+            Bundle payload = new Bundle();
+
+            Log.d(TAG, "getChangePayload() called with: oldItemPosition = [" + oldItemPosition + "], newItemPosition = [" + newItemPosition + "]");
+
+            payload.putBoolean(DefaultImageListAdapter.PAYLOAD_SELECTED, newItem.isSelected());
+
+            return payload;
+        }
+    }
+
     /*
      * View holder
      */
@@ -107,15 +146,26 @@ public class DefaultImageListAdapter extends BaseImageAdapter<DefaultImageListAd
      */
     public DefaultImageListAdapter(@LayoutRes int layoutResId, @Nullable List data) {
         super(layoutResId, data);
+
+        init();
     }
 
     public DefaultImageListAdapter(@Nullable List data) {
         super(data);
+
+        init();
     }
 
     public DefaultImageListAdapter(@LayoutRes int layoutResId) {
         super(layoutResId);
+
+        init();
     }
+
+    private void init() {
+        setDiffUtilCallback(new DefaultImageListDiffCallback());
+    }
+
 
 //    /*
 //     * Diff and update
@@ -197,35 +247,6 @@ public class DefaultImageListAdapter extends BaseImageAdapter<DefaultImageListAd
 //        }
 //    }
 
-    /*
-     * Select all
-     */
-
-    public void selectAll() {
-        for (int i = 0, mDataSize = mData.size(); i < mDataSize; i++) {
-            Item item = mData.get(i);
-            item.setSelected(true);
-        }
-
-        notifyDataSetChanged();
-
-        if (mOnInteractionListener != null) {
-            mOnInteractionListener.onSelectedCountChange(this, mData.size());
-        }
-    }
-
-    public void unselectAll() {
-        for (int i = 0, mDataSize = mData.size(); i < mDataSize; i++) {
-            Item item = mData.get(i);
-            item.setSelected(false);
-        }
-
-        notifyDataSetChanged();
-
-        if (mOnInteractionListener != null) {
-            mOnInteractionListener.onSelectedCountChange(this, 0);
-        }
-    }
 
     @Override
     void onBindViewHolderSelected(BaseViewHolder vh, boolean selected, boolean isSelectionMode) {

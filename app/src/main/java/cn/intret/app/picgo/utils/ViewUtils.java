@@ -3,6 +3,7 @@ package cn.intret.app.picgo.utils;
 import android.support.annotation.ColorRes;
 import android.support.annotation.IdRes;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 
 public class ViewUtils {
@@ -40,6 +41,13 @@ public class ViewUtils {
      */
     public static void setText(View view, @IdRes int id, String value) {
         TextView v = (TextView)view.findViewById(id);
+        if (v != null) {
+            v.setText(value);
+        }
+    }
+
+    public static void setButtonText(View view, @IdRes int id, String value) {
+        Button v = (Button)view.findViewById(id);
         if (v != null) {
             v.setText(value);
         }

@@ -101,8 +101,7 @@
     </style>
 
     <style name="ConflictListItemImage">
-        <item name="android:layout_gravity">center</item>
-        <item name="android:padding">4dp</item>
+
         <item name="android:background">@null</item>
         <item name="android:scaleType">centerInside</item>
     </style>

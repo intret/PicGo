@@ -1,46 +1,239 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              xmlns:tools="http://schemas.android.com/tools"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent"
-              android:orientation="vertical"
-              android:padding="16dp"
-              tools:context="cn.intret.app.picgo.model.ConflictResolverDialogFragment">
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="cn.intret.app.picgo.model.ConflictResolverDialogFragment">
 
-    <RadioGroup
-        android:layout_weight="0"
-        android:id="@+id/radio_group"
+    <android.support.constraint.Guideline
+        android:id="@+id/guideline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintGuide_percent="0.5"
+        tools:layout_editor_absoluteX="0dp"
+        tools:layout_editor_absoluteY="176dp"/>
+
+    <!--Header-->
+    <include
+        android:id="@+id/header"
+        layout="@layout/dialog_header"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        app:layout_constraintBottom_toTopOf="@+id/keep_target"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_weight="0"
+        />
 
-        <RadioButton
-            android:id="@+id/btn_keep_source"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/keep_all_source_files"
-            />
-
-        <RadioButton
-            android:id="@+id/btn_keep_target"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/keep_all_target_files"
-            />
-
-        <RadioButton
-            android:id="@+id/btn_keep_both"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/keep_both"
-            />
-    </RadioGroup>
-
-    <android.support.v7.widget.RecyclerView
-        android:layout_weight="1"
-        android:id="@+id/conflict_image_list"
+    <!--Keep Target-->
+    <android.support.constraint.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        tools:listitem="@layout/conflict_image_list_item"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="@dimen/dialog_standard_content_margin"
+        android:layout_marginRight="@dimen/dialog_standard_content_margin"
+        android:orientation="horizontal"
         >
-    </android.support.v7.widget.RecyclerView>
+
+        <!--Guideline-->
+        <android.support.constraint.Guideline
+            android:id="@+id/image_guideline"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintGuide_percent="0.5"
+            />
+
+        <!--keep target -->
+        <ImageView
+            android:id="@+id/keep_target"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginRight="4dp"
+            android:background="@color/gray_90"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintDimensionRatio="5:2"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toLeftOf="@id/image_guideline"
+            app:layout_constraintTop_toTopOf="parent"/>
+
+
+        <!--target folder name-->
+        <TextView
+            android:id="@+id/keep_target_check"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_marginLeft="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:drawablePadding="8dp"
+            android:gravity="center_vertical"
+
+            android:textAlignment="center"
+            android:textAppearance="@style/TextAppearance.AppCompat.Small"
+            android:textStyle="bold"
+            app:layout_constraintLeft_toLeftOf="@+id/keep_target"
+            app:layout_constraintTop_toTopOf="@+id/keep_target"
+            tools:text="DCIM"/>
+
+
+        <!--Keep Source-->
+        <ImageView
+            android:id="@+id/keep_source"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginLeft="4dp"
+            android:background="@color/gray_90"
+            app:layout_constraintBottom_toBottomOf="@id/keep_target"
+            app:layout_constraintDimensionRatio="5:2"
+            app:layout_constraintLeft_toRightOf="@id/image_guideline"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="@id/keep_target"
+            />
+
+        <!--source folder-->
+        <TextView
+            android:id="@+id/keep_source_check"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:drawablePadding="8dp"
+            android:gravity="center_vertical"
+            android:textAlignment="center"
+            android:textStyle="bold"
+            android:textAppearance="@style/TextAppearance.AppCompat.Small"
+            app:layout_constraintLeft_toLeftOf="@+id/keep_source"
+            app:layout_constraintTop_toTopOf="@+id/keep_source"
+            tools:text="Camera"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:drawableTop="@drawable/ic_arrow_back_black_24px"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="@id/keep_target"
+            app:layout_constraintLeft_toLeftOf="@id/keep_target"
+            app:layout_constraintRight_toRightOf="@id/keep_source"
+            app:layout_constraintTop_toTopOf="@id/keep_target"
+            tools:visibility="visible"
+            />
+
+        <!--===============source info=======================-->
+        <TextView
+            android:id="@+id/source_keep_percent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:layout_marginRight="8dp"
+            android:layout_marginTop="8dp"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="@id/keep_source"
+            app:layout_constraintRight_toRightOf="@id/keep_source"
+            tools:text="1/28"
+            />
+
+        <TextView
+            android:id="@+id/source_remove_file_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:layout_marginLeft="8dp"
+            android:layout_marginRight="8dp"
+            android:layout_marginTop="4dp"
+            android:alpha=".5"
+            tools:visibility="visible"
+            android:visibility="gone"
+            android:drawableLeft="@drawable/ic_delete_black_18px"
+            android:drawablePadding="4dp"
+            android:textColor="@color/warning"
+            app:layout_constraintBottom_toBottomOf="@id/keep_source"
+            app:layout_constraintRight_toRightOf="@id/keep_source"
+            tools:text="25/28"
+            />
+
+        <!--==============target info========================-->
+        <TextView
+            android:id="@+id/target_keep_file_count"
+            android:layout_width="wrap_content"
+
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:layout_marginLeft="8dp"
+            android:layout_marginTop="4dp"
+            android:drawableLeft="@drawable/ic_check_circle_black_18px"
+            android:drawablePadding="4dp"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="@id/keep_target"
+            app:layout_constraintLeft_toLeftOf="@id/keep_target"
+            tools:text="23"
+            tools:visibility="invisible"
+            />
+
+        <TextView
+            android:id="@+id/target_remove_file_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="8dp"
+            android:layout_marginRight="8dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="8dp"
+            android:alpha=".5"
+            android:visibility="gone"
+            tools:visibility="visible"
+            android:drawableLeft="@drawable/ic_delete_black_18px"
+            android:drawablePadding="4dp"
+            android:textColor="@color/warning"
+
+            app:layout_constraintBottom_toBottomOf="@id/keep_target"
+            app:layout_constraintRight_toRightOf="@id/keep_target"
+            tools:text="5/28"
+            />
+
+        <TextView
+            android:id="@+id/target_total_file_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:layout_marginRight="8dp"
+            android:layout_marginTop="8dp"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="@id/keep_target"
+            app:layout_constraintRight_toRightOf="@id/keep_target"
+            tools:text="1/28"
+            tools:visibility="invisible"/>
+
+
+    </android.support.constraint.ConstraintLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="@dimen/dialog_standard_content_margin"
+        android:layout_marginRight="@dimen/dialog_standard_content_margin"
+        android:layout_marginTop="8dp"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/keep_source"
+        app:layout_constraintVertical_weight="1"
+
+        >
+
+        <android.support.v7.widget.RecyclerView
+
+            android:id="@+id/conflict_image_list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+
+            tools:listitem="@layout/list_item_conflict"
+            >
+        </android.support.v7.widget.RecyclerView>
+
+    </FrameLayout>
 
 </LinearLayout>

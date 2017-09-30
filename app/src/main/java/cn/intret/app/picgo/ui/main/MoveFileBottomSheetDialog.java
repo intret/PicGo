@@ -10,6 +10,4 @@ public class MoveFileBottomSheetDialog extends BottomSheetDialogFragment {
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         return super.onCreateDialog(savedInstanceState);
     }
-
-
 }

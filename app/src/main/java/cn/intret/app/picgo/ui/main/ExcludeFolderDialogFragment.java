@@ -665,7 +665,7 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
         setStatusDetecting(contentView);
 
         ImageService.getInstance()
-                .detectMoveFileConflict(item.getFile(), mHiddenFolders)
+                .detectFileConflict(item.getFile(), mHiddenFolders)
                 .compose(RxUtils.workAndShow())
                 .subscribe(moveFileDetectResult -> {
                     int colorOk = ExcludeFolderDialogFragment.this.getResources().getColor(android.R.color.holo_green_dark);

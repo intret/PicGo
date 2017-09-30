@@ -55,9 +55,9 @@ import com.annimon.stream.Stream;
 import com.annimon.stream.function.BiConsumer;
 import com.annimon.stream.function.Function;
 import com.annimon.stream.function.Supplier;
-import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.f2prateek.rx.preferences2.Preference;
 import com.jakewharton.rxrelay2.BehaviorRelay;
+import com.orhanobut.logger.Logger;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -75,6 +75,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
@@ -82,20 +83,23 @@ import butterknife.ButterKnife;
 import butterknife.OnClick;
 import butterknife.OnLongClick;
 import cn.intret.app.picgo.R;
+import cn.intret.app.picgo.model.CompareItem;
+import cn.intret.app.picgo.model.CompareItemResolveResult;
 import cn.intret.app.picgo.model.ConflictResolverDialogFragment;
-import cn.intret.app.picgo.model.DeleteFolderMessage;
-import cn.intret.app.picgo.model.NotEmptyException;
+import cn.intret.app.picgo.model.event.DeleteFolderMessage;
 import cn.intret.app.picgo.model.FolderModel;
 import cn.intret.app.picgo.model.GroupMode;
+import cn.intret.app.picgo.model.ImageFolder;
+import cn.intret.app.picgo.model.ImageGroup;
 import cn.intret.app.picgo.model.ImageService;
 import cn.intret.app.picgo.model.LoadMediaFileParam;
 import cn.intret.app.picgo.model.MediaFile;
-import cn.intret.app.picgo.model.ImageFolder;
-import cn.intret.app.picgo.model.ImageGroup;
+import cn.intret.app.picgo.model.NotEmptyException;
 import cn.intret.app.picgo.model.SortOrder;
 import cn.intret.app.picgo.model.SortWay;
 import cn.intret.app.picgo.model.UserDataService;
 import cn.intret.app.picgo.model.ViewMode;
+import cn.intret.app.picgo.model.event.ConflictResolveResultMessage;
 import cn.intret.app.picgo.model.event.FolderModelChangeMessage;
 import cn.intret.app.picgo.model.event.RecentOpenFolderListChangeMessage;
 import cn.intret.app.picgo.model.event.RemoveFileMessage;
@@ -103,20 +107,20 @@ import cn.intret.app.picgo.model.event.RenameDirectoryMessage;
 import cn.intret.app.picgo.model.event.RescanFolderListMessage;
 import cn.intret.app.picgo.model.event.RescanFolderThumbnailListMessage;
 import cn.intret.app.picgo.model.event.RescanImageDirectoryMessage;
-import cn.intret.app.picgo.ui.adapter.brvah.BaseImageAdapter;
-import cn.intret.app.picgo.ui.adapter.brvah.DefaultImageListAdapter;
-import cn.intret.app.picgo.ui.adapter.brvah.DetailImageAdapter;
-import cn.intret.app.picgo.ui.adapter.brvah.ExpandableFolderAdapter;
 import cn.intret.app.picgo.ui.adapter.FlatFolderListAdapter;
-import cn.intret.app.picgo.ui.adapter.brvah.FolderListAdapter;
-import cn.intret.app.picgo.ui.adapter.brvah.FolderListAdapterUtils;
-import cn.intret.app.picgo.ui.adapter.TransitionUtils;
-import cn.intret.app.picgo.ui.adapter.brvah.BaseSelectableAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedImageListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedListItemClickDispatcher;
 import cn.intret.app.picgo.ui.adapter.SectionedListItemDispatchListener;
+import cn.intret.app.picgo.ui.adapter.TransitionUtils;
+import cn.intret.app.picgo.ui.adapter.brvah.BaseImageAdapter;
+import cn.intret.app.picgo.ui.adapter.brvah.BaseSelectableAdapter;
+import cn.intret.app.picgo.ui.adapter.brvah.DefaultImageListAdapter;
+import cn.intret.app.picgo.ui.adapter.brvah.DetailImageAdapter;
+import cn.intret.app.picgo.ui.adapter.brvah.ExpandableFolderAdapter;
+import cn.intret.app.picgo.ui.adapter.brvah.FolderListAdapter;
+import cn.intret.app.picgo.ui.adapter.brvah.FolderListAdapterUtils;
 import cn.intret.app.picgo.ui.event.CurrentImageChangeMessage;
 import cn.intret.app.picgo.ui.floating.FloatWindowService;
 import cn.intret.app.picgo.ui.pref.SettingActivity;
@@ -139,7 +143,6 @@ import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.schedulers.Schedulers;
 
 public class MainActivity extends BaseAppCompatActivity {
 
@@ -164,7 +167,7 @@ public class MainActivity extends BaseAppCompatActivity {
     @BindView(R.id.t9_keypad) T9KeypadView mKeypad;
     @BindView(R.id.keyboard_switch_layout) ViewGroup mKeypadSwitchLayout;
     @BindView(R.id.keyboard_switch) ImageView mKeypadSwitch;
-    @BindView(R.id.keyboard_switch_badge)View mKeypadSwitchBadge;
+    @BindView(R.id.keyboard_switch_badge) View mKeypadSwitchBadge;
 
     private BadgeView mDialpadSwitchBadge;
 
@@ -247,24 +250,31 @@ public class MainActivity extends BaseAppCompatActivity {
     private String mCurrentT9Number;
 
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         Watch watch = Watch.now();
         setContentView(R.layout.activity_main);
+
+        watch.logGlanceMS(TAG, "setContentView");
+
         ButterKnife.bind(this);
 
         watch.logGlanceMS(TAG, "ButterKnife");
 
         initToolBar();
         initDrawer();
+        watch.logGlanceMS(TAG, "init toolbar & drawer");
+
         initImageList();
+        watch.logGlanceMS(TAG, "init image list");
 
         initTransition();
 
+        watch.logGlanceMS(TAG, "");
         EventBus.getDefault().register(this);
+        watch.logGlanceMS(TAG, "registerEventBus");
 
         watch.logTotalMS(TAG, "onCreate");
         //showFloatingWindow();
@@ -322,7 +332,7 @@ public class MainActivity extends BaseAppCompatActivity {
         super.onStart();
 
         Watch watch = Watch.now();
-        loadFolderList();
+//        loadFolderList();
         reloadImageList(false);
 
         watch.logTotalMS(TAG, "onStart");
@@ -527,6 +537,32 @@ public class MainActivity extends BaseAppCompatActivity {
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onEvent(ConflictResolveResultMessage message) {
+        List<CompareItemResolveResult> compareItems = message.getCompareItems();
+        if (compareItems != null) {
+
+            for (CompareItemResolveResult compareItem : compareItems) {
+                if (compareItem.isResolved()) {
+
+
+                    CompareItem item = compareItem.getCompareItem();
+                    switch (item.getResult()) {
+
+                        case KEEP_SOURCE:
+                            break;
+                        case KEEP_TARGET:
+                            break;
+                        case KEEP_BOTH:
+                            break;
+                        case NONE:
+                            break;
+                    }
+                }
+            }
+        }
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(CurrentImageChangeMessage message) {
         Log.d(TAG, "onEvent() called with: message = [" + message + "]");
         mCurrentViewerImageIndex = message.getPosition();
@@ -617,6 +653,8 @@ public class MainActivity extends BaseAppCompatActivity {
         // 更新目录对应 Adapter
         DefaultImageListAdapter adapter = mImageListAdapters.get(dir);
         if (adapter != null) {
+
+
             diffUpdateDefaultImageListAdapter(adapter, true, false);
         }
 
@@ -625,15 +663,16 @@ public class MainActivity extends BaseAppCompatActivity {
             diffUpdateDetailImageAdapter(detailImageAdapter, true, false);
         }
 
-
         // 更新抽屉中的缩略图列表
         updateFolderListItemThumbnailList(dir);
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(RescanFolderListMessage message) {
-        com.orhanobut.logger.Logger.d("RescanFolderListMessage " + message);
-        diffUpdateFolderListAdapter(mFolderAdapter, true);
+        Logger.d("RescanFolderListMessage " + message);
+
+        reloadFolderList(true);
+//        diffUpdateFolderListAdapter(mFolderAdapter, true);
     }
 
     public boolean isCurrentShowDirectory(File dir) {
@@ -690,7 +729,7 @@ public class MainActivity extends BaseAppCompatActivity {
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(RenameDirectoryMessage message) {
 
-        com.orhanobut.logger.Logger.d("RenameDirectoryMessage " + message);
+        Logger.d("RenameDirectoryMessage " + message);
         File oldDirectory = message.getOldDirectory();
         //mFolderAdapter.renameDirectory(oldDirectory, message.getNewDirectory());
 
@@ -727,7 +766,8 @@ public class MainActivity extends BaseAppCompatActivity {
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(FolderModelChangeMessage message) {
         mIsFolderListLoaded = false;
-        loadFolderList();
+        reloadFolderList(true);
+//        loadFolderList();
     }
 
     private void diffUpdateFolderListAdapter(SectionedFolderListAdapter adapter, boolean fromCacheFirst) {
@@ -738,54 +778,27 @@ public class MainActivity extends BaseAppCompatActivity {
         ImageService.getInstance()
                 .loadFolderList(fromCacheFirst)
                 .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
+                .doOnNext(newAdapter -> {
+                    if (newAdapter.getSections().isEmpty()) {
+                        mFolderListEmptyView.setVisibility(View.VISIBLE);
+                        mFolderListEmptyView.setText(R.string.folder_list_empty_text);
+                    } else {
+                        mFolderListEmptyView.setVisibility(View.GONE);
+                    }
+                })
                 .compose(workAndShow())
                 .subscribe(adapter::diffUpdate,
                         RxUtils::unhandledThrowable);
     }
 
-    static class DefaultImageListDiffCallback extends BaseQuickAdapter.DiffUtilCallback<DefaultImageListAdapter.Item> {
 
-        @Override
-        public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-            DefaultImageListAdapter.Item oldItem = getOldItem(oldItemPosition);
-            DefaultImageListAdapter.Item newItem = getNewItem(newItemPosition);
-            return oldItem.getFile().equals(newItem.getFile());
-        }
-
-        @Override
-        public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-            DefaultImageListAdapter.Item oldItem = getOldItem(oldItemPosition);
-            DefaultImageListAdapter.Item newItem = getNewItem(newItemPosition);
-
-            boolean isSameSelected = (oldItem.isSelected() == newItem.isSelected());
-            if (!isSameSelected) {
-
-                Log.d(TAG, String.format("areContentsTheSame false: old item at %d : %s, new item at %d : %s",
-                        oldItemPosition, oldItem.getFile(), newItemPosition, newItem.getFile()));
-            }
-            return isSameSelected;
-        }
-
-        @Nullable
-        @Override
-        public Object getChangePayload(int oldItemPosition, int newItemPosition) {
-            //实现这个回调,更加精确的进行局部更新,可以用来解决局部刷新Item时,item闪烁问题,但相对来说,实现复杂度增加.
-            DefaultImageListAdapter.Item oldItem = getOldItem(oldItemPosition);
-            DefaultImageListAdapter.Item newItem = getNewItem(newItemPosition);
-            Bundle payload = new Bundle();
-
-            Log.d(TAG, "getChangePayload() called with: oldItemPosition = [" + oldItemPosition + "], newItemPosition = [" + newItemPosition + "]");
-
-            payload.putBoolean(DefaultImageListAdapter.PAYLOAD_SELECTED, newItem.isSelected());
-
-            return payload;
-        }
-    }
 
     private void diffUpdateDefaultImageListAdapter(DefaultImageListAdapter adapter, boolean fromCacheFirst, boolean hideRefreshControlWhenFinish) {
         if (adapter == null) {
             Log.w(TAG, "diffUpdateDefaultImageListAdapter: adapter is null");
+            return;
         }
+
         Log.d(TAG, String.format("差量更新图片列表 dir=%s fromCacheFirst=%s", adapter.getDirectory(), fromCacheFirst));
 
         File dir = adapter.getDirectory();
@@ -793,11 +806,15 @@ public class MainActivity extends BaseAppCompatActivity {
             Log.e(TAG, "diffUpdateDefaultImageListAdapter: the adapter didn't have the corresponding directory.");
             return;
         }
+
+        // 显示正在刷新
         if (hideRefreshControlWhenFinish) {
             if (!mRefresh.isRefreshing()) {
                 mRefresh.setRefreshing(true);
             }
         }
+
+        // 加载图片列表
         ImageService.getInstance()
                 .loadMediaFileList(dir,
                         new LoadMediaFileParam()
@@ -809,10 +826,16 @@ public class MainActivity extends BaseAppCompatActivity {
                 .map((mediaFiles) -> mediaFilesToListItems(mediaFiles, adapter.getSelectedFiles()))
                 .compose(workAndShow())
                 .subscribe((newData) -> {
+
+                    // 停止刷新控件
                     if (hideRefreshControlWhenFinish) {
                         mRefresh.setRefreshing(false);
                     }
+
+                    // 差量更新数据
                     adapter.diffUpdate(newData);
+
+                    getImageAdapterSelectCountChangeRelay().accept(adapter);
                 }, (throwable) -> {
                     if (hideRefreshControlWhenFinish) {
                         mRefresh.setRefreshing(false);
@@ -850,6 +873,8 @@ public class MainActivity extends BaseAppCompatActivity {
                             }
                             diffUpdateAdapter(adapter, newAdapter);
                             //showDetailImageListAdapter(newAdapter);
+
+                            getDetailAdapterSelectCountChangeRelay().accept(adapter);
                         },
                         (throwable) -> {
                             if (hideRefreshControl) {
@@ -948,6 +973,11 @@ public class MainActivity extends BaseAppCompatActivity {
 
     @Override
     public void onBackPressed() {
+
+        if (mDrawerLayout.isDrawerOpen(Gravity.START)) {
+            mDrawerLayout.closeDrawers();
+            return;
+        }
 
         // // TODO: 2017/9/2 其他图片显示模式的退出选择操作
         boolean isSelectionMode = false;
@@ -1081,7 +1111,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
                 showHiddenFolderPref.set(menuItem.isChecked());
 
-                reloadFolderList();
+                reloadFolderList(false);
             }
             break;
             case R.id.app_bar_view_hidden_folders:
@@ -1268,6 +1298,9 @@ public class MainActivity extends BaseAppCompatActivity {
             mDrawerToggle.syncState();
         }
 
+        // Folder list
+        mFolderList.setEmptyView(mFolderListEmptyView);
+
         //mTitle = mDrawerTitle = getTitle();
 
 
@@ -1275,10 +1308,10 @@ public class MainActivity extends BaseAppCompatActivity {
         mDialpadSwitchBadge = BadgeFactory
                 .createDot(this)
                 .setBadgeGravity(Gravity.TOP | Gravity.RIGHT)
-                .setWidthAndHeight(8,8)
+                .setWidthAndHeight(8, 8)
                 .setBadgeBackground(getResources().getColor(R.color.colorAccent))
                 .setBadgeCount(-1)
-                .setSpace(8,16)
+                .setSpace(8, 16)
                 .bind(mKeypadSwitchBadge);
 
         mDialpadSwitchBadge.setVisibility(View.GONE);
@@ -1337,8 +1370,6 @@ public class MainActivity extends BaseAppCompatActivity {
         return true;
     }
 
-
-
     @OnClick(R.id.keyboard_switch)
     public void onClickButtonDialpadSwitch(View view) {
         switchKeyboard();
@@ -1362,7 +1393,7 @@ public class MainActivity extends BaseAppCompatActivity {
             } else {
                 mFolderAdapter.filter(value ->
                         value.getItemSubType() == SectionedFolderListAdapter.ItemSubType.CONFLICT_COUNT
-                        || value.getItemSubType() == SectionedFolderListAdapter.ItemSubType.SOURCE_DIR
+                                || value.getItemSubType() == SectionedFolderListAdapter.ItemSubType.SOURCE_DIR
                 );
             }
         }
@@ -1380,7 +1411,10 @@ public class MainActivity extends BaseAppCompatActivity {
 
     @OnClick(R.id.btn_select_all)
     public void onClickToolbarSelectAll(View view) {
+        selectAdapterAllItems();
+    }
 
+    private void selectAdapterAllItems() {
         switch (mViewMode) {
 
             case GRID_VIEW: {
@@ -1430,8 +1464,6 @@ public class MainActivity extends BaseAppCompatActivity {
         if (mIsFolderListLoaded) {
             Log.w(TAG, "loadFolderList: TODO 检查文件列表变化");
         } else {
-
-            mFolderList.setEmptyView(mFolderListEmptyView);
 
             // 初始化相册文件夹列表
             ImageService.getInstance()
@@ -1515,6 +1547,10 @@ public class MainActivity extends BaseAppCompatActivity {
         listAdapter.setShowHeaderOptionButton(true);
         listAdapter.setOnItemClickListener(onItemClickListener);
         listAdapter.setShowSourceDirBadgeWhenEmpty(false);
+        if (mCurrentFolder != null) {
+            listAdapter.selectItem(mCurrentFolder);
+            listAdapter.setMoveFileSourceDir(mCurrentFolder);
+        }
 
         // RecyclerView layout
         mFolderList.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
@@ -1525,8 +1561,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
         // TODO Initial selection status
         if (mCurrentFolder != null) {
-            listAdapter.setMoveFileSourceDir(mCurrentFolder);
-            listAdapter.scrollToItem(mCurrentFolder);
+//            listAdapter.selectItem(mCurrentFolder);
         }
 
         // List item click event
@@ -1643,7 +1678,7 @@ public class MainActivity extends BaseAppCompatActivity {
             return;
         }
 
-        com.orhanobut.logger.Logger.d("show context menu : " + item.getName());
+        Logger.d("show context menu : " + item.getName());
         File selectedDir = item.getFile();
 
         // Window properties
@@ -1653,6 +1688,17 @@ public class MainActivity extends BaseAppCompatActivity {
 
         // Create menu items
         List<PopupUtils.PopupMenuItem> items = new LinkedList<>();
+        // Select all
+//        items.add(
+//                new PopupUtils.PopupMenuItem()
+//                        .setIcon(getResources().getDrawable(R.drawable.ic_filter_all_black_24px))
+//                        .setName(getResources().getString(R.string.select_all))
+//                        .setAction(() -> {
+//                            selectAdapterAllItems();
+//                            return true;
+//                        })
+//        );
+
         // Rename
         items.add(
                 new PopupUtils.PopupMenuItem()
@@ -2065,9 +2111,26 @@ public class MainActivity extends BaseAppCompatActivity {
                 .dispatchItemClick(position, (adapter, coord) -> {
                     SectionedFolderListAdapter.Item item = adapter.getItem(coord);
 
+                    File selectedItem = adapter.getSelectedItem();
+                    File moveFileSourceDir = adapter.getMoveFileSourceDir();
+                    if (Objects.equals(item.getFile(), moveFileSourceDir)) {
+                        Log.w(TAG, "onFolderListItemClick: 点击的项是移动操作的源目录，不显示冲突对话框" );
+                        return;
+                    }
+
                     if (!ListUtils.isEmpty(item.getConflictFiles())) {
 
-                        ToastUtils.toastShort(MainActivity.this, R.string.unimplemented);
+                        ConflictResolverDialogFragment fragment = ConflictResolverDialogFragment
+                                .newInstance(item.getFile().getAbsolutePath(),
+                                        new ArrayList<>(
+                                                Stream.of(item.getConflictFiles())
+                                                        .map(file -> {
+                                                            return new File(moveFileSourceDir, file.getName());
+                                                        })
+                                                        .map(File::getAbsolutePath)
+                                                        .toList())
+                                );
+                        fragment.show(getSupportFragmentManager(), "Conflict Resolver Dialog");
                     } else {
                         Log.d(TAG, "onItemClick: 显示 " + item.getFile());
                         adapter.selectItem(item.getFile());
@@ -2412,8 +2475,10 @@ public class MainActivity extends BaseAppCompatActivity {
 
     private void showDetailImageList(File directory, boolean showRefreshing) {
 
-        DetailImageAdapter adapter = mDetailImageListAdapters.get(directory);
-        if (adapter == null) {
+        DetailImageAdapter cachedAdapter = mDetailImageListAdapters.get(directory);
+        if (cachedAdapter == null) {
+
+            Logger.d("showDetailImageList 加载并显示目录 " + directory);
 
             ImageService.getInstance()
                     .loadMediaFileList(directory,
@@ -2428,9 +2493,11 @@ public class MainActivity extends BaseAppCompatActivity {
                     // cache adapter
                     .doOnNext(detailImageAdapter -> mDetailImageListAdapters.put(directory, detailImageAdapter))
                     .compose(workAndShow())
-                    .subscribe((adapter1) -> showDetailImageListAdapter(adapter1, showRefreshing), RxUtils::unhandledThrowable);
+                    .subscribe((adapter) -> showDetailImageListAdapter(adapter, showRefreshing), RxUtils::unhandledThrowable);
         } else {
-            showDetailImageListAdapter(adapter, false);
+            Logger.d("showDetailImageList 显示缓存中的目录 " + directory);
+
+            showDetailImageListAdapter(cachedAdapter, false);
         }
     }
 
@@ -2448,12 +2515,73 @@ public class MainActivity extends BaseAppCompatActivity {
 
     @NonNull
     private DetailImageAdapter createDetailImageAdapter(File directory, List<DetailImageAdapter.Item> items) {
-        DetailImageAdapter listAdapter = new DetailImageAdapter(R.layout.item_image_detail, items);
-        listAdapter.setDirectory(directory);
+        DetailImageAdapter adapter = new DetailImageAdapter(R.layout.item_image_detail, items);
+        adapter.setDirectory(directory);
 
-        listAdapter.setDetectMoves(true);
+        adapter.setDetectMoves(true);
 
-        return listAdapter;
+        // Setup adapter
+        BaseSelectableAdapter.OnInteractionListener<BaseSelectableAdapter, DetailImageAdapter.Item> onInteractionListener = new DetailImageAdapter.OnInteractionListener<
+                BaseSelectableAdapter,
+                DetailImageAdapter.Item>() {
+            @Override
+            public void onItemLongClick(DetailImageAdapter.Item item, int position) {
+                Log.d(TAG, "onItemLongClick: " + item);
+                if (!item.isSelected()) {
+                    //mImageList.setDragSelectActive(true, position);
+                }
+            }
+
+            @Override
+            public void onItemCheckedChanged(DetailImageAdapter.Item item) {
+
+            }
+
+            @Override
+            public void onItemClicked(DetailImageAdapter.Item item, View view, int position) {
+                onClickItem(view, position, item.getFile());
+            }
+
+            @Override
+            public void onSelectionModeChange(BaseSelectableAdapter baseAdapter, boolean isSelectionMode) {
+                DetailImageAdapter adapter = (DetailImageAdapter) baseAdapter;
+                Log.d(TAG, "onSelectionModeChange: isSelectionMode " + isSelectionMode);
+                if (isSelectionMode) {
+
+                    changeFloatingCount(FloatWindowService.MSG_INCREASE);
+
+
+                    setImageToolbarVisible(true);
+//            mFloatingToolbar.showContextMenu();
+                } else {
+                    changeFloatingCount(FloatWindowService.MSG_DECREASE);
+
+                    setImageToolbarVisible(false);
+
+//            mFloatingToolbar.dismissPopupMenus();
+                }
+
+                updateActionBarTitleCount(isSelectionMode ? baseAdapter.getSelectedItemCount() : 0, adapter.getDirectory(), baseAdapter.getItemCount());
+            }
+
+            @Override
+            public void onSelectedItemLongClick(View view, int position, DetailImageAdapter.Item item) {
+                Log.d(TAG, "onSelectedItemLongClick() called with: view = [" + view + "], position = [" + position + "], item = [" + item + "]");
+            }
+
+            @Override
+            public void onSelectedCountChange(BaseSelectableAdapter baseAdapter, int selectedCount) {
+                Log.d(TAG, "onSelectedCountChange() called with: baseAdapter = [" + baseAdapter + "], selectedCount = [" + selectedCount + "]");
+
+                DetailImageAdapter adapter = (DetailImageAdapter) baseAdapter;
+                updateActionBarTitleCount(selectedCount, adapter.getDirectory(), baseAdapter.getItemCount());
+            }
+        };
+
+        adapter.setOnInteractionListener(onInteractionListener);
+
+
+        return adapter;
     }
 
     private void showSectionedImageList(File directory, GroupMode groupMode) {
@@ -2749,12 +2877,12 @@ public class MainActivity extends BaseAppCompatActivity {
     private void showDefaultImageList(File directory, boolean showRefreshing) {
         DefaultImageListAdapter listAdapter = mImageListAdapters.get(directory);
         if (listAdapter != null) {
-            com.orhanobut.logger.Logger.d("showDefaultImageList 切换显示目录 " + directory);
+            Logger.d("showDefaultImageList 切换显示目录 " + directory);
             showGridImageListAdapter(listAdapter, showRefreshing);
 
         } else {
 
-            com.orhanobut.logger.Logger.d("showDefaultImageList 加载并显示目录 " + directory);
+            Logger.d("showDefaultImageList 加载并显示目录 " + directory);
 
             ImageService.getInstance()
                     .loadMediaFileList(directory,
@@ -2779,10 +2907,113 @@ public class MainActivity extends BaseAppCompatActivity {
     }
 
     private DefaultImageListAdapter itemsToAdapter(File directory, List<DefaultImageListAdapter.Item> items) {
+
         DefaultImageListAdapter adapter = createImageListAdapter(items);
+
+        // 配置 Adapter
         adapter.setDirectory(directory);
-        adapter.setDiffUtilCallback(new DefaultImageListDiffCallback());
+
         adapter.setDetectMoves(true);
+
+        // 图片列表交互
+        adapter.setOnInteractionListener(new BaseSelectableAdapter.OnInteractionListener<BaseSelectableAdapter, DefaultImageListAdapter.Item>() {
+            @Override
+            public void onItemLongClick(DefaultImageListAdapter.Item item, int position) {
+
+                if (!item.isSelected()) {
+                    Logger.d("通过长按图片进入选择模式：" + item.getFile());
+                    mImageList.setDragSelectActive(true, position);
+                }
+            }
+
+            @Override
+            public void onItemCheckedChanged(DefaultImageListAdapter.Item item) {
+
+            }
+
+            @Override
+            public void onItemClicked(DefaultImageListAdapter.Item item, View view, int position) {
+                onClickItem(view, position, item.getFile());
+            }
+
+            @Override
+            public void onSelectionModeChange(BaseSelectableAdapter adapter, boolean isSelectionMode) {
+
+                DefaultImageListAdapter a = (DefaultImageListAdapter) adapter;
+                Log.d(TAG, "onSelectionModeChange: isSelectionMode " + isSelectionMode);
+                if (isSelectionMode) {
+
+                    changeFloatingCount(FloatWindowService.MSG_INCREASE);
+
+                    setImageToolbarVisible(true);
+//            mFloatingToolbar.showContextMenu();
+                } else {
+                    changeFloatingCount(FloatWindowService.MSG_DECREASE);
+
+                    setImageToolbarVisible(false);
+//            mFloatingToolbar.dismissPopupMenus();
+                }
+
+                updateActionBarTitleCount(isSelectionMode ? adapter.getSelectedItemCount() : 0, a.getDirectory(), adapter.getItemCount());
+            }
+
+            @Override
+            public void onSelectedCountChange(BaseSelectableAdapter adapter, int selectedCount) {
+
+                Log.d(TAG, "onSelectedCountChange() called with: adapter = [" + adapter + "], selectedCount = [" + selectedCount + "]");
+
+                DefaultImageListAdapter listAdapter = (DefaultImageListAdapter) adapter;
+
+                // Actionbar title
+                updateActionBarTitleCount(selectedCount, listAdapter.getDirectory(), adapter.getItemCount());
+
+                // 通知选中个数变化
+                getImageAdapterSelectCountChangeRelay().accept(listAdapter);
+
+
+//                List<DefaultImageListAdapter.Item> selectedItems = listAdapter.getSelectedItems();
+
+//
+//                ImageService.getInstance()
+//                        .detectFileConflict(((BaseImageAdapter) adapter).getDirectory(),
+//                                Stream.of(selectedItems).map(DefaultImageListAdapter.Item::getFile).toList());
+            }
+
+            @Override
+            public void onSelectedItemLongClick(View view, int position, DefaultImageListAdapter.Item item) {
+                int selectedCount = mCurrentImageAdapter.getSelectedItemCount();
+
+                LinkedList<String> menuItems = new LinkedList<>();
+                menuItems.add(getString(R.string.copy_d_files_to, selectedCount));
+                menuItems.add(getString(R.string.move_d_files_to, selectedCount));
+                menuItems.add(getString(R.string.remove_d_files, selectedCount));
+
+                new MaterialDialog.Builder(MainActivity.this)
+                        .title(getString(R.string.selected_files_operation))
+                        .items(menuItems)
+                        .itemsCallback((dialog, itemView, pos, text) -> {
+                            switch (pos) {
+                                case 0: {
+                                    // copy
+                                    ToastUtils.toastShort(MainActivity.this, R.string.unimplemented);
+                                }
+                                break;
+                                case 1: {
+                                    // move
+                                    showMoveFileDialog();
+                                }
+                                break;
+                                case 2: {
+                                    // remove
+                                    ToastUtils.toastShort(MainActivity.this, R.string.unimplemented);
+                                }
+                                break;
+                            }
+                        })
+                        .show();
+            }
+        });
+
         return adapter;
     }
 
@@ -2886,67 +3117,6 @@ public class MainActivity extends BaseAppCompatActivity {
         updateActionBarTitle(adapter.getDirectory().getName());
         updateActionBarTitleCount(adapter.getSelectedItemCount(), adapter.getDirectory(), adapter.getItemCount());
 
-        // Setup adapter
-        BaseSelectableAdapter.OnInteractionListener<BaseSelectableAdapter, DetailImageAdapter.Item> onInteractionListener = new DetailImageAdapter.OnInteractionListener<
-                BaseSelectableAdapter,
-                DetailImageAdapter.Item>() {
-            @Override
-            public void onItemLongClick(DetailImageAdapter.Item item, int position) {
-                Log.d(TAG, "onItemLongClick: " + item);
-                if (!item.isSelected()) {
-                    //mImageList.setDragSelectActive(true, position);
-                }
-            }
-
-            @Override
-            public void onItemCheckedChanged(DetailImageAdapter.Item item) {
-
-            }
-
-            @Override
-            public void onItemClicked(DetailImageAdapter.Item item, View view, int position) {
-                onClickItem(view, position, item.getFile());
-            }
-
-            @Override
-            public void onSelectionModeChange(BaseSelectableAdapter baseAdapter, boolean isSelectionMode) {
-                DetailImageAdapter adapter = (DetailImageAdapter) baseAdapter;
-                Log.d(TAG, "onSelectionModeChange: isSelectionMode " + isSelectionMode);
-                if (isSelectionMode) {
-
-                    changeFloatingCount(FloatWindowService.MSG_INCREASE);
-
-
-                    setImageToolbarVisible(true);
-//            mFloatingToolbar.showContextMenu();
-                } else {
-                    changeFloatingCount(FloatWindowService.MSG_DECREASE);
-
-                    setImageToolbarVisible(false);
-
-//            mFloatingToolbar.dismissPopupMenus();
-                }
-
-                updateActionBarTitleCount(isSelectionMode ? baseAdapter.getSelectedItemCount() : 0, adapter.getDirectory(), baseAdapter.getItemCount());
-            }
-
-            @Override
-            public void onSelectedItemLongClick(View view, int position, DetailImageAdapter.Item item) {
-                Log.d(TAG, "onSelectedItemLongClick() called with: view = [" + view + "], position = [" + position + "], item = [" + item + "]");
-            }
-
-            @Override
-            public void onSelectedCountChange(BaseSelectableAdapter baseAdapter, int selectedCount) {
-                Log.d(TAG, "onSelectedCountChange() called with: baseAdapter = [" + baseAdapter + "], selectedCount = [" + selectedCount + "]");
-
-                DetailImageAdapter adapter = (DetailImageAdapter) baseAdapter;
-                updateActionBarTitleCount(selectedCount, adapter.getDirectory(), baseAdapter.getItemCount());
-            }
-        };
-
-        adapter.setOnInteractionListener(onInteractionListener);
-
-
         // 当前显示的图片位置
         // TODO 更严谨的计算显示位置
         if (mCurrentDetailImageAdapter != null) {
@@ -3009,7 +3179,6 @@ public class MainActivity extends BaseAppCompatActivity {
                     if (mUpdateImageConflictFileDisposable == null) {
                         mUpdateImageConflictFileDisposable = getImageAdapterSelectCountChangeRelay()
                                 .debounce(deBounceTime, TimeUnit.MILLISECONDS)
-                                .subscribeOn(AndroidSchedulers.mainThread())
                                 .observeOn(AndroidSchedulers.mainThread())
                                 .subscribe(defaultImageListAdapter -> {
                                     List<File> sourceFiles = Stream.of(defaultImageListAdapter.getSelectedItems())
@@ -3019,6 +3188,8 @@ public class MainActivity extends BaseAppCompatActivity {
                                 }, RxUtils::unhandledThrowable);
                     }
                 } else {
+
+                    // 清空文件夹列表冲突 badge
                     if (mFolderAdapter != null) {
                         mFolderAdapter.updateConflictFiles(new LinkedHashMap<>());
                     }
@@ -3033,7 +3204,6 @@ public class MainActivity extends BaseAppCompatActivity {
                     if (mUpdateDetailImageListConflictDisposable == null) {
                         mUpdateDetailImageListConflictDisposable = getDetailAdapterSelectCountChangeRelay()
                                 .debounce(deBounceTime, TimeUnit.MILLISECONDS)
-                                .subscribeOn(AndroidSchedulers.mainThread())
                                 .observeOn(AndroidSchedulers.mainThread())
                                 .subscribe(detailImageAdapter -> {
                                     List<File> sourceFiles = Stream.of(detailImageAdapter.getSelectedItems())
@@ -3100,12 +3270,13 @@ public class MainActivity extends BaseAppCompatActivity {
                 }, RxUtils::unhandledThrowable);
     }
 
-    private void reloadFolderList() {
+
+    private void reloadFolderList(boolean fromCacheFirst) {
         if (mFolderAdapter != null) {
-            diffUpdateFolderListAdapter(mFolderAdapter, false);
+            diffUpdateFolderListAdapter(mFolderAdapter, fromCacheFirst);
         } else {
             ImageService.getInstance()
-                    .loadFolderList(false)
+                    .loadFolderList(fromCacheFirst)
                     .compose(workAndShow())
                     .subscribe(this::showFolderList, RxUtils::unhandledThrowable);
         }
@@ -3247,98 +3418,7 @@ public class MainActivity extends BaseAppCompatActivity {
     }
 
     private DefaultImageListAdapter createImageListAdapter(List<DefaultImageListAdapter.Item> items) {
-        DefaultImageListAdapter defaultImageListAdapter = new DefaultImageListAdapter(R.layout.image_list_item, items);
-        defaultImageListAdapter.setOnInteractionListener(new BaseSelectableAdapter.OnInteractionListener<BaseSelectableAdapter, DefaultImageListAdapter.Item>() {
-            @Override
-            public void onItemLongClick(DefaultImageListAdapter.Item item, int position) {
-                Log.d(TAG, "onItemLongClick: " + item);
-                if (!item.isSelected()) {
-                    mImageList.setDragSelectActive(true, position);
-                }
-            }
-
-            @Override
-            public void onItemCheckedChanged(DefaultImageListAdapter.Item item) {
-
-            }
-
-            @Override
-            public void onItemClicked(DefaultImageListAdapter.Item item, View view, int position) {
-                onClickItem(view, position, item.getFile());
-            }
-
-            @Override
-            public void onSelectionModeChange(BaseSelectableAdapter adapter, boolean isSelectionMode) {
-
-                DefaultImageListAdapter a = (DefaultImageListAdapter) adapter;
-                Log.d(TAG, "onSelectionModeChange: isSelectionMode " + isSelectionMode);
-                if (isSelectionMode) {
-
-                    changeFloatingCount(FloatWindowService.MSG_INCREASE);
-
-                    setImageToolbarVisible(true);
-//            mFloatingToolbar.showContextMenu();
-                } else {
-                    changeFloatingCount(FloatWindowService.MSG_DECREASE);
-
-                    setImageToolbarVisible(false);
-//            mFloatingToolbar.dismissPopupMenus();
-                }
-
-                updateActionBarTitleCount(isSelectionMode ? adapter.getSelectedItemCount() : 0, a.getDirectory(), adapter.getItemCount());
-            }
-
-            @Override
-            public void onSelectedItemLongClick(View view, int position, DefaultImageListAdapter.Item item) {
-                int selectedCount = mCurrentImageAdapter.getSelectedItemCount();
-
-                LinkedList<String> menuItems = new LinkedList<>();
-                menuItems.add(getString(R.string.copy_d_files_to, selectedCount));
-                menuItems.add(getString(R.string.move_d_files_to, selectedCount));
-                menuItems.add(getString(R.string.remove_d_files, selectedCount));
-
-                new MaterialDialog.Builder(MainActivity.this)
-                        .title(getString(R.string.selected_files_operation))
-                        .items(menuItems)
-                        .itemsCallback((dialog, itemView, pos, text) -> {
-                            switch (pos) {
-                                case 0: {
-                                    // copy
-                                    ToastUtils.toastShort(MainActivity.this, R.string.unimplemented);
-                                }
-                                break;
-                                case 1: {
-                                    // move
-                                    showMoveFileDialog();
-                                }
-                                break;
-                                case 2: {
-                                    // remove
-                                    ToastUtils.toastShort(MainActivity.this, R.string.unimplemented);
-                                }
-                                break;
-                            }
-                        })
-                        .show();
-            }
-
-            @Override
-            public void onSelectedCountChange(BaseSelectableAdapter adapter, int selectedCount) {
-                DefaultImageListAdapter listAdapter = (DefaultImageListAdapter) adapter;
-
-                updateActionBarTitleCount(selectedCount, listAdapter.getDirectory(), adapter.getItemCount());
-
-                List<DefaultImageListAdapter.Item> selectedItems = listAdapter.getSelectedItems();
-
-                getImageAdapterSelectCountChangeRelay()
-                        .accept(listAdapter);
-
-                ImageService.getInstance()
-                        .detectMoveFileConflict(((BaseImageAdapter) adapter).getDirectory(),
-                                Stream.of(selectedItems).map(DefaultImageListAdapter.Item::getFile).toList());
-            }
-        });
-        return defaultImageListAdapter;
+        return new DefaultImageListAdapter(R.layout.image_list_item, items);
     }
 
     private BehaviorRelay<DefaultImageListAdapter> getImageAdapterSelectCountChangeRelay() {
@@ -3381,7 +3461,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
     private void startImageViewerActivity(File directory, View view, int position, File file) {
 
-        com.orhanobut.logger.Logger.d("查看图片 %d：%s", position, file.getAbsoluteFile());
+        Logger.d("查看图片 %d：%s", position, file.getAbsoluteFile());
 
         mCurrentViewerImageIndex = position;
         View imageView = view.findViewById(R.id.image);
