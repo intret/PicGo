@@ -8,8 +8,8 @@ import com.chad.library.adapter.base.entity.MultiItemEntity;
 import java.util.LinkedList;
 import java.util.List;
 
-import cn.intret.app.picgo.model.FolderModel;
-import cn.intret.app.picgo.model.ImageFolder;
+import cn.intret.app.picgo.model.image.FolderModel;
+import cn.intret.app.picgo.model.image.ImageFolder;
 import cn.intret.app.picgo.ui.adapter.SectionedFolderListAdapter;
 
 public class FolderListAdapterUtils {

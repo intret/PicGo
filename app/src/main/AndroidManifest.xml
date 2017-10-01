@@ -33,11 +33,11 @@
         </service>
 
         <activity
-            android:name=".ui.main.ImageActivity"
+            android:name=".ui.image.ImageActivity"
             android:theme="@style/AppTheme.ImageViewer">
         </activity>
         <activity
-            android:name=".ui.main.DragPhotoActivity"
+            android:name=".ui.image.DragPhotoActivity"
             android:theme="@style/translucent"/>
         <activity android:name=".ui.pref.AboutActivity">
             <intent-filter>

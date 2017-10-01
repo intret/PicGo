@@ -83,22 +83,21 @@ import butterknife.ButterKnife;
 import butterknife.OnClick;
 import butterknife.OnLongClick;
 import cn.intret.app.picgo.R;
-import cn.intret.app.picgo.model.CompareItem;
-import cn.intret.app.picgo.model.CompareItemResolveResult;
-import cn.intret.app.picgo.model.ConflictResolverDialogFragment;
+import cn.intret.app.picgo.model.image.CompareItem;
+import cn.intret.app.picgo.model.image.CompareItemResolveResult;
 import cn.intret.app.picgo.model.event.DeleteFolderMessage;
-import cn.intret.app.picgo.model.FolderModel;
-import cn.intret.app.picgo.model.GroupMode;
-import cn.intret.app.picgo.model.ImageFolder;
-import cn.intret.app.picgo.model.ImageGroup;
-import cn.intret.app.picgo.model.ImageService;
-import cn.intret.app.picgo.model.LoadMediaFileParam;
-import cn.intret.app.picgo.model.MediaFile;
+import cn.intret.app.picgo.model.image.FolderModel;
+import cn.intret.app.picgo.model.image.GroupMode;
+import cn.intret.app.picgo.model.image.ImageFolder;
+import cn.intret.app.picgo.model.image.ImageGroup;
+import cn.intret.app.picgo.model.image.ImageModule;
+import cn.intret.app.picgo.model.image.LoadMediaFileParam;
+import cn.intret.app.picgo.model.image.MediaFile;
 import cn.intret.app.picgo.model.NotEmptyException;
-import cn.intret.app.picgo.model.SortOrder;
-import cn.intret.app.picgo.model.SortWay;
-import cn.intret.app.picgo.model.UserDataService;
-import cn.intret.app.picgo.model.ViewMode;
+import cn.intret.app.picgo.model.user.SortOrder;
+import cn.intret.app.picgo.model.user.SortWay;
+import cn.intret.app.picgo.model.user.UserModule;
+import cn.intret.app.picgo.model.user.ViewMode;
 import cn.intret.app.picgo.model.event.ConflictResolveResultMessage;
 import cn.intret.app.picgo.model.event.FolderModelChangeMessage;
 import cn.intret.app.picgo.model.event.RecentOpenFolderListChangeMessage;
@@ -121,8 +120,13 @@ import cn.intret.app.picgo.ui.adapter.brvah.DetailImageAdapter;
 import cn.intret.app.picgo.ui.adapter.brvah.ExpandableFolderAdapter;
 import cn.intret.app.picgo.ui.adapter.brvah.FolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.brvah.FolderListAdapterUtils;
+import cn.intret.app.picgo.ui.base.BaseAppCompatActivity;
+import cn.intret.app.picgo.ui.conflict.ConflictResolverDialogFragment;
 import cn.intret.app.picgo.ui.event.CurrentImageChangeMessage;
+import cn.intret.app.picgo.ui.event.MoveFileResultMessage;
 import cn.intret.app.picgo.ui.floating.FloatWindowService;
+import cn.intret.app.picgo.ui.image.DragPhotoActivity;
+import cn.intret.app.picgo.ui.image.ImageActivity;
 import cn.intret.app.picgo.ui.pref.SettingActivity;
 import cn.intret.app.picgo.utils.Action0;
 import cn.intret.app.picgo.utils.DateTimeUtils;
@@ -369,7 +373,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
         getMenuInflater().inflate(R.menu.main_menu, menu);
 
-        ViewMode viewMode = UserDataService.getInstance().getViewMode().get();
+        ViewMode viewMode = UserModule.getInstance().getViewMode().get();
         if (viewMode == ViewMode.UNKNOWN) {
             Log.e(TAG, "onCreateOptionsMenu: invalid view mode : " + viewMode);
         } else {
@@ -385,7 +389,7 @@ public class MainActivity extends BaseAppCompatActivity {
             }
         }
 
-        Boolean showHiddenFile = UserDataService.getInstance().getShowHiddenFilePreference().get();
+        Boolean showHiddenFile = UserModule.getInstance().getShowHiddenFilePreference().get();
         MenuItem item = menu.findItem(R.id.app_bar_show_hidden_folder);
         if (item != null) {
             item.setChecked(showHiddenFile);
@@ -777,7 +781,7 @@ public class MainActivity extends BaseAppCompatActivity {
             Log.w(TAG, "diffUpdateFolderListAdapter: adapter is null");
             return;
         }
-        ImageService.getInstance()
+        ImageModule.getInstance()
                 .loadFolderList(fromCacheFirst)
                 .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
                 .doOnNext(newAdapter -> {
@@ -823,7 +827,7 @@ public class MainActivity extends BaseAppCompatActivity {
         }
 
         // 加载图片列表
-        ImageService.getInstance()
+        ImageModule.getInstance()
                 .loadMediaFileList(dir,
                         new LoadMediaFileParam()
                                 .setFromCacheFirst(fromCacheFirst)
@@ -860,7 +864,7 @@ public class MainActivity extends BaseAppCompatActivity {
             return;
         }
 
-        ImageService.getInstance()
+        ImageModule.getInstance()
                 .loadMediaFileList(dir,
                         new LoadMediaFileParam()
                                 .setFromCacheFirst(fromCacheFirst)
@@ -1114,7 +1118,7 @@ public class MainActivity extends BaseAppCompatActivity {
                 menuItem.setChecked(!menuItem.isChecked());
 
                 // Save option
-                Preference<Boolean> showHiddenFolderPref = UserDataService.getInstance()
+                Preference<Boolean> showHiddenFolderPref = UserModule.getInstance()
                         .getShowHiddenFilePreference();
 
                 showHiddenFolderPref.set(menuItem.isChecked());
@@ -1152,7 +1156,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
             setToolbarViewModeIcon(R.drawable.ic_grid_on_black_24px);
 
-            Preference<ViewMode> prefViewMode = UserDataService.getInstance().getViewMode();
+            Preference<ViewMode> prefViewMode = UserModule.getInstance().getViewMode();
             prefViewMode.set(ViewMode.GRID_VIEW);
 
             checkMenuItem(menu, R.id.item_grid_view, true);
@@ -1206,7 +1210,7 @@ public class MainActivity extends BaseAppCompatActivity {
                         Log.w(TAG, "showViewModeMenu: mCurrentFolder is null");
                     }
 
-                    Preference<ViewMode> prefViewMode = UserDataService.getInstance().getViewMode();
+                    Preference<ViewMode> prefViewMode = UserModule.getInstance().getViewMode();
                     prefViewMode.set(ViewMode.GRID_VIEW);
                     mViewMode = ViewMode.GRID_VIEW;
                 }
@@ -1221,7 +1225,7 @@ public class MainActivity extends BaseAppCompatActivity {
                         Log.w(TAG, "showViewModeMenu: mCurrentFolder is null");
                     }
 
-                    Preference<ViewMode> prefViewMode = UserDataService.getInstance().getViewMode();
+                    Preference<ViewMode> prefViewMode = UserModule.getInstance().getViewMode();
                     prefViewMode.set(ViewMode.LIST_VIEW);
 
                     mViewMode = ViewMode.LIST_VIEW;
@@ -1229,22 +1233,22 @@ public class MainActivity extends BaseAppCompatActivity {
                 break;
                 case R.id.sort_by_name:
                     mSortWay = SortWay.NAME;
-                    UserDataService.getInstance().getSortWay().set(mSortWay);
+                    UserModule.getInstance().getSortWay().set(mSortWay);
                     reloadCurrentImageList();
                     break;
                 case R.id.sort_by_date:
                     mSortWay = SortWay.DATE;
-                    UserDataService.getInstance().getSortWay().set(mSortWay);
+                    UserModule.getInstance().getSortWay().set(mSortWay);
                     reloadCurrentImageList();
                     break;
                 case R.id.order_by_asc:
                     mSortOrder = SortOrder.ASC;
-                    UserDataService.getInstance().getSortOrder().set(mSortOrder);
+                    UserModule.getInstance().getSortOrder().set(mSortOrder);
                     reloadCurrentImageList();
                     break;
                 case R.id.order_by_desc:
                     mSortOrder = SortOrder.DESC;
-                    UserDataService.getInstance().getSortOrder().set(mSortOrder);
+                    UserModule.getInstance().getSortOrder().set(mSortOrder);
                     reloadCurrentImageList();
                     break;
             }
@@ -1349,7 +1353,7 @@ public class MainActivity extends BaseAppCompatActivity {
                     }
                 });
 
-        ImageService.getInstance()
+        ImageModule.getInstance()
                 .loadFolderList(true, t9NumberInput)
                 .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
                 .compose(RxUtils.workAndShow())
@@ -1474,7 +1478,7 @@ public class MainActivity extends BaseAppCompatActivity {
         } else {
 
             // 初始化相册文件夹列表
-            ImageService.getInstance()
+            ImageModule.getInstance()
                     .loadFolderList(true)
                     .compose(workAndShow())
                     .doOnError(throwable -> {
@@ -1641,7 +1645,7 @@ public class MainActivity extends BaseAppCompatActivity {
                     if (inputEditText != null) {
                         String folderName = inputEditText.getEditableText().toString();
                         File dir = new File(targetDir, folderName);
-                        ImageService.getInstance()
+                        ImageModule.getInstance()
                                 .createFolder(dir)
                                 .compose(workAndShow())
                                 .subscribe(ok -> {
@@ -1798,7 +1802,7 @@ public class MainActivity extends BaseAppCompatActivity {
     }
 
     private void onClickMenuItemDeleteDirectory(File directory) {
-        ImageService.getInstance()
+        ImageModule.getInstance()
                 .removeFolder(directory, false)
                 .compose(workAndShow())
                 .subscribe(
@@ -1831,7 +1835,7 @@ public class MainActivity extends BaseAppCompatActivity {
     }
 
     private void forceDeleteDirectory(File dir) {
-        ImageService.getInstance()
+        ImageModule.getInstance()
                 .removeFolder(dir, true)
                 .compose(workAndShow())
                 .subscribe(deleted -> {
@@ -1960,11 +1964,11 @@ public class MainActivity extends BaseAppCompatActivity {
             return;
         }
 
-        UserDataService.getInstance()
+        UserModule.getInstance()
                 .addExcludeFolder(selectedDir)
                 .subscribe(ok -> {
                     if (ok) {
-                        ImageService.getInstance()
+                        ImageModule.getInstance()
                                 .hiddenFolder(selectedDir)
                                 .subscribe(removed -> {
                                     if (removed) {
@@ -2053,7 +2057,7 @@ public class MainActivity extends BaseAppCompatActivity {
                 .positiveText(R.string.delete)
                 .onPositive((dialog, which) -> {
 
-                    ImageService.getInstance()
+                    ImageModule.getInstance()
                             .removeFolder(selectedDir, false)
                             .compose(workAndShow())
                             .subscribe(aBoolean -> {
@@ -2096,7 +2100,7 @@ public class MainActivity extends BaseAppCompatActivity {
                                 return;
                             }
 
-                            ImageService.getInstance()
+                            ImageModule.getInstance()
                                     .renameDirectory(dir, newDirName)
                                     .compose(workAndShow())
                                     .subscribe(ok -> {
@@ -2253,7 +2257,7 @@ public class MainActivity extends BaseAppCompatActivity {
      */
 
     private void moveAdapterSelectedFilesToDir(File destDir) {
-        ImageService.getInstance()
+        ImageModule.getInstance()
                 .moveFilesToDirectory(destDir,
                         getCurrentSelectedFilePathList(),
                         true,
@@ -2373,13 +2377,13 @@ public class MainActivity extends BaseAppCompatActivity {
         mFolderList.addItemDecoration(new SectionDecoration(this, new SectionDecoration.DecorationCallback() {
             @Override
             public long getGroupId(int position) {
-                return ImageService.getInstance().getSectionForPosition(position);
+                return ImageModule.getInstance().getSectionForPosition(position);
 //                return mFolderListAdapter.getItemCount();
             }
 
             @Override
             public String getGroupFirstLine(int position) {
-                return ImageService.getInstance().getSectionFileName(position);
+                return ImageModule.getInstance().getSectionFileName(position);
             }
         }));
         mFolderList.setAdapter(mFolderListAdapter);
@@ -2492,7 +2496,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
             Logger.d("showDetailImageList 加载并显示目录 " + directory);
 
-            ImageService.getInstance()
+            ImageModule.getInstance()
                     .loadMediaFileList(directory,
                             new LoadMediaFileParam()
                                     .setFromCacheFirst(true)
@@ -2614,7 +2618,7 @@ public class MainActivity extends BaseAppCompatActivity {
                 Log.d(TAG, "show cached sectioned list adapter : " + directory.getName());
                 showSectionedImageList(listAdapter);
             } else {
-                ImageService.getInstance()
+                ImageModule.getInstance()
                         .loadImageGroupList(directory, groupMode, true, SortWay.DATE, SortOrder.DESC)
                         .map(this::sortImageGroupByViewMode)
                         .map((sectionList) -> {
@@ -2780,7 +2784,7 @@ public class MainActivity extends BaseAppCompatActivity {
     private Observable<LinkedList<SectionedImageListAdapter.Section>> loadAdapterSections(File directory, GroupMode mode) {
         return Observable.create(e -> {
 
-            List<File> imageFiles = ImageService.getInstance().listMediaFiles(directory);
+            List<File> imageFiles = ImageModule.getInstance().listMediaFiles(directory);
             LinkedList<SectionedImageListAdapter.Section> sections = Stream.of(imageFiles)
                     .groupBy(file -> {
                         long d = file.lastModified();
@@ -2900,7 +2904,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
             Logger.d("showDefaultImageList 加载并显示目录 " + directory);
 
-            ImageService.getInstance()
+            ImageModule.getInstance()
                     .loadMediaFileList(directory,
                             new LoadMediaFileParam()
                                     .setFromCacheFirst(true)
@@ -3247,7 +3251,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
     private void updateFolderListConflictItems(List<File> sourceFiles) {
 
-        ImageService.getInstance()
+        ImageModule.getInstance()
                 .detectFileExistence(sourceFiles)
                 .compose(workAndShow())
                 .subscribe(detectFileExistenceResult -> {
@@ -3273,7 +3277,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
     private void addRecentHistoryRecord(File directory) {
 
-        UserDataService.getInstance()
+        UserModule.getInstance()
                 .addOpenFolderRecentRecord(directory)
                 .compose(workAndShow())
                 .subscribe(aBoolean -> {
@@ -3291,7 +3295,7 @@ public class MainActivity extends BaseAppCompatActivity {
         if (mFolderAdapter != null) {
             diffUpdateFolderListAdapter(mFolderAdapter, fromCacheFirst);
         } else {
-            ImageService.getInstance()
+            ImageModule.getInstance()
                     .loadFolderList(fromCacheFirst)
                     .compose(workAndShow())
                     .subscribe(this::showFolderList, RxUtils::unhandledThrowable);
@@ -3335,15 +3339,15 @@ public class MainActivity extends BaseAppCompatActivity {
 //            mImageList.addItemDecoration(marginDecoration);
 
             Observable<ViewMode> viewModeObservable = Observable.just(1)
-                    .map(integer -> UserDataService.getInstance()
-                            .getStringPreference(UserDataService.PREF_KEY_IMAGE_VIEW_MODE, ViewMode::fromString));
+                    .map(integer -> UserModule.getInstance()
+                            .getStringPreference(UserModule.PREF_KEY_IMAGE_VIEW_MODE, ViewMode::fromString));
 
             // Load recent history and show the first one
 
             // 把最近文件列表和视图模式加载后合并
             Log.d(TAG, "reloadImageList: ");
 
-            UserDataService.getInstance().loadInitialPreference(true)
+            UserModule.getInstance().loadInitialPreference(true)
                     .compose(workAndShow())
                     .doOnNext(userInitialPreferences -> Log.d(TAG, "Loaded user initial preference : " + userInitialPreferences))
                     .subscribe(userInitialPreferences -> {
@@ -3425,7 +3429,7 @@ public class MainActivity extends BaseAppCompatActivity {
             Log.e(TAG, "updateFolderListItemThumbnailList: directory is null/empty");
             return;
         }
-        ImageService.getInstance()
+        ImageModule.getInstance()
                 .rescanDirectoryThumbnailList(directory)
                 .compose(workAndShow())
                 .subscribe(files -> {
@@ -3454,7 +3458,7 @@ public class MainActivity extends BaseAppCompatActivity {
     private Observable<List<DefaultImageListAdapter.Item>> loadImages(File directory) {
         return Observable.create(e -> {
             LinkedList<DefaultImageListAdapter.Item> items = new LinkedList<DefaultImageListAdapter.Item>();
-            List<File> images = ImageService.getInstance().listMediaFiles(directory);
+            List<File> images = ImageModule.getInstance().listMediaFiles(directory);
 
             for (File file : images) {
 
@@ -3600,7 +3604,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
                     List<File> selectedFiles = currImageAdapter.getSelectedFiles();
 
-                    ImageService.getInstance()
+                    ImageModule.getInstance()
                             .removeFiles(selectedFiles)
                             .compose(workAndShow())
                             .subscribe(integerListPair -> {
@@ -3688,7 +3692,7 @@ public class MainActivity extends BaseAppCompatActivity {
                     if (tag != null && tag instanceof SectionedFolderListAdapter.Item) {
 
                         File destDir = ((SectionedFolderListAdapter.Item) tag).getFile();
-                        ImageService.getInstance()
+                        ImageModule.getInstance()
                                 .moveFilesToDirectory(destDir, selectedFiles)
                                 .compose(workAndShow())
                                 .subscribe(count -> {

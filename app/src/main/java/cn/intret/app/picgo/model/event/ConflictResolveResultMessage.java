@@ -3,7 +3,7 @@ package cn.intret.app.picgo.model.event;
 
 import java.util.List;
 
-import cn.intret.app.picgo.model.CompareItemResolveResult;
+import cn.intret.app.picgo.model.image.CompareItemResolveResult;
 
 public class ConflictResolveResultMessage {
     List<CompareItemResolveResult> compareItems;

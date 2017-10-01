@@ -49,10 +49,10 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.app.CoreModule;
-import cn.intret.app.picgo.model.FolderModel;
-import cn.intret.app.picgo.model.ImageFolder;
-import cn.intret.app.picgo.model.ImageService;
-import cn.intret.app.picgo.model.UserDataService;
+import cn.intret.app.picgo.model.image.FolderModel;
+import cn.intret.app.picgo.model.image.ImageFolder;
+import cn.intret.app.picgo.model.image.ImageModule;
+import cn.intret.app.picgo.model.user.UserModule;
 import cn.intret.app.picgo.ui.adapter.brvah.ExpandableFolderAdapter;
 import cn.intret.app.picgo.ui.adapter.brvah.FolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.brvah.FolderListAdapterUtils;
@@ -61,6 +61,7 @@ import cn.intret.app.picgo.ui.adapter.SectionedListItemClickDispatcher;
 import cn.intret.app.picgo.ui.adapter.SectionedListItemDispatchListener;
 import cn.intret.app.picgo.ui.adapter.fast.FolderItem;
 import cn.intret.app.picgo.ui.adapter.fast.SectionItem;
+import cn.intret.app.picgo.ui.event.MoveFileResultMessage;
 import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.utils.RxUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
@@ -164,7 +165,7 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
     }
 
     private void loadExpandableFolderList() {
-        ImageService.getInstance()
+        ImageModule.getInstance()
                 .loadHiddenFileListModel()
                 .map(FolderListAdapterUtils::folderModelToExpandableFolderAdapter)
                 .subscribe(this::showExpandableFolderList, RxUtils::unhandledThrowable);
@@ -223,7 +224,7 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
     }
 
     private void loadSectionFolderList() {
-        ImageService.getInstance()
+        ImageModule.getInstance()
                 .loadHiddenFileListModel()
                 .compose(workAndShow())
                 .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
@@ -254,7 +255,7 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
                         @Override
                         public void onItemCloseClick(View v, SectionedFolderListAdapter.Section section, SectionedFolderListAdapter.Item item, int sectionIndex, int relativePosition) {
 
-                            UserDataService.getInstance()
+                            UserModule.getInstance()
                                     .getExcludeFolderPreference()
                                     .map(pref -> {
                                         LinkedList<File> files = pref.get();
@@ -288,7 +289,7 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
                     mFolderList.setAdapter(mListAdapter);
 
                     // Restore position
-                    int visibleItemPosition = UserDataService.getInstance().getMoveFileDialogFirstVisibleItemPosition();
+                    int visibleItemPosition = UserModule.getInstance().getMoveFileDialogFirstVisibleItemPosition();
                     if (visibleItemPosition != RecyclerView.NO_POSITION) {
                         mFolderList.scrollToPosition(visibleItemPosition);
                     }
@@ -491,7 +492,7 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
 
     private void showHiddenFolders() {
 
-        ImageService.getInstance()
+        ImageModule.getInstance()
                 .loadHiddenFileListModel()
                 .map(this::getIItems)
                 .compose(workAndShow())
@@ -554,7 +555,7 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
 
                     String inputString = input.toString();
 
-                    ImageService.getInstance()
+                    ImageModule.getInstance()
                             .loadHiddenFileListModel(inputString)
                             .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
                             .compose(RxUtils.workAndShow())
@@ -664,7 +665,7 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
 
         setStatusDetecting(contentView);
 
-        ImageService.getInstance()
+        ImageModule.getInstance()
                 .detectFileConflict(item.getFile(), mHiddenFolders)
                 .compose(RxUtils.workAndShow())
                 .subscribe(moveFileDetectResult -> {
@@ -812,7 +813,7 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
         if (item != null) {
 
             File destDir = item.getFile();
-            ImageService.getInstance()
+            ImageModule.getInstance()
                     .moveFilesToDirectory(destDir, mHiddenFolders, true, false)
                     .compose(RxUtils.workAndShow())
                     .subscribe(moveFileResult -> {
@@ -867,10 +868,10 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
         RecyclerView.LayoutManager lm = rv.getLayoutManager();
         if (lm instanceof LinearLayoutManager) {
             int firstVisibleItemPosition = ((LinearLayoutManager) lm).findFirstVisibleItemPosition();
-            UserDataService.getInstance().setMoveFileDialogFirstVisibleItemPosition(firstVisibleItemPosition);
+            UserModule.getInstance().setMoveFileDialogFirstVisibleItemPosition(firstVisibleItemPosition);
         } else if (lm instanceof GridLayoutManager) {
             int firstVisibleItemPosition = ((GridLayoutManager) lm).findFirstVisibleItemPosition();
-            UserDataService.getInstance().setMoveFileDialogFirstVisibleItemPosition(firstVisibleItemPosition);
+            UserModule.getInstance().setMoveFileDialogFirstVisibleItemPosition(firstVisibleItemPosition);
         }
     }
 

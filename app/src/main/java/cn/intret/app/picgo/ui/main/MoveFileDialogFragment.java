@@ -45,14 +45,15 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.app.CoreModule;
-import cn.intret.app.picgo.model.ConflictResolverDialogFragment;
-import cn.intret.app.picgo.model.ImageService;
-import cn.intret.app.picgo.model.UserDataService;
+import cn.intret.app.picgo.model.image.ImageModule;
+import cn.intret.app.picgo.model.user.UserModule;
 import cn.intret.app.picgo.model.event.FolderModelChangeMessage;
 import cn.intret.app.picgo.ui.adapter.brvah.FolderListAdapterUtils;
 import cn.intret.app.picgo.ui.adapter.SectionedFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedListItemClickDispatcher;
 import cn.intret.app.picgo.ui.adapter.SectionedListItemDispatchListener;
+import cn.intret.app.picgo.ui.conflict.ConflictResolverDialogFragment;
+import cn.intret.app.picgo.ui.event.MoveFileResultMessage;
 import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.utils.RxUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
@@ -164,7 +165,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
     }
 
     private void loadFolderList() {
-        ImageService.getInstance()
+        ImageModule.getInstance()
                 .loadFolderList(true)
                 .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
                 .map(this::setAdapterMoveFileSourceDir)
@@ -204,14 +205,14 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
 //        });
 
         // Restore position
-        int visibleItemPosition = UserDataService.getInstance()
+        int visibleItemPosition = UserModule.getInstance()
                 .getMoveFileDialogFirstVisibleItemPosition();
         if (visibleItemPosition != RecyclerView.NO_POSITION) {
             mFolderList.scrollToPosition(visibleItemPosition);
         }
 
         // 文件冲突检测
-        ImageService.getInstance()
+        ImageModule.getInstance()
                 .detectFileExistence(mSelectedFiles)
                 .compose(workAndShow())
                 .subscribe(detectFileExistenceResult -> {
@@ -255,7 +256,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
                                 if (inputEditText != null) {
                                     String folderName = inputEditText.getEditableText().toString();
                                     File dir = new File(section.getFile(), folderName);
-                                    ImageService.getInstance()
+                                    ImageModule.getInstance()
                                             .createFolder(dir)
                                             .compose(workAndShow())
                                             .subscribe(ok -> {
@@ -462,7 +463,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
                         String folderName = inputEditText.getEditableText().toString();
 
                         File newFolder = new File(targetDir, folderName);
-                        ImageService.getInstance()
+                        ImageModule.getInstance()
                                 .createFolder(newFolder)
                                 .compose(workAndShow())
                                 .subscribe(ok -> {
@@ -537,7 +538,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
     }
 
     private void filterFolderList(RecyclerView folderList, String inputString, File scrollToDir) {
-        ImageService.getInstance()
+        ImageModule.getInstance()
                 .loadFolderList(true, inputString)
                 .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
                 .map(this::setAdapterMoveFileSourceDir)
@@ -668,7 +669,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
 
             // TODO: 直接从 adapter 中获取冲突文件信息就可以了
 
-            ImageService.getInstance()
+            ImageModule.getInstance()
                     .detectFileConflict(item.getFile(), mSelectedFiles)
                     .compose(RxUtils.workAndShow())
                     .subscribe(moveFileDetectResult -> {
@@ -818,7 +819,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
         if (item != null) {
 
             File destDir = item.getFile();
-            ImageService.getInstance()
+            ImageModule.getInstance()
                     .moveFilesToDirectory(destDir, mSelectedFiles, true, false)
                     .compose(RxUtils.workAndShow())
                     .subscribe(moveFileResult -> {
@@ -873,10 +874,10 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
         RecyclerView.LayoutManager lm = rv.getLayoutManager();
         if (lm instanceof LinearLayoutManager) {
             int firstVisibleItemPosition = ((LinearLayoutManager) lm).findFirstVisibleItemPosition();
-            UserDataService.getInstance().setMoveFileDialogFirstVisibleItemPosition(firstVisibleItemPosition);
+            UserModule.getInstance().setMoveFileDialogFirstVisibleItemPosition(firstVisibleItemPosition);
         } else if (lm instanceof GridLayoutManager) {
             int firstVisibleItemPosition = ((GridLayoutManager) lm).findFirstVisibleItemPosition();
-            UserDataService.getInstance().setMoveFileDialogFirstVisibleItemPosition(firstVisibleItemPosition);
+            UserModule.getInstance().setMoveFileDialogFirstVisibleItemPosition(firstVisibleItemPosition);
         }
     }
 

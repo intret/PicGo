@@ -17,8 +17,8 @@ import java.io.InputStreamReader;
 import java.util.List;
 
 import cn.intret.app.picgo.BuildConfig;
-import cn.intret.app.picgo.model.ImageService;
-import cn.intret.app.picgo.model.UserDataService;
+import cn.intret.app.picgo.model.image.ImageModule;
+import cn.intret.app.picgo.model.user.UserModule;
 import cn.intret.app.picgo.utils.Watch;
 import io.reactivex.plugins.RxJavaPlugins;
 
@@ -123,10 +123,10 @@ public class AppComponent extends Application {
                 CoreModule.getInstance().init(getApplicationContext());
 
                 watch.logGlanceMS(TAG, "init core module");
-                UserDataService.getInstance();
+                UserModule.getInstance();
 
                 watch.logGlanceMS(TAG, "init user module");
-                ImageService.getInstance();
+                ImageModule.getInstance();
 
                 watch.logGlanceMS(TAG, "init image module");
 

@@ -10,7 +10,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.annimon.stream.Stream;
-import com.annimon.stream.function.IndexedConsumer;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 
@@ -21,9 +20,8 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
-import cn.intret.app.picgo.model.ResolveResult;
+import cn.intret.app.picgo.model.image.ResolveResult;
 import cn.intret.app.picgo.utils.FileSizeUtils;
-import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.utils.MediaUtils;
 import cn.intret.app.picgo.utils.Param;
 

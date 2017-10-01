@@ -2,7 +2,7 @@ package cn.intret.app.picgo.model.event;
 
 import java.util.List;
 
-import cn.intret.app.picgo.model.RecentRecord;
+import cn.intret.app.picgo.model.user.RecentRecord;
 
 public class RecentOpenFolderListChangeMessage extends BaseMessage {
     private List<RecentRecord> mRecentRecord;
