@@ -151,6 +151,7 @@ public class MainActivity extends BaseAppCompatActivity {
     public static final int DEFAULT_IMAGE_LIST_COLLUMN_COUNT = 4;
 
     @BindView(R.id.refresh) SwipeRefreshLayout mRefresh;
+    @BindView(R.id.folder_list_refresh) SwipeRefreshLayout mFolderListRefresh;
     @BindView(R.id.img_list) SuperRecyclerView mImageList;
     @BindView(R.id.empty_view) View mEmptyView;
     @BindView(R.id.drawer_layout) DrawerLayout mDrawerLayout;
@@ -485,6 +486,7 @@ public class MainActivity extends BaseAppCompatActivity {
             Log.w(TAG, "showConflictDialog: conflict files is empty");
             return;
         }
+        Logger.d("Show conflict dialog : " + destDir);
 
         List<String> strings = Stream.of(conflictFiles).map(fileFilePair -> fileFilePair.second.getAbsolutePath()).toList();
         ConflictResolverDialogFragment fragment = ConflictResolverDialogFragment.newInstance(destDir.getAbsolutePath(), new ArrayList<>(strings));
@@ -1300,9 +1302,9 @@ public class MainActivity extends BaseAppCompatActivity {
 
         // Folder list
         mFolderList.setEmptyView(mFolderListEmptyView);
-
-        //mTitle = mDrawerTitle = getTitle();
-
+        mFolderListRefresh.setOnRefreshListener(() -> {
+            reloadFolderList(false);
+        });
 
         // 文件夹列表工具栏
         mDialpadSwitchBadge = BadgeFactory
@@ -2526,9 +2528,10 @@ public class MainActivity extends BaseAppCompatActivity {
                 DetailImageAdapter.Item>() {
             @Override
             public void onItemLongClick(DetailImageAdapter.Item item, int position) {
-                Log.d(TAG, "onItemLongClick: " + item);
+
                 if (!item.isSelected()) {
-                    //mImageList.setDragSelectActive(true, position);
+                    Logger.d("通过长按图片进入选择模式：" + item.getFile());
+                    mImageList.setDragSelectActive(true, position);
                 }
             }
 
@@ -2575,6 +2578,9 @@ public class MainActivity extends BaseAppCompatActivity {
 
                 DetailImageAdapter adapter = (DetailImageAdapter) baseAdapter;
                 updateActionBarTitleCount(selectedCount, adapter.getDirectory(), baseAdapter.getItemCount());
+
+                // 通知选中个数变化
+                getDetailAdapterSelectCountChangeRelay().accept(adapter);
             }
         };
 

@@ -4,6 +4,7 @@ package cn.intret.app.picgo.ui.adapter.brvah;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
 
@@ -140,6 +141,9 @@ public abstract class BaseSelectableAdapter< T extends ItemSelectable, VH extend
         if (rv != null && rv instanceof DragSelectRecyclerView) {
             RecyclerView.LayoutManager layoutManager = rv.getLayoutManager();
             if (layoutManager instanceof GridLayoutManager) {
+                ((DragSelectRecyclerView) rv).setDragSelectActive(true, i);
+                enterDragSelect = true;
+            } else if (layoutManager instanceof LinearLayoutManager) {
                 ((DragSelectRecyclerView) rv).setDragSelectActive(true, i);
                 enterDragSelect = true;
             }

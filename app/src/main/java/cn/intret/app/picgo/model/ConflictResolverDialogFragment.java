@@ -15,6 +15,7 @@ import android.widget.TextView;
 
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.annimon.stream.Stream;
+import com.orhanobut.logger.Logger;
 
 import org.greenrobot.eventbus.EventBus;
 
@@ -190,6 +191,9 @@ public class ConflictResolverDialogFragment extends BottomSheetDialogFragment {
                 )
                 .positiveText(R.string.confirm)
                 .onPositive((dialog, which) -> {
+
+                    Logger.d("解决图片文文件名冲突");
+
                     ImageService.getInstance()
                             .resolveFileNameConflict(compareItems)
                             .compose(RxUtils.workAndShow())
@@ -208,6 +212,7 @@ public class ConflictResolverDialogFragment extends BottomSheetDialogFragment {
 
     private void onCompleteResolve(List<CompareItemResolveResult> compareItems) {
         if (mAdapter != null) {
+            // 所有冲突都解决了，可以关闭对话框
             if (mAdapter.getItemCount() == 0) {
                 dismiss();
             }
