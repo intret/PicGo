@@ -789,10 +789,16 @@ public class MainActivity extends BaseAppCompatActivity {
                     }
                 })
                 .compose(workAndShow())
-                .subscribe(adapter::diffUpdate,
-                        RxUtils::unhandledThrowable);
+                .subscribe((newAdapter1) -> {
+                            adapter.diffUpdate(newAdapter1);
+                            // TODO 参数化 refreshing
+                            mFolderListRefresh.setRefreshing(false);
+                        },
+                        (throwable) -> {
+                            RxUtils.unhandledThrowable(throwable);
+                            mFolderListRefresh.setRefreshing(false);
+                        });
     }
-
 
 
     private void diffUpdateDefaultImageListAdapter(DefaultImageListAdapter adapter, boolean fromCacheFirst, boolean hideRefreshControlWhenFinish) {
@@ -1554,6 +1560,10 @@ public class MainActivity extends BaseAppCompatActivity {
             listAdapter.setMoveFileSourceDir(mCurrentFolder);
         }
 
+        if (mFolderListRefresh.isRefreshing()) {
+            mFolderListRefresh.setRefreshing(false);
+        }
+
         // RecyclerView layout
         mFolderList.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
 
@@ -2116,7 +2126,7 @@ public class MainActivity extends BaseAppCompatActivity {
                     File selectedItem = adapter.getSelectedItem();
                     File moveFileSourceDir = adapter.getMoveFileSourceDir();
                     if (Objects.equals(item.getFile(), moveFileSourceDir)) {
-                        Log.w(TAG, "onFolderListItemClick: 点击的项是移动操作的源目录，不显示冲突对话框" );
+                        Log.w(TAG, "onFolderListItemClick: 点击的项是移动操作的源目录，不显示冲突对话框");
                         return;
                     }
 

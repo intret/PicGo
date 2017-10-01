@@ -1545,6 +1545,12 @@ public class ImageService extends BaseService {
 
     }
 
+    /**
+     * 任何解决后的图片，它所在的目录都会被扫描一次。
+     * @param compareItems
+     * @return
+     * @
+     */
     public Observable<CompareItemResolveResult> resolveFileNameConflict(final List<CompareItem> compareItems) {
         return Observable.create(e -> {
             if (ListUtils.isEmpty(compareItems)) {
