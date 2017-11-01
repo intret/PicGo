@@ -98,7 +98,7 @@ public class ImageModule extends BaseModule {
 
     FolderModel mFolderModel;
     ReadWriteLock mFolderModelRWLock = new ReentrantReadWriteLock();
-    private ObjectGuarder<Preference<LinkedList<File>>> mExlucdeFolderListPref;
+    private ObjectGuarder<Preference<LinkedList<File>>> mExcludeFolderListPref;
 
     private class MediaFileList {
         List<MediaFile> mMediaFiles;
@@ -185,8 +185,8 @@ public class ImageModule extends BaseModule {
                 .getExcludeFolderPreference()
                 .subscribeOn(Schedulers.io())
                 .subscribe(linkedListPreference -> {
-                    mExlucdeFolderListPref = new ObjectGuarder<>(linkedListPreference);
-                    mExlucdeFolderListPref.readConsume(pref -> {
+                    mExcludeFolderListPref = new ObjectGuarder<>(linkedListPreference);
+                    mExcludeFolderListPref.readConsume(pref -> {
                         pref.asObservable().subscribe(newFileList -> {
                             mHiddenFolders.writeConsume(fileList -> {
 
@@ -788,7 +788,7 @@ public class ImageModule extends BaseModule {
      * @return
      */
     public Observable<List<MediaFile>> loadMediaFileList(File directory, LoadMediaFileParam param) {
-        return Observable.create(
+        return Observable.<List<MediaFile>>create(
                 e -> {
 
                     mSortWay = param.getSortWay();
@@ -821,7 +821,7 @@ public class ImageModule extends BaseModule {
                                                 .sorted(getMediaFileComparator(param))
                                                 .toList();
 
-                                        //Log.d(TAG, "loadMediaFileList: return media file list with comparator : " );
+                                        Log.d(TAG, "loadMediaFileList: return cached media file list" );
                                         e.onNext(mediaFiles);
                                         e.onComplete();
                                         watch.logGlanceMS(TAG, "load media files from cache and sort it");
@@ -849,9 +849,7 @@ public class ImageModule extends BaseModule {
 
                                     // File length
                                     MediaFile mediaFile = new MediaFile();
-                                    mediaFile.setFile(file);
-                                    mediaFile.setFileSize(file.length());
-                                    mediaFile.setDate(new Date(file.lastModified()));
+                                    fillBasicFileInfo(mediaFile, file);
 
                                     // 填充媒体文件额外信息
 
@@ -865,6 +863,7 @@ public class ImageModule extends BaseModule {
 
                                     return mediaFile;
                                 })
+                                .filter(file -> file.getFileSize() > 0)
                                 .sorted(comparator)
                                 .toList();
 
@@ -874,11 +873,10 @@ public class ImageModule extends BaseModule {
                         sortedMediaFiles = Stream.of(imageFiles)
                                 .map(file -> {
                                     MediaFile mediaFile = new MediaFile();
-                                    mediaFile.setFile(file);
-                                    mediaFile.setFileSize(file.length());
-                                    mediaFile.setDate(new Date(file.lastModified()));
+                                    fillBasicFileInfo(mediaFile, file);
                                     return mediaFile;
                                 })
+                                .filter(file -> file.getFileSize() > 0)
                                 .sorted(comparator)
                                 .toList();
 
@@ -891,7 +889,18 @@ public class ImageModule extends BaseModule {
                     e.onNext(sortedMediaFiles);
                     e.onComplete();
                 })
+                .doOnNext(fileList -> {
+                    if (ListUtils.isEmpty(fileList)) {
+                        Log.w(TAG, "loadMediaFileList: no file int dir : " + directory);
+                    }
+                })
                 ;
+    }
+
+    private void fillBasicFileInfo(MediaFile mediaFile, File file) {
+        mediaFile.setFile(file);
+        mediaFile.setFileSize(file.length());
+        mediaFile.setDate(new Date(file.lastModified()));
     }
 
     private Comparator<MediaFile> getMediaFileComparator(LoadMediaFileParam param) {
