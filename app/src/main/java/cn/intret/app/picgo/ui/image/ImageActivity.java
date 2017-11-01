@@ -350,19 +350,17 @@ public class ImageActivity extends BaseAppCompatActivity implements ImageFragmen
                 R.id.value_file_size,
                 FileSizeUtils.formatFileSize(info.getFileLength(), false));
 
-        // 路径
+        // 文件路径
         ViewUtils.setText(mDetailContainer,
                 R.id.value_file_path,
                 showingImageFile.getAbsolutePath());
 
-        // 日期
-        if (info.getExif() != null) {
-            ViewUtils.setText(
-                    mDetailContainer,
-                    R.id.value_capture_time,
-                    DateFormatUtils.format(info.getLastModified(),
-                            FastDateFormat.getDateInstance(FastDateFormat.FULL).getPattern()));
-        }
+        // 文件日期
+        ViewUtils.setText(
+                mDetailContainer,
+                R.id.value_capture_time,
+                DateFormatUtils.format(info.getLastModified(),
+                        FastDateFormat.getDateInstance(FastDateFormat.FULL).getPattern()));
 
         // 分辨率
         String sizeString = getResources().getString(R.string.image_size_d_d,
