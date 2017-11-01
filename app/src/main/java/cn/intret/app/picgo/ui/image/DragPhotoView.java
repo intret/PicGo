@@ -7,6 +7,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 
 import com.github.chrisbanes.photoview.PhotoView;
@@ -18,6 +19,7 @@ import com.github.chrisbanes.photoview.PhotoView;
 
 public class DragPhotoView extends PhotoView {
     public static final float TRANSLATE_Y_VELOCITY = 0.45f;
+    private static final String TAG = "DragPhotoView";
     private Paint mPaint;
 
     // downX
@@ -78,6 +80,8 @@ public class DragPhotoView extends PhotoView {
     public boolean dispatchTouchEvent(MotionEvent event) {
         //only scale == 1 can drag
         if (getScale() == 1) {
+
+            Log.d(TAG, "dispatchTouchEvent: action=" + event.getAction());
 
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
@@ -170,8 +174,8 @@ public class DragPhotoView extends PhotoView {
         if (mScale >= mMinScale && mScale <= 1f) {
             mScale = 1 - percent;
 
-//            mAlpha = (int) (255 * (1 - percent));
-            mAlpha = 255;
+            mAlpha = (int) (255 * (1 - percent));
+//            mAlpha = 255;
             if (mAlpha > 255) {
                 mAlpha = 255;
             } else if (mAlpha < 0) {

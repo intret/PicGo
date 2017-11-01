@@ -49,6 +49,7 @@ import cn.intret.app.picgo.ui.event.ImageAnimationStartMessage;
 import cn.intret.app.picgo.ui.event.TapImageMessage;
 import cn.intret.app.picgo.utils.PathUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
+import cn.intret.app.picgo.view.DismissFrameLayout;
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageView;
 
@@ -74,7 +75,8 @@ public class ImageFragment extends Fragment {
     private OnFragmentInteractionListener mListener;
     private boolean mIsLoaded = false;
 
-    @BindView(R.id.image) DragPhotoView mImage;
+    @BindView(R.id.dismiss_frame) DismissFrameLayout mDismissFrameLayout;
+    @BindView(R.id.image) PhotoView mImage;
     @BindView(R.id.gif_image) GifImageView mGifImageView;
     @BindView(R.id.file_type) ImageView mFileType;
     @BindView(R.id.empty_view) View mEmptyView;
@@ -162,6 +164,24 @@ public class ImageFragment extends Fragment {
             }
         };
 
+        {
+            mDismissFrameLayout.setDismissListener(new DismissFrameLayout.OnDismissListener() {
+                @Override
+                public void onScaleProgress(float scale) {
+                    ImageFragment.this.mListener.onScaleProgress(scale);
+                }
+
+                @Override
+                public void onDismiss() {
+                    ImageFragment.this.mListener.onDismiss();
+                }
+
+                @Override
+                public void onCancel() {
+                    ImageFragment.this.mListener.onCancel();
+                }
+            });
+        }
 
 //        ActivityCompat.startPostponedEnterTransition(activity);
         if (mPerformEnterTransition) {
@@ -170,20 +190,20 @@ public class ImageFragment extends Fragment {
         }
 
         mImage.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        mImage.setOnExitListener(new DragPhotoView.OnExitListener() {
-            @Override
-            public void onExit(DragPhotoView view, float translateX, float translateY, float w, float h) {
-                Log.d(TAG, "onExit() called with: view = [" + view + "], translateX = [" + translateX + "], translateY = [" + translateY + "], w = [" + w + "], h = [" + h + "]");
-                EventBus.getDefault().post(new DragImageExitMessage());
-            }
-        });
-        mImage.setMinScale(0.90f);
-
-        mImage.setOnTapListener(view -> {
-            Log.d(TAG, "onTap() called with: view = [" + view + "]");
-
-            EventBus.getDefault().post(new TapImageMessage());
-        });
+//        mImage.setOnExitListener(new DragPhotoView.OnExitListener() {
+//            @Override
+//            public void onExit(DragPhotoView view, float translateX, float translateY, float w, float h) {
+//                Log.d(TAG, "onExit() called with: view = [" + view + "], translateX = [" + translateX + "], translateY = [" + translateY + "], w = [" + w + "], h = [" + h + "]");
+//                EventBus.getDefault().post(new DragImageExitMessage());
+//            }
+//        });
+//        mImage.setMinScale(0.90f);
+//
+//        mImage.setOnTapListener(view -> {
+//            Log.d(TAG, "onTap() called with: view = [" + view + "]");
+//
+//            EventBus.getDefault().post(new TapImageMessage());
+//        });
 
         if (PathUtils.isGifFile(mFilePath)) {
             try {
@@ -479,7 +499,7 @@ public class ImageFragment extends Fragment {
      * "http://developer.android.com/training/basics/fragments/communicating.html"
      * >Communicating with Other Fragments</a> for more information.
      */
-    public interface OnFragmentInteractionListener {
+    public interface OnFragmentInteractionListener extends DismissFrameLayout.OnDismissListener {
         // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
     }

@@ -7,6 +7,7 @@ import android.animation.ValueAnimator;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -135,26 +136,24 @@ public class ImageActivity extends BaseAppCompatActivity implements ImageFragmen
     private AnimationType mAnimationType = AnimationType.FADE_IN_FADE_OUT;
     private boolean mCurrentFullscreen;
     private AnimatorSet mFullscreenAnimatorSet;
+    private ColorDrawable mColorDrawable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        ActivityCompat.postponeEnterTransition(this);
-//        supportPostponeEnterTransition();
-
-        View decorView = getWindow().getDecorView();
-
-        setContentView(R.layout.activity_image);
-
-        ButterKnife.bind(this);
-
         extractIntentData();
+
+        ActivityCompat.postponeEnterTransition(this);
+        setContentView(R.layout.activity_image);
+        ButterKnife.bind(this);
 
         initToolbar();
 
-        loadImageFiles();
+        mColorDrawable = new ColorDrawable(getResources().getColor(R.color.black));
+        mPagerContainer.setBackgroundDrawable(mColorDrawable);
 
+        loadImageFiles();
         initImageTransition();
     }
 
@@ -609,6 +608,30 @@ public class ImageActivity extends BaseAppCompatActivity implements ImageFragmen
 
     }
 
+    private int ALPHA_MAX = 0xFF;
+    @Override
+    public void onScaleProgress(float scale) {
+        Log.d(TAG, "onScaleProgress() called with: scale = [" + scale + "]");
+        mColorDrawable.setAlpha(
+                Math.min(ALPHA_MAX, mColorDrawable.getAlpha() - (int) (scale * ALPHA_MAX)));
+    }
+
+    @Override
+    public void onDismiss() {
+        Log.d(TAG, "onDismiss() called");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            finishAfterTransition();
+        } else {
+            finish();
+        }
+    }
+
+    @Override
+    public void onCancel() {
+        Log.d(TAG, "onCancel() called");
+        mColorDrawable.setAlpha(ALPHA_MAX);
+    }
+
     private enum AnimationType {
         FADE_IN_FADE_OUT,
         SLIDE_IN_SLIDE_OUT
@@ -712,9 +735,7 @@ public class ImageActivity extends BaseAppCompatActivity implements ImageFragmen
                     .map(this::imageListToImageListAdapter)
                     .subscribe(adapter -> {
                         showImageAdapter(adapter, mItemPosition);
-                    }, throwable -> {
-
-                    });
+                    }, RxUtils::unhandledThrowable);
 
         } else if (mImageFilePath != null) {
 
