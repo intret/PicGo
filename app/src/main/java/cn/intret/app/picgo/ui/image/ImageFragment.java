@@ -44,9 +44,7 @@ import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.model.image.ImageModule;
 import cn.intret.app.picgo.ui.event.CancelExitTransitionMessage;
-import cn.intret.app.picgo.ui.event.DragImageExitMessage;
 import cn.intret.app.picgo.ui.event.ImageAnimationStartMessage;
-import cn.intret.app.picgo.ui.event.TapImageMessage;
 import cn.intret.app.picgo.utils.PathUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
 import cn.intret.app.picgo.view.DismissFrameLayout;
@@ -229,7 +227,8 @@ public class ImageFragment extends Fragment {
                     .transition(DrawableTransitionOptions.withCrossFade());
 
             if (PathUtils.isStaticImageFile(mFilePath) || PathUtils.isVideoFile(mFilePath)) {
-                request.listener(new ImageRequestObserver(mPerformEnterTransition));
+                request.listener(new ImageRequestObserver(mPerformEnterTransition)
+                        .setPerformEnterAnimationWhenResourceReady(true));
 //                scheduleStartPostponedTransition(mImage);
                 request.into(mImage);
 
@@ -302,6 +301,16 @@ public class ImageFragment extends Fragment {
     private class ImageRequestObserver implements RequestListener<Drawable> {
 
         boolean mPerformEnterTransition;
+        boolean mPerformEnterAnimationWhenResourceReady = false;
+
+        public boolean isPerformEnterAnimationWhenResourceReady() {
+            return mPerformEnterAnimationWhenResourceReady;
+        }
+
+        public ImageRequestObserver setPerformEnterAnimationWhenResourceReady(boolean performEnterAnimationWhenResourceReady) {
+            mPerformEnterAnimationWhenResourceReady = performEnterAnimationWhenResourceReady;
+            return this;
+        }
 
         public ImageRequestObserver(boolean performEnterTransition) {
             mPerformEnterTransition = performEnterTransition;
@@ -317,8 +326,9 @@ public class ImageFragment extends Fragment {
 
         @Override
         public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
-
-            starEnterAnimation();
+            if (mPerformEnterAnimationWhenResourceReady) {
+                starEnterAnimation();
+            }
             return false;
         }
 
