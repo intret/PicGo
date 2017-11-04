@@ -43,8 +43,10 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.model.image.ImageModule;
+import cn.intret.app.picgo.model.user.UserModule;
 import cn.intret.app.picgo.ui.event.CancelExitTransitionMessage;
 import cn.intret.app.picgo.ui.event.ImageAnimationStartMessage;
+import cn.intret.app.picgo.ui.event.TapImageMessage;
 import cn.intret.app.picgo.utils.PathUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
 import cn.intret.app.picgo.view.DismissFrameLayout;
@@ -129,9 +131,9 @@ public class ImageFragment extends Fragment {
         tryToSetTransitionNameFromIntent();
         //}
 
-//        mImage.setOnClickListener(v -> {
-//            handleClickEvent();
-//        });
+        mImage.setOnClickListener(v -> {
+            handleClickEvent();
+        });
 //
 //        mRootLayout.setOnClickListener(v -> {
 //            handleClickEvent();
@@ -288,13 +290,21 @@ public class ImageFragment extends Fragment {
     }
 
     private void handleClickEvent() {
-        if (mPerformExitTransition) {
-            if (getActivity() != null) {
-                Logger.d("退出查看图片：%s", mFilePath);
-                ActivityCompat.finishAfterTransition(getActivity());
-            }
+
+        boolean fullscreen = UserModule.getInstance().getImageClickToFullscreen();
+        if (fullscreen) {
+            // 点击图片进入全屏
+            EventBus.getDefault().post(new TapImageMessage());
         } else {
-            getActivity().finish();
+            // 点击图片返回
+            if (mPerformExitTransition) {
+                if (getActivity() != null) {
+                    Logger.d("退出查看图片：%s", mFilePath);
+                    ActivityCompat.finishAfterTransition(getActivity());
+                }
+            } else {
+                getActivity().finish();
+            }
         }
     }
 

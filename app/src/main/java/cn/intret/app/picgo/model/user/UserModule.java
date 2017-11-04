@@ -469,4 +469,8 @@ public class UserModule extends BaseModule {
             e.onComplete();
         });
     }
+
+    public boolean getImageClickToFullscreen() {
+        return true;
+    }
 }

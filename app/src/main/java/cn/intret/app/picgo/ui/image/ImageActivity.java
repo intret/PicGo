@@ -527,8 +527,8 @@ public class ImageActivity extends BaseAppCompatActivity implements ImageFragmen
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(TapImageMessage message) {
-        ActivityCompat.finishAfterTransition(this);
-//        switchFullscreen();
+        //ActivityCompat.finishAfterTransition(this);
+        switchFullscreen();
     }
 
     private void switchFullscreen() {
@@ -542,7 +542,7 @@ public class ImageActivity extends BaseAppCompatActivity implements ImageFragmen
 //            }
 //        }
 
-        //switchFullScreenMode(null);
+        switchFullScreenMode(null);
     }
 
     /**
