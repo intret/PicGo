@@ -558,9 +558,33 @@ public class ImageActivity extends BaseAppCompatActivity implements ImageFragmen
         if (mAnimationType == AnimationType.FADE_IN_FADE_OUT) {
 
             ObjectAnimator e = alphaAnimatorOfView(mBottomToolbar);
-            e.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+
+            e.addListener(new Animator.AnimatorListener() {
                 @Override
-                public void onAnimationUpdate(ValueAnimator animation) {
+                public void onAnimationStart(Animator animator) {
+
+                }
+
+                @Override
+                public void onAnimationEnd(Animator animator) {
+
+                    ViewUtils.setViewAndChildrenEnabled(mBottomToolbar, !isCurrentFullscreen());
+//                    mBottomToolbar.setEnabled(false);
+
+                    //                    if (mBottomToolbar.getAlpha() == 0) {
+//                        mBottomToolbar.setEnabled(false);
+//                    } else {
+//                        mBottomToolbar.setEnabled(true);
+//                    }
+                }
+
+                @Override
+                public void onAnimationCancel(Animator animator) {
+
+                }
+
+                @Override
+                public void onAnimationRepeat(Animator animator) {
 
                 }
             });
@@ -586,12 +610,12 @@ public class ImageActivity extends BaseAppCompatActivity implements ImageFragmen
         mFullscreenAnimatorSet.addListener(new Animator.AnimatorListener() {
             @Override
             public void onAnimationStart(Animator animation) {
-//                mBottomToolbar.setEnabled(false);
+                mBottomToolbar.setEnabled(false);
             }
 
             @Override
             public void onAnimationEnd(Animator animation) {
-//                mBottomToolbar.setEnabled(false);
+                mBottomToolbar.setEnabled(true);
             }
 
             @Override

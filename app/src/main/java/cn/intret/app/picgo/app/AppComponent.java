@@ -12,6 +12,8 @@ import com.orhanobut.logger.LogcatLogStrategy;
 import com.orhanobut.logger.Logger;
 import com.orhanobut.logger.PrettyFormatStrategy;
 
+import org.greenrobot.eventbus.EventBus;
+
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.util.List;
@@ -19,6 +21,7 @@ import java.util.List;
 import cn.intret.app.picgo.BuildConfig;
 import cn.intret.app.picgo.model.image.ImageModule;
 import cn.intret.app.picgo.model.user.UserModule;
+import cn.intret.app.picgo.ui.main.MainActivity;
 import cn.intret.app.picgo.utils.Watch;
 import io.reactivex.plugins.RxJavaPlugins;
 
@@ -120,6 +123,10 @@ public class AppComponent extends Application {
         try {
             // 主进程才加载核心业务, 消息推送进程不需要加载业务
             if (isMainProcess()) {
+
+                initLibraries();
+                watch.logGlanceMS(TAG, "init libraries");
+
                 CoreModule.getInstance().init(getApplicationContext());
 
                 watch.logGlanceMS(TAG, "init core module");
@@ -130,8 +137,7 @@ public class AppComponent extends Application {
 
                 watch.logGlanceMS(TAG, "init image module");
 
-                initLibraries();
-                watch.logGlanceMS(TAG, "init libraries");
+
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -141,6 +147,10 @@ public class AppComponent extends Application {
     }
 
     private void initLibraries() {
+
+        // EventBus
+        EventBus.builder().skipMethodVerificationFor(MainActivity.class)
+                .installDefaultEventBus();
 
         // Pretty Logger
         FormatStrategy formatStrategy = PrettyFormatStrategy.newBuilder()
