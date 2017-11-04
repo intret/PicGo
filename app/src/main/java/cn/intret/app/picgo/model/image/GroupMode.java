@@ -1,7 +1,7 @@
 package cn.intret.app.picgo.model.image;
 
 /**
- * Show mode for image list
+ * Image group mode for image list
  */
 
 public enum GroupMode {

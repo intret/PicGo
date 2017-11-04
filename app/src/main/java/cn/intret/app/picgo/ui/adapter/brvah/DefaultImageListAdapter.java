@@ -15,6 +15,7 @@ import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.chad.library.adapter.base.BaseViewHolder;
 
 import java.io.File;
+import java.util.Date;
 import java.util.List;
 
 import cn.intret.app.picgo.R;
@@ -35,6 +36,9 @@ public class DefaultImageListAdapter extends BaseImageAdapter<DefaultImageListAd
      */
 
     public static class Item implements BaseFileItem {
+        private Date mDate;
+        private long mFileSize;
+
         @Override
         public String toString() {
             return "Item{" + this.hashCode() +
@@ -89,6 +93,22 @@ public class DefaultImageListAdapter extends BaseImageAdapter<DefaultImageListAd
         @Override
         public int hashCode() {
             return mFile != null ? mFile.hashCode() : 0;
+        }
+
+        public void setDate(Date date) {
+            mDate = date;
+        }
+
+        public Date getDate() {
+            return mDate;
+        }
+
+        public void setFileSize(long fileSize) {
+            mFileSize = fileSize;
+        }
+
+        public long getFileSize() {
+            return mFileSize;
         }
     }
 
@@ -166,6 +186,9 @@ public class DefaultImageListAdapter extends BaseImageAdapter<DefaultImageListAd
         setDiffUtilCallback(new DefaultImageListDiffCallback());
     }
 
+    public void sortItems() {
+
+    }
 
 //    /*
 //     * Diff and update

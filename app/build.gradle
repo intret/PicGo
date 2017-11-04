@@ -1,30 +1,29 @@
 apply plugin: 'com.android.application'
-apply plugin: 'me.tatarka.retrolambda'
 apply from: './dependencies.gradle'
-
+// DSL 参考:
+// http://google.github.io/android-gradle-dsl/current/
+//https://developer.android.com/studio/write/java8-support.html
 repositories {
 
     jcenter()
     maven {
         url "https://jitpack.io"
     }
+    google()
 }
 
 android {
-    compileSdkVersion 25
-    buildToolsVersion "25.0.2"
+    compileSdkVersion 26
+    buildToolsVersion "26.0.2"
     defaultConfig {
         applicationId "cn.intret.app.picgo"
-        minSdkVersion 21
-        targetSdkVersion 25
+        minSdkVersion 22
+        targetSdkVersion 26
         versionCode 1
         versionName "1.0"
+
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-//        jackOptions {
-//            enabled true
-//        }
-        // Enabling multidex support.
-        multiDexEnabled true
+//        multiDexEnabled true
         compileOptions {
             sourceCompatibility JavaVersion.VERSION_1_8
             targetCompatibility JavaVersion.VERSION_1_8
@@ -37,30 +36,27 @@ android {
 
     buildTypes {
         debug {
-            applicationVariants.all { variant ->
 
-                if (variant.buildType.name.equals("release")
-                        && (variant.productFlavors[0].name.equals("beta")
-                        || variant.productFlavors[0].name.equals("production"))
-                        && variant.outputs[0].zipAlign) {
-
-                    changeApkName(variant, versionName, versionCode);
-                }
-            }
         }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    flavorDimensions "state"
     productFlavors {
         production {
+            dimension "state"
             versionName "1.0"
+            versionNameSuffix "-prod"
             versionCode 1 // todo get GIT code
         }
         beta {
+            dimension "state"
             applicationIdSuffix 'beta'
+
             versionName "1.0"
+            versionNameSuffix "-beta"
             versionCode 1 // todo get GIT code
         }
     }
@@ -68,75 +64,11 @@ android {
     sourceSets {
 
     }
-}
-
-def changeApkName(variant, versionName, versionCode) {
-    variant.outputs.each { output ->
-        def apk = output.outputFile
-        def apkName = apk.name;
-
-        // OLD:
-        //   app-beta-debug.apk
-        //   app-beta-unsigned-release.apk
-        // NEW:
-        //
-
-        def ver = appendRevision((String) versionName);
-
-
-        if (apkName.contains(project.name + "-beta-")) {
-            apkName = apkName.replace(project.name + "-beta-", "app-${versionName}.${versionCode}-beta-");
-        } else if (apkName.contains(project.name + "-production-")) {
-            apkName = apkName.replace(project.name + "-production-", "app-${versionName}.${versionCode}-");
-        } else if (apkName.contains(project.name + "-prerelease-")) {
-            apkName = apkName.replace(project.name + "-prerelease-", "app-${versionName}.${versionCode}-prerelease-");
-        } else {
-            apkName = apkName.replace(project.name, "app-${versionName}");
-        }
-
-        // remove build type suffix
-        apkName = apkName.replace("-${variant.buildType.name}.apk", ".apk");
-
-        //apkName = apkName.replace(".apk", "-${variant.buildType.name.toLowerCase()}.apk");
-
-        println "新的APK文件名称 : ${apkName} (<- ${apk.name})"
-        output.outputFile = new File(apk.parentFile, apkName);
-        if (output.zipAlign) {
-            output.zipAlign.outputFile = new File(apk.parentFile, apkName.replace("-unaligned", ""));
-        }
+    dexOptions {
     }
-}
-
-String java8 = getJavaVersion(8)
-String java7 = getJavaVersion(7)
-// https://github.com/evant/gradle-retrolambda
-retrolambda {
-    jdk java8
-    oldJdk java7
-    javaVersion JavaVersion.VERSION_1_7
-    defaultMethods false
-    incremental true
-}
-// for OSX
-import org.gradle.internal.os.OperatingSystem;
-
-String getJavaVersion(Integer v) {
-    // http://stackoverflow.com/questions/11235614/how-to-detect-the-current-os-from-gradle/11255194#11255194
-
-    if (OperatingSystem.current().isMacOsX()) {
-        def sout = new StringBuffer()
-        def proc = "/usr/libexec/java_home -v 1.$v".execute()
-        proc.consumeProcessOutput(sout, new StringBuffer())
-        proc.waitForOrKill(1000)
-        return sout.toString().replace("\n", "").replace("\r", "")
-    } else if (OperatingSystem.current().isWindows()) {
-        if (v == 8) {
-            return System.getenv("JAVA8_HOME")
-        } else if (v == 7) {
-            return System.getenv("JAVA7_HOME")
-        }
-    } else {
-        println("No implementation for this operating system.")
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 }
 
@@ -146,7 +78,7 @@ dependencies {
     compile 'com.android.support:appcompat-v7:' + versions.supportLib
     compile 'com.android.support:cardview-v7:' + versions.supportLib
     compile 'com.android.support:design:' + versions.supportLib
-    compile 'com.android.support:multidex:1.0.1'
+    compile 'com.android.support:multidex:1.0.2'
     compile 'com.android.support:mediarouter-v7:' + versions.supportLib
     compile 'com.android.support:recyclerview-v7:' + versions.supportLib
     compile 'com.android.support:support-v4:' + versions.supportLib
@@ -154,13 +86,13 @@ dependencies {
     compile 'com.github.githubwing:DragPhotoView:1.0.1'
     compile 'com.andkulikov:transitionseverywhere:1.7.4'
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
-    compile 'com.android.support:support-v4:25.3.1'
+    compile 'com.android.support:support-v4:' + versions.supportLib
     compile 'com.annimon:stream:1.1.8'
     compile 'com.davemorrissey.labs:subsampling-scale-image-view:3.6.0'
     compile 'com.f2prateek.rx.preferences2:rx-preferences:2.0.0-RC3'
     compile 'com.github.czy1121:badgebutton:1.1.0'
     compile 'com.allenliu.badgeview:library:1.1.1'
-    compile 'com.github.bumptech.glide:glide:4.0.0-RC1'
+    compile 'com.github.bumptech.glide:glide:4.1.1'
     compile 'com.github.chrisbanes:PhotoView:2.1.3'
     compile 'com.github.recruit-lifestyle:FloatingView:2.2.2'
     compile 'com.github.rubensousa:floatingtoolbar:1.5.1'
@@ -170,7 +102,7 @@ dependencies {
     compile 'com.jakewharton.rxbinding2:rxbinding-appcompat-v7:2.0.0'
     compile 'com.jakewharton.rxbinding2:rxbinding:2.0.0'
     compile 'com.jakewharton.rxrelay2:rxrelay:2.0.0'
-    compile 'com.jakewharton:butterknife:8.7.0'
+    compile 'com.jakewharton:butterknife:8.8.1'
     compile 'com.noveogroup.android:android-logger:1.3.5'
     compile 'com.orhanobut:logger:2.1.1'
     compile 'com.truizlop.sectionedrecyclerview:library:1.2.0'
@@ -186,7 +118,7 @@ dependencies {
     compile 'org.greenrobot:eventbus:3.0.0'
     compile 'pl.droidsonroids.gif:android-gif-drawable:1.2.8'
     compile 'q.rorbin:badgeview:1.1.2'
-//    compile 'com.mikepenz.thirdparty:stickyheadersrecyclerview:0.4.4-SNAPSHOT@aar'
+    //    compile 'com.mikepenz.thirdparty:stickyheadersrecyclerview:0.4.4-SNAPSHOT@aar'
     compile('com.mikepenz:fastadapter:2.6.3@aar') {
         transitive = false
     }
@@ -195,8 +127,8 @@ dependencies {
     }
     compile 'com.mikepenz:fastadapter-commons:2.6.3@aar'
     compile 'com.mikepenz:fastadapter-extensions:2.6.3@aar'
-    annotationProcessor 'com.jakewharton:butterknife-compiler:8.7.0'
-    annotationProcessor 'com.github.bumptech.glide:compiler:4.0.0-RC1'
+    annotationProcessor 'com.jakewharton:butterknife-compiler:8.8.1'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.1.1'
     compile('com.github.bumptech.glide:recyclerview-integration:4.0.0-RC1') {
         // Excludes the support library because it's already included by Glide.
         transitive = false
@@ -209,7 +141,6 @@ dependencies {
     }
     compile project(':sectioned-recyclerview')
     compile project(':brvah')
-
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
