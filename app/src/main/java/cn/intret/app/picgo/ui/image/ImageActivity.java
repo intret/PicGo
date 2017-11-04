@@ -568,7 +568,7 @@ public class ImageActivity extends BaseAppCompatActivity implements ImageFragmen
                 @Override
                 public void onAnimationEnd(Animator animator) {
 
-                    ViewUtils.setViewAndChildrenEnabled(mBottomToolbar, !isCurrentFullscreen());
+
 //                    mBottomToolbar.setEnabled(false);
 
                     //                    if (mBottomToolbar.getAlpha() == 0) {
@@ -610,12 +610,19 @@ public class ImageActivity extends BaseAppCompatActivity implements ImageFragmen
         mFullscreenAnimatorSet.addListener(new Animator.AnimatorListener() {
             @Override
             public void onAnimationStart(Animator animation) {
-                mBottomToolbar.setEnabled(false);
+                if (isCurrentFullscreen()) {
+                    mBottomToolbar.setVisibility(View.VISIBLE);
+                }
             }
 
             @Override
             public void onAnimationEnd(Animator animation) {
-                mBottomToolbar.setEnabled(true);
+                if (isCurrentFullscreen()) {
+                    mBottomToolbar.setVisibility(View.INVISIBLE);
+                } else {
+                    mBottomToolbar.setVisibility(View.VISIBLE);
+                }
+                ViewUtils.setViewAndChildrenEnabled(mBottomToolbar, !isCurrentFullscreen());
             }
 
             @Override
