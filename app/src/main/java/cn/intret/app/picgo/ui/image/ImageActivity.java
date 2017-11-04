@@ -3,7 +3,6 @@ package cn.intret.app.picgo.ui.image;
 import android.animation.Animator;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
-import android.animation.ValueAnimator;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -78,6 +77,7 @@ import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.utils.MediaUtils;
 import cn.intret.app.picgo.utils.PathUtils;
 import cn.intret.app.picgo.utils.RxUtils;
+import cn.intret.app.picgo.utils.ShareUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
 import cn.intret.app.picgo.utils.ViewUtils;
@@ -384,37 +384,17 @@ public class ImageActivity extends BaseAppCompatActivity implements ImageFragmen
     public void onClickShareButton(View view) {
 
         File currentFile = getShowingImageFile();
+
         Logger.d("share file : " + currentFile);
 
-//        final Intent shareIntent = new Intent(Intent.ACTION_SEND);
-//        shareIntent.setType("image/jpg");
-//        final File photoFile = new File(getFilesDir(), currentFile.getAbsolutePath());
-//        shareIntent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(photoFile));
-//        startActivity(Intent.createChooser(shareIntent, "Share image using"));
-
-//        ShareIntentBuilder.from(this)
-//                .ignoreSpecification()
-//
-//                .stream(Uri.parse("content://" + currentFile), "application/octet-stream" )
-//                .share(currentFile.getName());
-        {
-            if (PathUtils.isStaticImageFile(currentFile.getAbsolutePath())) {
-
-//                ContentValues image = getImageContent(currentFile, currentFile.getName(), this);
-//                Uri result = this.getContentResolver()
-//                        .insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, image);
-
-                // open share options
-//                openShareOptions("Share title", "share message", result, this);
-            }
+        if (PathUtils.isStaticImageFile(currentFile)) {
+            ShareUtils.shareImage(this, currentFile);
+//            ShareUtils.shareImages(this, ListUtils.objectToArrayList(Uri.fromFile(currentFile)));
+        } else if (PathUtils.isGifFile(currentFile)) {
+            ShareUtils.shareImage(this, currentFile);
+        } else {
+            ToastUtils.toastShort(this, R.string.cannot_share_file);
         }
-//        Intent shareIntent = new Intent();
-//        shareIntent.setAction(Intent.ACTION_SEND);
-//        shareIntent.putExtra(Intent.EXTRA_STREAM, uriToImage);
-//        shareIntent.setType("image/jpeg");
-//        startActivity(Intent.createChooser(shareIntent, getResources().getText(R.string.send_to)));
-
-        ToastUtils.toastShort(this, R.string.unimplemented);
     }
 
     public static ContentValues getImageContent(File parent, String imageName, AppCompatActivity activity) {

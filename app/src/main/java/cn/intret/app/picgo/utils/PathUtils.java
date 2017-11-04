@@ -44,6 +44,10 @@ public class PathUtils {
         return FilenameUtils.isExtension(StringUtils.lowerCase(filePath), EXIF_FILE_EXTENSIONS);
     }
 
+    public static boolean isStaticImageFile(File file) {
+        return file != null && isStaticImageFile(file.getAbsolutePath());
+    }
+
     public static boolean isStaticImageFile(String filePath) {
         return FilenameUtils.isExtension(StringUtils.lowerCase(filePath), STATIC_IMAGE_FILE_EXTENSIONS);
     }

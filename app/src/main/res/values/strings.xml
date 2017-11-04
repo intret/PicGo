@@ -139,5 +139,6 @@
     <string name="folder_list_empty_text">空空如也</string>
     <string name="next">下一步</string>
     <string name="wait_for_a_moment_previous_operation_is_going">请等待，长一个操作正在进行！</string>
+    <string name="cannot_share_file">不能分享文件</string>
 
 </resources>
