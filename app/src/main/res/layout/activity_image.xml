@@ -182,6 +182,7 @@
                     android:layout_column="0"
                     android:layout_columnSpan="2"
                     android:layout_row="0"
+
                     android:gravity="right"
                     android:text="@string/file_path_"
                     />
@@ -195,6 +196,7 @@
                     android:layout_columnSpan="3"
                     android:layout_row="0"
                     android:maxLines="3"
+                    android:singleLine="false"
                     tools:text="@string/tools_file_path"/>
 
                 <!-- 分辨率 -->
