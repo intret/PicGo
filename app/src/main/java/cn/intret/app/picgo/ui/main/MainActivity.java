@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.drawable.ColorDrawable;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.support.annotation.MainThread;
@@ -61,7 +60,6 @@ import com.jakewharton.rxrelay2.BehaviorRelay;
 import com.orhanobut.logger.Logger;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -136,6 +134,7 @@ import cn.intret.app.picgo.utils.MapAction1;
 import cn.intret.app.picgo.utils.PathUtils;
 import cn.intret.app.picgo.utils.PopupUtils;
 import cn.intret.app.picgo.utils.RxUtils;
+import cn.intret.app.picgo.utils.ShareUtils;
 import cn.intret.app.picgo.utils.SystemUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
 import cn.intret.app.picgo.utils.Watch;
@@ -817,17 +816,16 @@ public class MainActivity extends BaseAppCompatActivity {
         ImageModule.getInstance()
                 .loadFolderList(fromCacheFirst)
                 .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
-                .doOnNext(newAdapter -> {
-                    if (newAdapter.getSections().isEmpty()) {
-                        mFolderListEmptyView.setVisibility(View.VISIBLE);
-                        mFolderListEmptyView.setText(R.string.folder_list_empty_text);
-                    } else {
-                        mFolderListEmptyView.setVisibility(View.GONE);
-                    }
-                })
                 .compose(workAndShow())
-                .subscribe((newAdapter1) -> {
-                            adapter.diffUpdate(newAdapter1);
+                .subscribe((newAdapter) -> {
+
+                            if (newAdapter.getSections().isEmpty()) {
+                                mFolderListEmptyView.setVisibility(View.VISIBLE);
+                                mFolderListEmptyView.setText(R.string.folder_list_empty_text);
+                            } else {
+                                mFolderListEmptyView.setVisibility(View.GONE);
+                            }
+                            adapter.diffUpdate(newAdapter);
                             // TODO 参数化 refreshing
                             mFolderListRefresh.setRefreshing(false);
                         },
@@ -3482,12 +3480,8 @@ public class MainActivity extends BaseAppCompatActivity {
             String absolutePath = mediaFile.getAbsolutePath();
             if (PathUtils.isVideoFile(absolutePath)) {
                 // Play video
-                Uri videoUri = Uri.parse(absolutePath);
-                Intent intent = new Intent(Intent.ACTION_VIEW, videoUri);
-                intent.setDataAndType(videoUri, "video/" + FilenameUtils.getExtension(absolutePath));
-                startActivity(intent);
+                ShareUtils.playVideo(this, absolutePath);
             } else {
-
                 startImageViewerActivity(mediaFile.getParentFile(), imageView, position, mediaFile);
             }
         } catch (Exception e) {
