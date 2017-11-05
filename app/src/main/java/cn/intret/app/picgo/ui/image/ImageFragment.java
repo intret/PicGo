@@ -48,6 +48,7 @@ import cn.intret.app.picgo.ui.event.CancelExitTransitionMessage;
 import cn.intret.app.picgo.ui.event.ImageAnimationStartMessage;
 import cn.intret.app.picgo.ui.event.TapImageMessage;
 import cn.intret.app.picgo.utils.PathUtils;
+import cn.intret.app.picgo.utils.ShareUtils;
 import cn.intret.app.picgo.utils.ToastUtils;
 import cn.intret.app.picgo.view.DismissFrameLayout;
 import pl.droidsonroids.gif.GifDrawable;
@@ -92,6 +93,7 @@ public class ImageFragment extends Fragment {
     public PhotoView getImage() {
         return mImage;
     }
+
     public ImageView getFileType() {
         return mFileType;
     }
@@ -246,7 +248,8 @@ public class ImageFragment extends Fragment {
             mFileType.setVisibility(View.VISIBLE);
             mFileType.setImageResource(R.drawable.ic_play_circle_filled_white_48px);
             mFileType.setOnClickListener(v -> {
-                ToastUtils.toastShort(this.getContext(), R.string.unimplemented);
+                playVideoFile(mFilePath);
+
             });
         } else if (PathUtils.isGifFile(mFilePath)) {
 //            mGifImageView.setImageURI();
@@ -263,6 +266,11 @@ public class ImageFragment extends Fragment {
         return rootView;
     }
 
+    private void playVideoFile(String filePath) {
+        ShareUtils.playVideo(getActivity(), filePath);
+//        ToastUtils.toastShort(this.getContext(), R.string.unimplemented);
+    }
+
     private void showImageDialog() {
         new MaterialDialog.Builder(this.getContext())
                 .items(R.array.image_viewer_context_menu_items)
@@ -272,13 +280,13 @@ public class ImageFragment extends Fragment {
                             ImageModule.getInstance()
                                     .removeFile(new File(mFilePath))
                                     .subscribe(aBoolean -> {
-                                            if (aBoolean) {
+                                                if (aBoolean) {
+
+                                                }
+                                            }, throwable -> {
 
                                             }
-                                        }, throwable -> {
-
-                                        }
-                            );
+                                    );
                             break;
                         case 1: // rename
                             break;
@@ -412,7 +420,7 @@ public class ImageFragment extends Fragment {
      * @param filePath               File path of image to present
      * @param imageTransitionName
      * @param fileTypeTransitionName
-     *@param performEnterTransition  @return A new instance of fragment ImageFragment.
+     * @param performEnterTransition @return A new instance of fragment ImageFragment.
      */
     public static ImageFragment newInstance(String filePath, String imageTransitionName, String fileTypeTransitionName, boolean performEnterTransition) {
         ImageFragment fragment = new ImageFragment();
@@ -470,6 +478,7 @@ public class ImageFragment extends Fragment {
     class OnPreDrawObserver implements ViewTreeObserver.OnPreDrawListener {
 
         View mView;
+
         OnPreDrawObserver(View view) {
             mView = view;
         }

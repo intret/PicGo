@@ -11,11 +11,11 @@ public class ToastUtils {
     public final static String TAG = ToastUtils.class.getSimpleName();
 
     public static void toastShort(Context context, String message) {
-        toast(context, message, Toast.LENGTH_SHORT);
+        toast(context, Toast.LENGTH_SHORT, message);
     }
 
     public static void toastShort(Context context, @StringRes int resId) {
-        toast(context, resId, Toast.LENGTH_SHORT);
+        toast(context, Toast.LENGTH_SHORT, resId );
     }
 
     public static void toastShort(Context context, @StringRes int resId, Object... formatArgs) {
@@ -23,7 +23,7 @@ public class ToastUtils {
     }
 
     public static void toastLong(Context context, String message) {
-        toast(context, message, Toast.LENGTH_LONG);
+        toast(context, Toast.LENGTH_LONG, message);
     }
 
     public static void toastLong(Context context, @StringRes int resId, Object... formatArgs) {
@@ -31,10 +31,10 @@ public class ToastUtils {
     }
 
     public static void toastLong(Context context, @StringRes int resId) {
-        toast(context, resId, Toast.LENGTH_LONG);
+        toast(context, Toast.LENGTH_LONG, resId );
     }
 
-    private static void toast(Context context, String message, int duration) {
+    private static void toast(Context context, int duration, String message) {
         if (context == null) {
             Log.w(TAG, "toastLong: context is null : " + message);
             return;
@@ -44,7 +44,7 @@ public class ToastUtils {
         t.show();
     }
 
-    public static void toast(Context context, int duration, @StringRes int resId, Object... formatArgs) {
+    private static void toast(Context context, int duration, @StringRes int resId, Object... formatArgs) {
         if (context == null) {
             Log.w(TAG, "toastLong: context is null : " + resId);
             return;
@@ -55,7 +55,7 @@ public class ToastUtils {
         t.show();
     }
 
-    public static void toast(Context context, int duration, @StringRes int resId) {
+    private static void toast(Context context, int duration, @StringRes int resId) {
         if (context == null) {
             Log.w(TAG, "toastLong: context is null : " + resId);
             return;

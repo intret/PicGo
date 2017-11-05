@@ -393,7 +393,8 @@ public class ImageActivity extends BaseAppCompatActivity implements ImageFragmen
         } else if (PathUtils.isGifFile(currentFile)) {
             ShareUtils.shareImage(this, currentFile);
         } else {
-            ToastUtils.toastShort(this, R.string.cannot_share_file);
+            ShareUtils.playVideo(this, currentFile.getAbsolutePath());
+//            ToastUtils.toastShort(this, R.string.cannot_share_file);
         }
     }
 
