@@ -375,14 +375,10 @@ public class ImageModule extends BaseModule {
                     FolderModel folderModel = new FolderModel();
 
                     // SDCard/DCIM directory images
-                    File dcimDir = SystemUtils.getDCIMDir();
-                    List<File> dcimSubFolders = getSortedSubDirectories(dcimDir);
-                    addContainerFolder(folderModel, dcimDir, dcimSubFolders);
+                    addDirectoryFolder(folderModel, SystemUtils.getDCIMDir());
 
                     // SDCard/Picture directory images
-                    File picturesDir = SystemUtils.getPicturesDir();
-                    List<File> pictureSubFolders = getSortedSubDirectories(picturesDir);
-                    addContainerFolder(folderModel, picturesDir, pictureSubFolders);
+                    addDirectoryFolder(folderModel, SystemUtils.getPicturesDir());
 
                     watch.logGlanceMS(TAG, "Load folder list");
                     FolderModel cloneModel;
@@ -399,6 +395,11 @@ public class ImageModule extends BaseModule {
                     emitter.onNext(cloneModel);
                     emitter.onComplete();
                 });
+    }
+
+    private void addDirectoryFolder(FolderModel folderModel, File picturesDir) throws FileNotFoundException {
+        List<File> pictureSubFolders = getSortedSubDirectories(picturesDir);
+        addContainerFolder(folderModel, picturesDir, pictureSubFolders);
     }
 
     public Observable<File> loadRandomImage() {
@@ -453,18 +454,25 @@ public class ImageModule extends BaseModule {
         FolderModel.ContainerFolder containerFolder = new FolderModel.ContainerFolder();
         List<ImageFolder> subFolders = new LinkedList<>();
 
-        for (int i = 0, s = mediaFolders.size(); i < s; i++) {
-            File folder = mediaFolders.get(i);
+        if (!mShowHiddenFile) {
+            mHiddenFolders.readConsume(fileList -> {
 
-            if (!mShowHiddenFile) {
-                mHiddenFolders.readConsume(fileList -> {
-                    if (!fileList.contains(folder)) {
+                final HashSet<File> destDirFileNameHashSet = new HashSet<File>(mHiddenFolders.getObject());
+
+                for (int i = 0, s = mediaFolders.size(); i < s; i++) {
+                    File folder = mediaFolders.get(i);
+
+                     if(!destDirFileNameHashSet.contains(folder)) {
                         subFolders.add(createImageFolder(folder));
-                    } else {
-//                        Log.d(TAG, "addContainerFolder: ignore folder [" + folder + "]");
-                    }
-                });
-            } else {
+                     } else {
+                        //Log.d(TAG, "addContainerFolder: ignore folder [" + folder + "]");
+                     }
+                }
+            });
+        } else {
+
+            for (int i = 0, s = mediaFolders.size(); i < s; i++) {
+                File folder = mediaFolders.get(i);
                 subFolders.add(createImageFolder(folder));
             }
         }
@@ -478,15 +486,15 @@ public class ImageModule extends BaseModule {
 
     private ImageFolder createImageFolder(File folder) {
         // todo merge with createThumbnailList
-        File[] imageFiles = folder.listFiles(PathUtils.MEDIA_FILENAME_FILTER);
 
+        File[] imageFiles = folder.listFiles(PathUtils.MEDIA_FILENAME_FILTER);
         return new ImageFolder()
                 .setFile(folder)
                 .setName(folder.getName())
                 .setCount(imageFiles == null ? 0 : imageFiles.length)
                 .setThumbList(createThumbnailList(imageFiles, DEFAULT_THUMBNAIL_COUNT))
-                .setMediaFiles(imageFiles);
-
+                .setMediaFiles(imageFiles)
+        ;
     }
 
 
@@ -736,23 +744,35 @@ public class ImageModule extends BaseModule {
                 });
     }
 
+    /**
+     * TODO 增加排序方式参数
+     *
+     * @param directory
+     * @return
+     * @throws FileNotFoundException
+     */
     public List<File> getSortedSubDirectories(File directory) throws FileNotFoundException {
         if (directory == null) {
             throw new FileNotFoundException("Cannot found camera directory.");
         }
 
+        Watch watch = Watch.now();
         File[] allFiles = directory.listFiles((file) -> file.isDirectory() && !file.getName().startsWith("."));
         if (allFiles == null) {
             return new LinkedList<>();
         }
+        watch.logGlanceMS(TAG, "list directory ");
 
         List<File> allFileList = new LinkedList<>(Arrays.asList(allFiles));
         allFileList.add(directory);
 
+
         // Long.compare(file2.lastModified(), file.lastModified())
-        return Stream.of(allFileList)
+        List<File> files = Stream.of(allFileList)
                 .sorted(FOLDER_LIST_NAME_ASC_COMPARATOR)
                 .toList();
+        watch.logGlanceMS(TAG, "Sort list");
+        return files;
     }
 
     /*
@@ -821,7 +841,7 @@ public class ImageModule extends BaseModule {
                                                 .sorted(getMediaFileComparator(param))
                                                 .toList();
 
-                                        Log.d(TAG, "loadMediaFileList: return cached media file list" );
+                                        Log.d(TAG, "loadMediaFileList: return cached media file list");
                                         e.onNext(mediaFiles);
                                         e.onComplete();
                                         watch.logGlanceMS(TAG, "load media files from cache and sort it");
@@ -1377,6 +1397,7 @@ public class ImageModule extends BaseModule {
 
     /**
      * 检测源文件列表在别的目录中是否出现
+     *
      * @param sourceFiles
      * @return
      */
@@ -1561,6 +1582,7 @@ public class ImageModule extends BaseModule {
 
     /**
      * 任何解决后的图片，它所在的目录都会被扫描一次。
+     *
      * @param compareItems
      * @return
      * @

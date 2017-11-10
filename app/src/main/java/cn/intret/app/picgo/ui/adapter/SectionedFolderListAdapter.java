@@ -1860,20 +1860,25 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         }
 
         public void setBadgeSelectedCount(int selectedCount) {
-            if (selectedCount > 0) {
-                badge.setBadgeBackgroundColor(itemView.getContext().getResources().getColor(R.color.colorAccent));
-                badge.setBadgeNumber(selectedCount);
-            } else {
-                badge.hide(false);
+            if (badge != null) {
+                if (selectedCount > 0) {
+                    badge.setBadgeBackgroundColor(itemView.getContext().getResources().getColor(R.color.colorAccent));
+                    badge.setBadgeNumber(selectedCount);
+                } else {
+                    badge.hide(false);
+                }
+
             }
         }
 
         void setBadgeConflictCount(int conflictCount) {
-            if (conflictCount > 0) {
-                badge.setBadgeBackgroundColor(itemView.getContext().getResources().getColor(R.color.warning));
-                badge.setBadgeText(itemView.getContext().getResources().getString(R.string.conflict_d, conflictCount));
-            } else {
-                badge.hide(false);
+            if (badge != null) {
+                if (conflictCount > 0) {
+                    badge.setBadgeBackgroundColor(itemView.getContext().getResources().getColor(R.color.warning));
+                    badge.setBadgeText(itemView.getContext().getResources().getString(R.string.conflict_d, conflictCount));
+                } else {
+                    badge.hide(false);
+                }
             }
         }
 

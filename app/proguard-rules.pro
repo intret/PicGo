@@ -26,6 +26,7 @@
 
 #
 # Glide : https://github.com/bumptech/glide
+#         http://bumptech.github.io/glide/doc/configuration.html
 #
 
 -keep public class * implements com.bumptech.glide.module.GlideModule
@@ -34,6 +35,7 @@
   **[] $VALUES;
   public *;
 }
+-keep class com.bumptech.glide.GeneratedAppGlideModuleImpl
 
 # for DexGuard only
 -keepresourcexmlelements manifest/application/meta-data@value=GlideModule

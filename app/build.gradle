@@ -1,5 +1,7 @@
 apply plugin: 'com.android.application'
 apply from: './dependencies.gradle'
+
+// [Android Studio 3.0 新功能解析和旧项目适配 - 掘金](https://juejin.im/post/59f9caf6518825603a37f179)
 // DSL 参考:
 // http://google.github.io/android-gradle-dsl/current/
 //https://developer.android.com/studio/write/java8-support.html

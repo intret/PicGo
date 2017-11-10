@@ -153,7 +153,7 @@ public class MainActivity extends BaseAppCompatActivity {
     private static final String TAG = "MainActivity";
     // 文件夹列表缩略图数量
     public static final int MOVE_FILE_DIALOG_THUMBNAIL_COUNT = 3;
-    public static final int DEFAULT_IMAGE_LIST_COLUMN_COUNT = 3;
+    public static final int DEFAULT_IMAGE_LIST_COLUMN_COUNT = 2;
 
     /* --------------------------------------------------
      * 图片列表
@@ -1603,9 +1603,9 @@ public class MainActivity extends BaseAppCompatActivity {
         // List item click event
         RecyclerItemTouchListener itemTouchListener = new RecyclerItemTouchListener(this,
                 mFolderList,
-                this::onFolderListItemClick,
+                this::onClickFolderListItem,
                 (view, position) -> {
-                    //onFolderListItemLongClick(view, position);
+                    //onLongClickFolderListItem(view, position);
                 }
         );
         mFolderList.addOnItemTouchListener(itemTouchListener);
@@ -1683,8 +1683,7 @@ public class MainActivity extends BaseAppCompatActivity {
                 .show();
     }
 
-    private void onFolderListItemLongClick(View view, int position) {
-
+    private void onLongClickFolderListItem(View view, int position) {
 
         new SectionedListItemClickDispatcher<>(mFolderAdapter)
                 .dispatch(position, new SectionedListItemDispatchListener() {
@@ -2142,7 +2141,7 @@ public class MainActivity extends BaseAppCompatActivity {
         dlg.show();
     }
 
-    private void onFolderListItemClick(View view, int position) {
+    private void onClickFolderListItem(View view, int position) {
         new SectionedListItemClickDispatcher<>(mFolderAdapter)
                 .dispatchItemClick(position, (adapter, coord) -> {
                     SectionedFolderListAdapter.Item item = adapter.getItem(coord);
@@ -2150,7 +2149,7 @@ public class MainActivity extends BaseAppCompatActivity {
                     File selectedItem = adapter.getSelectedItem();
                     File moveFileSourceDir = adapter.getMoveFileSourceDir();
                     if (Objects.equals(item.getFile(), moveFileSourceDir)) {
-                        Log.w(TAG, "onFolderListItemClick: 点击的项是移动操作的源目录，不显示冲突对话框");
+                        Log.w(TAG, "onClickFolderListItem: 点击的项是移动操作的源目录，不显示冲突对话框");
                         return;
                     }
 
