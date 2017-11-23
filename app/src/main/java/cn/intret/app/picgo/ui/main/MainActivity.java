@@ -153,7 +153,7 @@ public class MainActivity extends BaseAppCompatActivity {
     private static final String TAG = "MainActivity";
     // 文件夹列表缩略图数量
     public static final int MOVE_FILE_DIALOG_THUMBNAIL_COUNT = 3;
-    public static final int DEFAULT_IMAGE_LIST_COLUMN_COUNT = 2;
+    public static final int DEFAULT_IMAGE_LIST_COLUMN_COUNT = 3;
 
     /* --------------------------------------------------
      * 图片列表
