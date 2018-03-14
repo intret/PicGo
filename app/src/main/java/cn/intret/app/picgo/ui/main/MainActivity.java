@@ -56,6 +56,8 @@ import com.annimon.stream.function.BiConsumer;
 import com.annimon.stream.function.Function;
 import com.annimon.stream.function.Supplier;
 import com.f2prateek.rx.preferences2.Preference;
+import com.hwangjr.rxbus.annotation.Tag;
+import com.hwangjr.rxbus.thread.EventThread;
 import com.jakewharton.rxrelay2.BehaviorRelay;
 import com.orhanobut.logger.Logger;
 
@@ -82,22 +84,12 @@ import butterknife.ButterKnife;
 import butterknife.OnClick;
 import butterknife.OnLongClick;
 import cn.intret.app.picgo.R;
-import cn.intret.app.picgo.model.image.CompareItem;
-import cn.intret.app.picgo.model.image.CompareItemResolveResult;
-import cn.intret.app.picgo.model.event.DeleteFolderMessage;
-import cn.intret.app.picgo.model.image.FolderModel;
-import cn.intret.app.picgo.model.image.GroupMode;
-import cn.intret.app.picgo.model.image.ImageFolder;
-import cn.intret.app.picgo.model.image.ImageGroup;
-import cn.intret.app.picgo.model.image.ImageModule;
-import cn.intret.app.picgo.model.image.LoadMediaFileParam;
-import cn.intret.app.picgo.model.image.MediaFile;
+import cn.intret.app.picgo.app.Constants;
+import cn.intret.app.picgo.app.RxBus;
+import cn.intret.app.picgo.app.RxBusImage;
 import cn.intret.app.picgo.model.NotEmptyException;
-import cn.intret.app.picgo.model.user.SortOrder;
-import cn.intret.app.picgo.model.user.SortWay;
-import cn.intret.app.picgo.model.user.UserModule;
-import cn.intret.app.picgo.model.user.ViewMode;
 import cn.intret.app.picgo.model.event.ConflictResolveResultMessage;
+import cn.intret.app.picgo.model.event.DeleteFolderMessage;
 import cn.intret.app.picgo.model.event.FolderModelChangeMessage;
 import cn.intret.app.picgo.model.event.RecentOpenFolderListChangeMessage;
 import cn.intret.app.picgo.model.event.RemoveFileMessage;
@@ -105,6 +97,20 @@ import cn.intret.app.picgo.model.event.RenameDirectoryMessage;
 import cn.intret.app.picgo.model.event.RescanFolderListMessage;
 import cn.intret.app.picgo.model.event.RescanFolderThumbnailListMessage;
 import cn.intret.app.picgo.model.event.RescanImageDirectoryMessage;
+import cn.intret.app.picgo.model.image.CompareItem;
+import cn.intret.app.picgo.model.image.CompareItemResolveResult;
+import cn.intret.app.picgo.model.image.FolderModel;
+import cn.intret.app.picgo.model.image.GroupMode;
+import cn.intret.app.picgo.model.image.ImageFolder;
+import cn.intret.app.picgo.model.image.ImageGroup;
+import cn.intret.app.picgo.model.image.ImageModule;
+import cn.intret.app.picgo.model.image.LoadMediaFileParam;
+import cn.intret.app.picgo.model.image.MediaFile;
+import cn.intret.app.picgo.model.user.SortOrder;
+import cn.intret.app.picgo.model.user.SortWay;
+import cn.intret.app.picgo.model.user.UserInitialPreferences;
+import cn.intret.app.picgo.model.user.UserModule;
+import cn.intret.app.picgo.model.user.ViewMode;
 import cn.intret.app.picgo.ui.adapter.FlatFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedFolderListAdapter;
@@ -148,7 +154,7 @@ import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 
-public class MainActivity extends BaseAppCompatActivity {
+public class MainActivity extends BaseAppCompatActivity implements MainContractor.View {
 
     private static final String TAG = "MainActivity";
     // 文件夹列表缩略图数量
@@ -261,6 +267,7 @@ public class MainActivity extends BaseAppCompatActivity {
     private Disposable mUpdateImageConflictFileDisposable;
     private Disposable mUpdateDetailImageListConflictDisposable;
 
+    MainPresenter mPresenter;
 
     // 拨号盘状态
     private boolean mEnableT9Filter = false;
@@ -293,28 +300,43 @@ public class MainActivity extends BaseAppCompatActivity {
 
         Watch watch = Watch.now();
         setContentView(R.layout.activity_main);
-
         watch.logGlanceMS(TAG, "setContentView");
 
-        ButterKnife.bind(this);
 
+        ButterKnife.bind(this);
         watch.logGlanceMS(TAG, "ButterKnife");
 
+        initStatusBar();
         initToolBar();
         initDrawer();
         watch.logGlanceMS(TAG, "init toolbar & drawer");
 
+
         initImageList();
         watch.logGlanceMS(TAG, "init image list");
 
-        initTransition();
 
+        initTransition();
         watch.logGlanceMS(TAG, "");
+
+
         EventBus.getDefault().register(this);
         watch.logGlanceMS(TAG, "registerEventBus");
 
+
         watch.logTotalMS(TAG, "onCreate");
         //showFloatingWindow();
+
+
+        // TODO: use dagger2 to inject it
+        mPresenter = new MainPresenter<>(this);
+        RxBusImage.get().register(this);
+        RxBus.get().register(this);
+    }
+
+    private void initStatusBar() {
+//        StatusBarUtil.setColor(this, getResources().getColor(R.color.black), 0);
+//        StatusBarUtil.setTranslucent(this, 0);
     }
 
     private void initImageList() {
@@ -398,6 +420,8 @@ public class MainActivity extends BaseAppCompatActivity {
     protected void onDestroy() {
 //        stopService(mStartFloatingIntent);
         EventBus.getDefault().unregister(this);
+        RxBus.get().unregister(this);
+        RxBusImage.get().unregister(this);
         super.onDestroy();
     }
 
@@ -678,9 +702,7 @@ public class MainActivity extends BaseAppCompatActivity {
     public void onEvent(RescanFolderThumbnailListMessage message) {
         Log.d(TAG, "onEvent() called with: message = [" + message + "]");
 
-
         mFolderAdapter.updateThumbList(message.getDirectory(), message.getThumbnails());
-
     }
 
     @Subscribe(threadMode = ThreadMode.ASYNC)
@@ -1376,7 +1398,7 @@ public class MainActivity extends BaseAppCompatActivity {
         ImageModule.getInstance()
                 .loadFolderList(true, t9NumberInput)
                 .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
-                .compose(RxUtils.workAndShow())
+                .compose(RxUtils.applySchedulers())
                 .subscribe(newAdapter -> {
 
                     RecyclerView.Adapter adapter = mFolderList.getAdapter();
@@ -1492,6 +1514,7 @@ public class MainActivity extends BaseAppCompatActivity {
         }
     }
 
+    @Deprecated
     private void loadFolderList() {
         if (mIsFolderListLoaded) {
             Log.w(TAG, "loadFolderList: TODO 检查文件列表变化");
@@ -3557,34 +3580,13 @@ public class MainActivity extends BaseAppCompatActivity {
             // 根据用户界面偏好设置来显示图片列表
             Logger.d("first load image List ");
 
-            UserModule.getInstance().loadInitialPreference(true)
-                    .compose(workAndShow())
-                    .doOnNext(userInitialPreferences -> Log.d(TAG, "Loaded user initial preference : " + userInitialPreferences))
-                    .subscribe(userInitialPreferences -> {
-                        mRecentHistory = Stream.of(userInitialPreferences.getRecentRecords()).map(r -> new File(r.getFilePath())).toList();
-
-                        mViewState.setViewMode(userInitialPreferences.getViewMode());
-                        mViewState.setSortWay(userInitialPreferences.getSortWay());
-                        mViewState.setSortOrder(userInitialPreferences.getSortOrder());
-
-                        if (ListUtils.isEmpty(mRecentHistory)) {
-                            Logger.w("reloadImageList: 最近访问目录列表为空，加载相机相册");
-                            showImageList(SystemUtils.getCameraDir(), true, false, true);
-                        } else {
-                            File recentDir = ListUtils.firstOf(mRecentHistory);
-
-                            Logger.d("reloadImageList: 显示最近显示目录 : " + recentDir);
-                            showImageList(recentDir, true, false, true);
-                        }
-                    }, throwable -> {
-                        ToastUtils.toastShort(this, R.string.failed_to_load_preference);
-                    });
+            mPresenter.loadInitialPreference();
 
 //            Observable.combineLatest(
 //                    UserDataService.getInstance().loadRecentOpenFolders(true),
 //                    viewModeObservable,
 //                    Pair::new)
-//                    .compose(workAndShow())
+//                    .compose(applySchedulers())
 //                    .subscribe(listViewModePair -> {
 //                                List<RecentRecord> recentRecords = listViewModePair.first;
 //
@@ -3599,7 +3601,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
 //            UserDataService.getInstance()
 //                    .loadRecentOpenFolders(true)
-//                    .compose(workAndShow())
+//                    .compose(applySchedulers())
 //                    .subscribe(recentRecords -> {
 //
 //                        mRecentHistory = Stream.of(recentRecords).map(r -> new File(r.getFilePath())).toList();
@@ -3840,7 +3842,7 @@ public class MainActivity extends BaseAppCompatActivity {
 
         /*ImageService.getInstance()
                 .loadFolderList(true)
-                .compose(workAndShow())
+                .compose(applySchedulers())
                 .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
                 .subscribe(adapter -> {
                     showMoveFileDialog(selectedFiles, adapter);
@@ -3966,5 +3968,29 @@ public class MainActivity extends BaseAppCompatActivity {
         recyclerView.addOnItemTouchListener(new RecyclerItemTouchListener(this, recyclerView, clickListener, longClickListener));
 
         return root;
+    }
+
+    @Override
+    public void onLoadedUserInitialPreferences(UserInitialPreferences userInitialPreferences) {
+        mRecentHistory = Stream.of(userInitialPreferences.getRecentRecords()).map(r -> new File(r.getFilePath())).toList();
+
+        mViewState.setViewMode(userInitialPreferences.getViewMode());
+        mViewState.setSortWay(userInitialPreferences.getSortWay());
+        mViewState.setSortOrder(userInitialPreferences.getSortOrder());
+
+        if (ListUtils.isEmpty(mRecentHistory)) {
+            Logger.w("reloadImageList: 最近访问目录列表为空，加载相机相册");
+            showImageList(SystemUtils.getCameraDir(), true, false, true);
+        } else {
+            File recentDir = ListUtils.firstOf(mRecentHistory);
+
+            Logger.d("reloadImageList: 显示最近显示目录 : " + recentDir);
+            showImageList(recentDir, true, false, true);
+        }
+    }
+
+    @Override
+    public void onErrorMessage(int msg) {
+        ToastUtils.toastShort(this, msg);
     }
 }

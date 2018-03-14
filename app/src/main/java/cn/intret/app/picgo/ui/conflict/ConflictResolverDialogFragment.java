@@ -200,7 +200,7 @@ public class ConflictResolverDialogFragment extends BottomSheetDialogFragment {
 
                     ImageModule.getInstance()
                             .resolveFileNameConflict(compareItems)
-                            .compose(RxUtils.workAndShow())
+                            .compose(RxUtils.applySchedulers())
                             .doOnNext(this::onCompareItemResult)
                             // 合并为列表
                             .collectInto(resolveResults, List::add)
@@ -268,7 +268,7 @@ public class ConflictResolverDialogFragment extends BottomSheetDialogFragment {
 
                 // 加载图片文件信息
                 .loadImageFilesInfoMap(allFiles)
-                .compose(RxUtils.singleWorkAndShow())
+                .compose(RxUtils.applySingleSchedulers())
 
                 // 构造 Adapter
                 .map(allFileInfoMap -> Stream.of(mConflictFiles)

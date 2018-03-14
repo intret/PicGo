@@ -5,6 +5,7 @@ import android.content.Context;
 import org.greenrobot.eventbus.EventBus;
 
 import cn.intret.app.picgo.app.CoreModule;
+import cn.intret.app.picgo.app.RxBus;
 
 /**
  * Base service

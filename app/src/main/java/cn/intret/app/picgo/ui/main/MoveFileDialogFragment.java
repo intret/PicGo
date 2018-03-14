@@ -315,15 +315,15 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
     }
 
     private void initListener(View contentView) {
-        ViewGroup keypadContainer = (ViewGroup) contentView.findViewById(R.id.t9_keypad_container);
+        ViewGroup keypadContainer = contentView.findViewById(R.id.t9_keypad_container);
         keypadContainer.setOnFocusChangeListener((v, hasFocus) -> {
             if (!hasFocus) {
                 keypadContainer.setVisibility(View.INVISIBLE);
             }
         });
-        T9KeypadView keypadView = ((T9KeypadView) contentView.findViewById(R.id.t9_keypad));
+        T9KeypadView keypadView = contentView.findViewById(R.id.t9_keypad);
 
-        ImageView btnKeypadSwitch = (ImageView) contentView.findViewById(R.id.keyboard_switch);
+        ImageView btnKeypadSwitch = contentView.findViewById(R.id.keyboard_switch);
         View keypadSwitchLayout = contentView.findViewById(R.id.keyboard_switch_layout);
 
         keypadSwitchLayout.setOnClickListener(v -> switchKeyboard(keypadContainer, btnKeypadSwitch));
@@ -351,7 +351,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
     }
 
     private void initHeader(View contentView) {
-        Button btnMoveFile = (Button) contentView.findViewById(R.id.btn_positive);
+        Button btnMoveFile = contentView.findViewById(R.id.btn_positive);
 
         btnMoveFile.setText(getResources().getString(R.string.move_file_d_, mSelectedFiles.size()));
         btnMoveFile.setOnClickListener(v -> {
@@ -359,7 +359,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
             dismiss();
         });
 
-        Button btnCreateFolder = (Button) contentView.findViewById(R.id.btn_create_folder);
+        Button btnCreateFolder = contentView.findViewById(R.id.btn_create_folder);
         btnCreateFolder.setOnClickListener(v -> {
             //createFolder(contentView);
         });
@@ -506,10 +506,10 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
     boolean mShouldApplyT9Filter = false;
 
     private void initDialPad(View contentView) {
-        ViewGroup keypadContainer = (ViewGroup) contentView.findViewById(R.id.t9_keypad_container);
-        T9KeypadView t9KeypadView = (T9KeypadView) contentView.findViewById(R.id.t9_keypad);
-        RecyclerView folderList = (RecyclerView) contentView.findViewById(R.id.folder_list);
-        ViewGroup folderListContainer = (ViewGroup) contentView.findViewById(R.id.folder_list_container);
+        ViewGroup keypadContainer = contentView.findViewById(R.id.t9_keypad_container);
+        T9KeypadView t9KeypadView = contentView.findViewById(R.id.t9_keypad);
+        RecyclerView folderList = contentView.findViewById(R.id.folder_list);
+        ViewGroup folderListContainer = contentView.findViewById(R.id.folder_list_container);
 
 
         t9KeypadView
@@ -543,7 +543,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
                 .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
                 .map(this::setAdapterMoveFileSourceDir)
                 .map(this::addNewFolderItem)
-                .compose(RxUtils.workAndShow())
+                .compose(RxUtils.applySchedulers())
                 .subscribe(newAdapter -> {
 
                     if (folderList != null) {
@@ -612,7 +612,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
     }
 
     private void initFolderList(final View contentView) {
-        RecyclerView folderList = (RecyclerView) contentView.findViewById(R.id.folder_list);
+        RecyclerView folderList = contentView.findViewById(R.id.folder_list);
 
         mFolderList = folderList;
 
@@ -671,7 +671,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
 
             ImageModule.getInstance()
                     .detectFileConflict(item.getFile(), mSelectedFiles)
-                    .compose(RxUtils.workAndShow())
+                    .compose(RxUtils.applySchedulers())
                     .subscribe(moveFileDetectResult -> {
                         int colorOk = MoveFileDialogFragment.this.getResources().getColor(android.R.color.holo_green_dark);
                         int colorConflict = MoveFileDialogFragment.this.getResources().getColor(android.R.color.holo_red_dark);
@@ -679,7 +679,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
                         if (moveFileDetectResult != null) {
                             List<Pair<File, File>> conflictFiles = moveFileDetectResult.getConflictFiles();
                             List<Pair<File, File>> canMoveFiles = moveFileDetectResult.getCanMoveFiles();
-                            Button btnMoveFile = (Button) contentView.findViewById(R.id.btn_positive);
+                            Button btnMoveFile = contentView.findViewById(R.id.btn_positive);
 
                             if (conflictFiles.isEmpty()) {
                                 setDetectingResultText(contentView, getString(R.string.can_move_all_files, canMoveFiles.size()), colorOk);
@@ -715,7 +715,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
         ViewUtils.setViewVisibility(contentView, R.id.detect_info_layout, View.INVISIBLE);
 
         // detect result
-        TextView detectResult = (TextView) contentView.findViewById(R.id.detect_result_info);
+        TextView detectResult = contentView.findViewById(R.id.detect_result_info);
         detectResult.setVisibility(View.VISIBLE);
         detectResult.setTextColor(textColor);
         detectResult.setText(resultText);
@@ -788,7 +788,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
                         File destDir = ((SectionedFolderListAdapter.Item) tag).getFile();
                         ImageService.getInstance()
                                 .moveFilesToDirectory(destDir, Stream.of(mSelectedFiles).map(File::new).toList())
-                                .compose(RxUtils.workAndShow())
+                                .compose(RxUtils.applySchedulers())
                                 .subscribe(count -> {
                                     if (count == mSelectedFiles.size()) {
                                         ToastUtils.toastLong(getActivity(),
@@ -821,7 +821,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
             File destDir = item.getFile();
             ImageModule.getInstance()
                     .moveFilesToDirectory(destDir, mSelectedFiles, true, false)
-                    .compose(RxUtils.workAndShow())
+                    .compose(RxUtils.applySchedulers())
                     .subscribe(moveFileResult -> {
                         storePosition(contentView);
 
@@ -870,7 +870,7 @@ public class MoveFileDialogFragment extends BottomSheetDialogFragment implements
     }
 
     private void storePosition(View contentView) {
-        RecyclerView rv = (RecyclerView) contentView.findViewById(R.id.folder_list);
+        RecyclerView rv = contentView.findViewById(R.id.folder_list);
         RecyclerView.LayoutManager lm = rv.getLayoutManager();
         if (lm instanceof LinearLayoutManager) {
             int firstVisibleItemPosition = ((LinearLayoutManager) lm).findFirstVisibleItemPosition();

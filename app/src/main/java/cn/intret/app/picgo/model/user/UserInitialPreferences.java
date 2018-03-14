@@ -3,7 +3,7 @@ package cn.intret.app.picgo.model.user;
 import java.util.List;
 
 /**
- * 用户初始偏好设置，包含 UI 决定如何进行首次显示的偏好设置。
+ * 用户初始偏好设置，包含 UI 布局偏好设置，包括关闭程序之前。
  */
 public class UserInitialPreferences {
     List<RecentRecord> mRecentRecords;

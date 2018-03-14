@@ -43,6 +43,8 @@ import java.util.Random;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import cn.intret.app.picgo.app.Constants;
+import cn.intret.app.picgo.app.RxBusImage;
 import cn.intret.app.picgo.model.BaseModule;
 import cn.intret.app.picgo.model.NotEmptyException;
 import cn.intret.app.picgo.model.user.SortOrder;
@@ -511,10 +513,12 @@ public class ImageModule extends BaseModule {
                 mFolderModelRWLock.writeLock().lock();
                 if (updateFileModelThumbnailList(mFolderModel, dir, thumbnailList)) {
                     Log.d(TAG, "已经更新目录缩略图列表：" + dir);
-                    mBus.post(new RescanFolderThumbnailListMessage()
+                    RescanFolderThumbnailListMessage event = new RescanFolderThumbnailListMessage()
                             .setDirectory(dir)
-                            .setThumbnails(thumbnailList)
-                    );
+                            .setThumbnails(thumbnailList);
+                    mBus.post(event);
+
+//                    RxBusImage.get().post(Constants.ImageEvents.RESCAN_FOLDER_THUMBNAIL_LIST);
                 }
             } finally {
                 mFolderModelRWLock.writeLock().unlock();

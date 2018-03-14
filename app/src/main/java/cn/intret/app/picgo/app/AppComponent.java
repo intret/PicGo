@@ -34,6 +34,7 @@ public class AppComponent extends Application {
     static AppComponent instance;
 
     public final static String TAG = "AppComponent";
+    private static Context mAppContext;
 
     public AppComponent() {
         instance = this;
@@ -115,10 +116,16 @@ public class AppComponent extends Application {
         return TextUtils.equals(getProcessName(), "cn.onestone.onestone:pushservice");
     }
 
+    public static Context getAppContext() {
+        return mAppContext;
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
         //LeakCanary.install(this);
+
+        mAppContext = getApplicationContext();
 
         Watch watch = Watch.now();
         try {
