@@ -8,7 +8,7 @@ ext {
 }
 
 android {
-    compileSdkVersion 25
+    compileSdkVersion 27
     buildToolsVersion '26.0.3'
     lintOptions {
         abortOnError false
@@ -29,11 +29,11 @@ android {
 }
 
 dependencies {
-    compile 'com.android.support:recyclerview-v7:' + versions.supportLib
-    compile 'com.android.support:support-v4:' + versions.supportLib
+    compile 'com.android.support:recyclerview-v7:27.1.0'
+    compile 'com.android.support:support-v4:27.1.0'
     testCompile 'com.google.truth:truth:' + versions.truth
     testCompile 'junit:junit:' + versions.junit
 }
 
 //apply from: 'https://raw.githubusercontent.com/afollestad/aidanfollestad.com/master/android-lib-release.gradle'
-apply from: './android-lib-release.gradle'
+//apply from: './android-lib-release.gradle'

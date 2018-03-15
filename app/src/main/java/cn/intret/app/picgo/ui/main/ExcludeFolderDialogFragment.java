@@ -6,6 +6,7 @@ import android.graphics.Canvas;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.BottomSheetDialogFragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
@@ -29,12 +30,14 @@ import com.annimon.stream.Stream;
 import com.chad.library.adapter.base.BaseViewHolder;
 import com.chad.library.adapter.base.callback.ItemDragAndSwipeCallback;
 import com.chad.library.adapter.base.listener.OnItemSwipeListener;
-import com.mikepenz.fastadapter.FastAdapter;
 import com.mikepenz.fastadapter.IAdapter;
 import com.mikepenz.fastadapter.IExpandable;
 import com.mikepenz.fastadapter.IItem;
 import com.mikepenz.fastadapter.ISelectionListener;
 import com.mikepenz.fastadapter.commons.adapters.FastItemAdapter;
+import com.mikepenz.fastadapter.expandable.ExpandableExtension;
+import com.mikepenz.fastadapter.listeners.OnClickListener;
+import com.mikepenz.fastadapter.select.SelectExtension;
 import com.mikepenz.fastadapter_extensions.RangeSelectorHelper;
 
 import org.greenrobot.eventbus.EventBus;
@@ -59,8 +62,6 @@ import cn.intret.app.picgo.ui.adapter.brvah.FolderListAdapterUtils;
 import cn.intret.app.picgo.ui.adapter.SectionedFolderListAdapter;
 import cn.intret.app.picgo.ui.adapter.SectionedListItemClickDispatcher;
 import cn.intret.app.picgo.ui.adapter.SectionedListItemDispatchListener;
-import cn.intret.app.picgo.ui.adapter.fast.FolderItem;
-import cn.intret.app.picgo.ui.adapter.fast.SectionItem;
 import cn.intret.app.picgo.ui.event.MoveFileResultMessage;
 import cn.intret.app.picgo.utils.ListUtils;
 import cn.intret.app.picgo.utils.RxUtils;
@@ -104,6 +105,8 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
 
     private ItemTouchHelper mItemTouchHelper;
     private ItemDragAndSwipeCallback mItemDragAndSwipeCallback;
+    private ExpandableExtension expandableExtension;
+    private SelectExtension<IItem> mIItemSelectExtension;
 
     public ExcludeFolderDialogFragment() {
         // Required empty public constructor
@@ -374,164 +377,6 @@ public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment imple
         initDialPad(contentView);
 
         //initList(contentView, savedInstanceState);
-    }
-
-    private void initList(View contentView, Bundle savedInstanceState) {
-        //create our FastAdapter
-
-        //we init our ActionModeHelper
-
-
-        //create our adapters
-//        final StickyHeaderAdapter stickyHeaderAdapter = new StickyHeaderAdapter();
-        mItemAdapter = new FastItemAdapter<>();
-
-        //configure our mFastAdapter
-        //as we provide id's for the items we want the hasStableIds enabled to speed up things
-        mItemAdapter.withSelectable(true);
-        mItemAdapter.withMultiSelect(true);
-        mItemAdapter.withSelectOnLongClick(true);
-        mItemAdapter.withPositionBasedStateManagement(false);
-        mItemAdapter.withOnPreClickListener(new FastAdapter.OnClickListener<IItem>() {
-            @Override
-            public boolean onClick(View v, IAdapter adapter, IItem item, int position) {
-                //we handle the default onClick behavior for the actionMode. This will return null if it didn't do anything and you can handle a normal onClick
-//                Boolean res = mActionModeHelper.onClick(item);
-//                return res != null ? res : false;
-                return true;
-            }
-        });
-
-        mItemAdapter.withOnClickListener(new FastAdapter.OnClickListener<IItem>() {
-            @Override
-            public boolean onClick(View view, IAdapter<IItem> iAdapter, IItem item, int i) {
-                mItemAdapter.select(i);
-                return true;
-            }
-        });
-
-        mItemAdapter.withSelectionListener(new ISelectionListener() {
-            @Override
-            public void onSelectionChanged(IItem item, boolean selected) {
-                if (item instanceof FolderItem) {
-
-
-//                    IItem headerItem = ((FolderItem) item).getParent();
-//                    if (headerItem != null) {
-//                        int pos = mItemAdapter.getAdapterPosition(headerItem);
-//                        // Important: notify the header directly, not via the notifyadapterItemChanged!
-//                        // we just want to update the view and we are sure, nothing else has to be done
-//                        Bundle payload = new Bundle();
-//
-//                        mItemAdapter.notifyItemChanged(pos);
-//                    }
-                }
-            }
-        });
-        mItemAdapter.withOnPreLongClickListener((v, adapter, item, position) -> {
-            //we do not want expandable items to be selected
-            if (item instanceof IExpandable) {
-                if (((IExpandable) item).getSubItems() != null) {
-                    return true;
-                }
-            }
-
-            return false;
-        });
-
-        // this will take care of selecting range of items via long press on the first and afterwards on the last item
-        mRangeSelectorHelper = new RangeSelectorHelper(mItemAdapter)
-                .withSavedInstanceState(savedInstanceState);
-
-//        // setup the drag select listener and add it to the RecyclerView
-//        mDragSelectTouchListener = new DragSelectTouchListener()
-//                .withSelectListener(new DragSelectTouchListener.OnDragSelectListener()
-//                {
-//                    @Override
-//                    public void onSelectChange(int start, int end, boolean isSelected)
-//                    {
-//                        mRangeSelectorHelper.selectRange(start, end, isSelected, true);
-//                        // we handled the long press, so we reset the range selector
-//                        mRangeSelectorHelper.reset();
-//                    }
-//                });
-//        rv.addOnItemTouchListener(mDragSelectTouchListener);
-
-        //get our recyclerView and do basic setup
-        RecyclerView folderList = contentView.findViewById(R.id.folder_list);
-        folderList.setLayoutManager(new LinearLayoutManager(this.getActivity()));
-        folderList.setItemAnimator(new DefaultItemAnimator());
-        folderList.setAdapter(mItemAdapter);
-
-
-//        final StickyRecyclerHeadersDecoration decoration = new StickyRecyclerHeadersDecoration(stickyHeaderAdapter);
-//        folderList.addItemDecoration(decoration);
-
-
-        //so the headers are aware of changes
-//        stickyHeaderAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
-//            @Override
-//            public void onChanged() {
-//                decoration.invalidateHeaders();
-//            }
-//        });
-
-        //init cache with the added items, this is useful for shorter lists with many many different view types (at least 4 or more
-        //new RecyclerViewCacheUtil().withCacheSize(2).apply(folderList, items);
-
-        //set the back arrow in the toolbar
-//        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-//        getSupportActionBar().setHomeButtonEnabled(false);
-
-        //we define the items
-        showHiddenFolders();
-
-        //restore selections (this has to be done after the items were added
-//        mFastAdapter.withSavedInstanceState(savedInstanceState);
-    }
-
-    private void showHiddenFolders() {
-
-        ImageModule.getInstance()
-                .loadHiddenFileListModel()
-                .map(this::getIItems)
-                .compose(workAndShow())
-                .subscribe(items -> {
-                    mItemAdapter.add(items);
-                    mItemAdapter.expand();
-                });
-    }
-
-    @NonNull
-    private List<IItem> getIItems(FolderModel folder) {
-        List<IItem> items = new ArrayList<>();
-        for (int i = 0; i < folder.getContainerFolders().size(); i++) {
-            FolderModel.ContainerFolder containerFolder = folder.getContainerFolders().get(i);
-
-            SectionItem<SectionItem, FolderItem> section = new SectionItem<>();
-
-            section.setHeader(containerFolder.getName());
-            section.setFile(containerFolder.getFile());
-
-            List<FolderItem> subSubItems = new LinkedList<>();
-            List<ImageFolder> folders = containerFolder.getFolders();
-            for (int i1 = 0; i1 < folders.size(); i1++) {
-                ImageFolder imageFolder = folders.get(i1);
-
-                FolderItem<? extends IItem> subItem = new FolderItem<>();
-                subItem.setName(imageFolder.getName());
-                subItem.setFile(imageFolder.getFile());
-                subItem.setCount(imageFolder.getCount());
-                subItem.setThumbList(imageFolder.getThumbList());
-
-                subSubItems.add(subItem);
-            }
-
-            section.withSubItems(subSubItems);
-
-            items.add(section);
-        }
-        return items;
     }
 
     private void initHeader(View contentView) {
