@@ -1,6 +1,6 @@
-#Introduction
+# About [![Build Status](https://travis-ci.org/intret/PicGo.svg?branch=master)](https://travis-ci.org/intret/PicGo)
 
-PicGo, a personal android image viewer app with these features:
+**PicGo**, an android image viewer app with features:
 
 - **T9 Keypad** : quick T9-Keypad image folder name filtering of image folders from directories `<ExternalStorage>/DCIM` and `<ExternalStorage>/Pictures`.
 - **Drag select** : Press image in image list to entering selection mode, drag to select more images.
