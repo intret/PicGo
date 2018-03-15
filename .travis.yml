@@ -78,12 +78,13 @@ before_deploy:
   #- echo "change tag name to $APP_FILE_NAME"
   #- git tag "$APP_FILE_NAME"
   # git tag "$(date +'%Y%m%d%H%M%S')-$(git log --format=%h -1)"
-
 deploy:
   provider: releases
+  api_key:
+    secure: TtFEMB2vx/4PVCZbXsdLkCyGoUNk+8fBpaxQrC0paS+UPq3jRcEc/NNP77VxtvFLv4qzJl39bmY7DcmJbcNLwYvfZ1YzGRa/BRHFKEjurSefbA6cOFqD04+UjDy3R8PzXKo9VGXscDyGlAL2u07aG4mlYPcSXqYpa9DCPWJU724xqZ7AzijB8x7SNiIzdvx3P6b9xq67yYKZan+ayhl30Ur0CKcPp9MucaXUw24z7d1Tt8ti7sG/9qq245WOcVgcQkCmVNNQITnJDnrB4qZrb5GAZFLwOJblAuS7vmSX0ofOCnvzNwDN2DtDDyR1JCpuxuSV9SBlU395P/8+I6aIoNutuFxcvgZKYqNa3rBguhKT9jpghq6cCQPDLP6fZrPQRrezKsrFX3Wq58dbhLb7gYrzOputVMtHGg2kGTCAJf5kBC4XZOwkogbcoLZJKWYnzJ8ahs2WUZdQO7azxyw0j409tj4fAOpuJVySEBFh46kZm8D73Xcx7kBjDj23xjv502ZkliPmwl06JACgRwd/HgQuPZojcMByccqAz1oeaoiawTffqIMFHMhGpbsS2FTsZnNB1qzDoqCSnYMnODu479DhUbPwkwO4s+rpbGRQC1Cqj1GQFJf6jwVCIMQFgbgTeVnGSa7k1O9jY8G4u+5EibZAVhZPTJYHEhP4ioSqbPg=
+  file: app/build/outputs/ci-travis-apk/*.apk
   prerelease: true
   file_glob: "true"
-  file: "app/build/outputs/ci-travis-apk/*.apk"
   skip_cleanup: true
   on:
     tags: true
