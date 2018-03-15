@@ -2,12 +2,13 @@
 # build apk and then copy .apk to specified directory for travis's uploading to Github Releases.
 # --------------------------------------------------------------------------------------------------
 
+cd ${0%/*}
 
 # 1 Build 'beta' flavor of project
 # 2 copy output .apk to 'app/build/outputs/ci-outputs/apk'
 
-
 # the .apk files will be copied to app/build/outputs/ci-travis
+
 chmod +x ./ci.sh
 ./ci.sh --build --flavor "production" --build-type "debug" --collect-apk --collect-apk-dir "ci-travis-apk"
 #./ci.sh --collect-apk
