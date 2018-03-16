@@ -71,16 +71,18 @@ android {
     productFlavors {
         production {
             dimension "state"
-            versionName "1.0"
+            versionName "0.1.0"
             versionNameSuffix ""
             versionCode 1 // todo get GIT code
         }
-        beta {
+        develop {
             dimension "state"
-            applicationIdSuffix 'beta'
+            // change application id make it possible to install two versions
+            // (production and developing version) of app on the same device
+            applicationIdSuffix '.dev'
 
-            versionName "1.0"
-            versionNameSuffix ".BETA"
+            versionName "0.1.0"
+            versionNameSuffix "-dev"
             versionCode 1 // todo get GIT code
         }
     }
