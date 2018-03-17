@@ -1,4 +1,4 @@
-package cn.intret.app.picgo.ui.main
+package cn.intret.app.picgo.ui.main.move
 
 import android.app.Dialog
 import android.content.Context
@@ -46,9 +46,7 @@ import com.afollestad.sectionedrecyclerview.SectionedViewHolder
 import com.annimon.stream.Stream
 import com.jakewharton.rxbinding2.widget.RxTextView
 import io.reactivex.Observable
-import io.reactivex.ObservableTransformer
 import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.schedulers.Schedulers
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode

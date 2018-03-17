@@ -1,4 +1,4 @@
-package cn.intret.app.picgo.ui.main;
+package cn.intret.app.picgo.ui.main.exclude;
 
 import android.app.Dialog;
 import android.content.Context;
@@ -6,11 +6,9 @@ import android.graphics.Canvas;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.design.widget.BottomSheetDialogFragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -30,13 +28,9 @@ import com.annimon.stream.Stream;
 import com.chad.library.adapter.base.BaseViewHolder;
 import com.chad.library.adapter.base.callback.ItemDragAndSwipeCallback;
 import com.chad.library.adapter.base.listener.OnItemSwipeListener;
-import com.mikepenz.fastadapter.IAdapter;
-import com.mikepenz.fastadapter.IExpandable;
 import com.mikepenz.fastadapter.IItem;
-import com.mikepenz.fastadapter.ISelectionListener;
 import com.mikepenz.fastadapter.commons.adapters.FastItemAdapter;
 import com.mikepenz.fastadapter.expandable.ExpandableExtension;
-import com.mikepenz.fastadapter.listeners.OnClickListener;
 import com.mikepenz.fastadapter.select.SelectExtension;
 import com.mikepenz.fastadapter_extensions.RangeSelectorHelper;
 
@@ -52,8 +46,6 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
 import cn.intret.app.picgo.app.CoreModule;
-import cn.intret.app.picgo.model.image.FolderModel;
-import cn.intret.app.picgo.model.image.ImageFolder;
 import cn.intret.app.picgo.model.image.ImageModule;
 import cn.intret.app.picgo.model.user.UserModule;
 import cn.intret.app.picgo.ui.adapter.brvah.ExpandableFolderAdapter;
@@ -76,7 +68,7 @@ import io.reactivex.schedulers.Schedulers;
 
 
 /**
- * Move selected file ( Fragment argument specified ) to user selected target folder.
+ * Move selected files ( Fragment argument specified ) to user selected target folder.
  */
 public class ExcludeFolderDialogFragment extends BottomSheetDialogFragment implements T9KeypadView.OnT9KeypadInteractionHandler {
 

@@ -126,6 +126,8 @@ import cn.intret.app.picgo.ui.event.MoveFileResultMessage;
 import cn.intret.app.picgo.ui.floating.FloatWindowService;
 import cn.intret.app.picgo.ui.image.DragPhotoActivity;
 import cn.intret.app.picgo.ui.image.ImageActivity;
+import cn.intret.app.picgo.ui.main.exclude.ExcludeFolderDialogFragment;
+import cn.intret.app.picgo.ui.main.move.MoveFileDialogFragment;
 import cn.intret.app.picgo.ui.pref.SettingActivity;
 import cn.intret.app.picgo.utils.Action0;
 import cn.intret.app.picgo.utils.DateTimeUtils;

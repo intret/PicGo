@@ -1,4 +1,4 @@
-package cn.intret.app.picgo.ui.main;
+package cn.intret.app.picgo.ui.main.move;
 
 import android.arch.lifecycle.LifecycleOwner;
 
