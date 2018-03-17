@@ -109,7 +109,7 @@ public class AppComponent extends Application {
         String baseAppId = "cn.intret.app.picgo";
         String processName = getProcessName();
         return TextUtils.equals(processName, baseAppId)
-                || TextUtils.equals(processName, baseAppId + "." + BuildConfig.FLAVOR);
+                || TextUtils.equals(processName, BuildConfig.APPLICATION_ID);
     }
 
     boolean isPushProcess() {
@@ -144,8 +144,8 @@ public class AppComponent extends Application {
                 ImageModule.getInstance();
 
                 watch.logGlanceMS(TAG, "init image module");
-
-
+            } else {
+                Log.w(TAG, "onCreate: not a main process");
             }
         } catch (Exception e) {
             e.printStackTrace();

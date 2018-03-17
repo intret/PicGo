@@ -7,7 +7,8 @@
     android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:showIn="@layout/activity_main">
+    tools:showIn="@layout/activity_main"
+    >
 
     <!--内容-->
     <android.support.design.widget.CoordinatorLayout
@@ -114,7 +115,6 @@
                 />
 
             <!--选中文件操作工具栏-->
-
             <android.support.v7.widget.Toolbar
                 android:id="@+id/floatingToolbar"
                 android:layout_width="0dp"
@@ -133,6 +133,11 @@
             <include
                 android:id="@+id/image_tool_bar"
                 android:visibility="gone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
                 layout="@layout/image_toolbar"/>
         </android.support.constraint.ConstraintLayout>
 

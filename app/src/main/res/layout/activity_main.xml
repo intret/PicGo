@@ -11,7 +11,7 @@
     tools:context="cn.intret.app.picgo.ui.main.MainActivity"
     >
 
-    <!--工具栏-->
+    <!--顶部工具栏-->
     <android.support.v7.widget.Toolbar
         android:id="@+id/my_toolbar"
         android:layout_width="0dp"

@@ -808,7 +808,7 @@ public class ImageModule extends BaseModule {
      * 加载多媒体文件（图片、视频）列表，按照参数 {@code param} 指定的排序方式返回列表。
      *
      * @param directory
-     * @param param     指定加载参数：是否有限从缓存加载，是否加载媒体信息，排序
+     * @param param     指定加载参数：是否优先从缓存加载，是否加载媒体文件信息，指定排序方式
      * @return
      */
     public Observable<List<MediaFile>> loadMediaFileList(File directory, LoadMediaFileParam param) {
