@@ -3675,7 +3675,7 @@ public class MainActivity extends BaseAppCompatActivity implements MainContract.
     }
 
     private void showMoveFileFragmentDialog(ArrayList<String> selectedFiles) {
-        MoveFileDialogFragment fragment = MoveFileDialogFragment.newInstance(selectedFiles);
+        MoveFileDialogFragment fragment = MoveFileDialogFragment.Companion.newInstance(selectedFiles);
         fragment.show(getSupportFragmentManager(), "move file dialog");
     }
 

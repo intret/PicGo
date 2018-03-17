@@ -1,12 +1,26 @@
-ext.versions = [
-        minSdk            : 14,
-        compileSdk        : 25,
-        buildTools        : '26.0.2',
-        publishVersion    : '0.5.0',
-        publishVersionCode: 16,
-        gradlePlugin      : '2.3.3',
-        spotlessPlugin    : '3.4.0',
-        supportLib        : '26.1.0',
-        truth             : '0.31',
-        junit             : '4.12'
-]
+ext {
+    versions = [
+            minSdk            : 14,
+            compileSdk        : 25,
+            buildTools        : '26.0.2',
+            publishVersion    : '0.5.0',
+            publishVersionCode: 16,
+            gradlePlugin      : '2.3.3',
+            spotlessPlugin    : '3.4.0',
+            supportLib        : '26.1.0',
+            truth             : '0.31',
+            junit             : '4.12'
+    ]
+
+    android = [
+            compileSdkVersion: 23,
+            buildToolsVersion: "23.0.2",
+            minSdkVersion    : 14,
+            targetSdkVersion : 22,
+    ]
+
+    dependencies = [
+            appcompatV7: 'com.android.support:appcompat-v7:23.2.1',
+            design     : 'com.android.support:design:23.2.1'
+    ]
+}
