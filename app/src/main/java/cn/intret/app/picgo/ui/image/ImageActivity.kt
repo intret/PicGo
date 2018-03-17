@@ -52,9 +52,7 @@ import com.orhanobut.logger.Logger
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import jp.wasabeef.blurry.Blurry
-import kotlinx.android.synthetic.main.activity_drag_photo.*
 import kotlinx.android.synthetic.main.activity_image.*
-import kotlinx.android.synthetic.main.activity_image.view.*
 import kotterknife.bindView
 import org.apache.commons.io.FilenameUtils
 import org.apache.commons.lang3.time.DateFormatUtils
@@ -228,9 +226,9 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
                     //names.add(fileTypeTransitionName);
 
                     sharedElements.clear()
-                    val image = fragment.image
+                    val image = fragment.mImage
                     if (image != null) {
-                        sharedElements[transitionName] = fragment.image
+                        sharedElements[transitionName] = fragment.mImage
                     } else {
                         var iv: View? = null
                         val root = fragment.view
@@ -277,8 +275,8 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
                     val transitionName = TransitionUtils.generateTransitionName(item.getFile()!!.absolutePath)
                     val fileTypeTransitionName = TransitionUtils.generateTransitionName(TransitionUtils.TRANSITION_PREFIX_FILETYPE, item.getFile()!!.absolutePath)
 
-                    sharedElements[transitionName] = (mPagerAdapter!!.getItem(currentItem) as ImageFragment).image
-                    sharedElements[fileTypeTransitionName] = (mPagerAdapter!!.getItem(currentItem) as ImageFragment).fileType
+                    sharedElements[transitionName] = (mPagerAdapter!!.getItem(currentItem) as ImageFragment).mImage
+                    sharedElements[fileTypeTransitionName] = (mPagerAdapter!!.getItem(currentItem) as ImageFragment).mFileType
                 }
                 Log.d(TAG, "imageView enter after onMapSharedElements() called with: names = [$names], sharedElements = [$sharedElements]")
                 super.onMapSharedElements(names, sharedElements)
