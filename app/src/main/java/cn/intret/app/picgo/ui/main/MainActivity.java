@@ -3492,7 +3492,7 @@ public class MainActivity extends BaseAppCompatActivity implements MainContract.
         }
 
         // Construct an Intent as normal
-        Intent intent = ImageActivity.newIntentViewFileList(this, directory.getAbsolutePath(),
+        Intent intent = ImageActivity.Companion.newIntentViewFileList(this, directory.getAbsolutePath(),
                 position, mViewState.getSortOrder(), mViewState.getSortWay());
 
         // BEGIN_INCLUDE(start_activity)
