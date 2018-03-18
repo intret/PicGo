@@ -30,7 +30,7 @@ class MoveFilePresenter<V>(var mView: V)
                         { throwable: Throwable -> mView.onLoadFolderModelFailed() })
     }
 
-    override fun detectFileExistence(sourceFiles: List<File>) {
+    override fun detectFileExistence(sourceFiles: List<File>?) {
         ImageModule.getInstance()
                 .detectFileExistence(sourceFiles)
                 .compose<DetectFileExistenceResult>(RxUtils.applySchedulers<DetectFileExistenceResult>())

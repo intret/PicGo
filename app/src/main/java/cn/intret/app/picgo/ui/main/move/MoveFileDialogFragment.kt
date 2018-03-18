@@ -20,7 +20,6 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
-import butterknife.BindView
 import butterknife.ButterKnife
 import cn.intret.app.picgo.R
 import cn.intret.app.picgo.app.CoreModule
@@ -47,6 +46,7 @@ import com.annimon.stream.Stream
 import com.jakewharton.rxbinding2.widget.RxTextView
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
+import kotterknife.bindView
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
@@ -63,56 +63,41 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
         MoveFileContracts.View,
         T9KeypadView.OnT9KeypadInteractionHandler {
 
-    private var mSelectedFiles: List<File> = ArrayList<File>()
+    internal val mFolderList: RecyclerView by bindView(R.id.folder_list)
 
-    private var mListener: OnFragmentInteractionListener? = null
+    internal val mDesc: TextView by bindView(R.id.desc)
+    internal val mT9KeypadView: T9KeypadView by bindView(R.id.t9_keypad)
+    internal val mKeyboardSwitchLayout: View by bindView(R.id.keyboard_switch_layout)
+    internal val mKeyboardSwitchIv: ImageView by bindView(R.id.keyboard_switch)
 
-    @BindView(R.id.folder_list)
-    internal var mFolderList: RecyclerView? = null
-    @BindView(R.id.desc)
-    internal var mDesc: TextView? = null
 
-    @BindView(R.id.t9_keypad)
-    internal var mT9KeypadView: T9KeypadView? = null
-
-    @BindView(R.id.keyboard_switch_layout)
-    internal var mKeyboardSwitchLayout: View? = null
-    @BindView(R.id.keyboard_switch)
-    internal var mKeyboardSwitchIv: ImageView? = null
     private var mListAdapter: SectionedFolderListAdapter? = null
     private val mEnableDetectSelectedFolder = false
+    private var mShouldApplyT9Filter = false
+
+    private var mSelectedFiles: List<File>? = ArrayList<File>()
+    private var mListener: OnFragmentInteractionListener? = null
+
+
     private var mDialogInputObservable: Observable<CharSequence>? = null
-
-    internal var mDialogViews = DialogViews()
-
-    internal var mShouldApplyT9Filter = false
 
     internal lateinit var mPresenter: MoveFileContracts.Presenter
     internal var mCreateDialog = false
-
-
-    internal inner class DialogViews {
-        @BindView(R.id.folder_list)
-        var mFolderList: RecyclerView? = null
-        @BindView(R.id.desc)
-        var mDesc: TextView? = null
-
-        @BindView(R.id.t9_keypad)
-        var mT9KeypadView: T9KeypadView? = null
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         if (arguments != null) {
             val files = arguments!!.getStringArrayList(ARG_SELECTED_FILES)
+            mSelectedFiles = LinkedList<File>()
             if (files == null) {
-                mSelectedFiles = LinkedList()
+               // mSelectedFiles = LinkedList<File>()
             } else {
-                mSelectedFiles = files.map { File(it) }.toList()
+                var list = files.map { File(it) }.toList()
+                var defaultIfNull = org.apache.commons.collections4.ListUtils.defaultIfNull(list, LinkedList<File>())
+                //mSelectedFiles = defaultIfNull
             }
         }
-
         mPresenter = MoveFilePresenter(this)
 
         EventBus.getDefault().register(this)
@@ -122,8 +107,13 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
                               savedInstanceState: Bundle?): View? {
 
         Log.d(TAG, "onCreateView() called with: inflater = [$inflater], container = [$container], savedInstanceState = [$savedInstanceState]")
+        return LayoutInflater.from(activity).inflate(R.layout.fragment_move_file_dialog, container, false)
+    }
 
-        return createContentView(container)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        initContentView(view)
     }
 
     override fun onStart() {
@@ -152,7 +142,7 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
         mListAdapter = adapter
         mListAdapter!!.isShowHeaderOptionButton = true
 
-        mFolderList!!.adapter = mListAdapter
+        mFolderList.adapter = mListAdapter
         //        mListAdapter.setOnItemClickListener(new SectionedFolderListAdapter.OnItemClickListener() {
         //            @Override
         //            public void onSectionHeaderClick(SectionedFolderListAdapter.Section section, int sectionIndex, int adapterPosition) {
@@ -179,17 +169,19 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
         val visibleItemPosition = UserModule.getInstance()
                 .moveFileDialogFirstVisibleItemPosition
         if (visibleItemPosition != RecyclerView.NO_POSITION) {
-            mFolderList!!.scrollToPosition(visibleItemPosition)
+            mFolderList.scrollToPosition(visibleItemPosition)
         }
 
         // 文件冲突检测
-        mPresenter.detectFileExistence(mSelectedFiles)
+        //mPresenter.detectFileExistence(mSelectedFiles)
     }
 
     private fun setAdapterMoveFileSourceDir(adapter: SectionedFolderListAdapter): SectionedFolderListAdapter {
+
         if (!ListUtils.isEmpty(mSelectedFiles)) {
-            adapter.moveFileSourceDir = mSelectedFiles[0].parentFile
+            adapter.moveFileSourceDir = mSelectedFiles?.get(0)?.parentFile
         }
+
         return adapter
     }
 
@@ -257,7 +249,7 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
 
     private fun createContentView(root: ViewGroup?): View {
         val contentView = LayoutInflater.from(activity).inflate(R.layout.fragment_move_file_dialog, root, false)
-        ButterKnife.bind(this@MoveFileDialogFragment, contentView)
+
 
         initContentView(contentView)
 
@@ -299,6 +291,9 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
     }
 
     private fun initContentView(contentView: View) {
+
+        ButterKnife.bind(this@MoveFileDialogFragment, contentView)
+
         initHeader(contentView)
         initFolderList(contentView)
         initDialPad(contentView)
@@ -307,7 +302,7 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
     private fun initHeader(contentView: View) {
         val btnMoveFile = contentView.findViewById<Button>(R.id.btn_positive)
 
-        btnMoveFile.text = resources.getString(R.string.move_file_d_, mSelectedFiles.size)
+        btnMoveFile.text = resources.getString(R.string.move_file_d_, mSelectedFiles?.size)
         btnMoveFile.setOnClickListener { v ->
             moveFile(contentView)
             dismiss()
@@ -502,13 +497,13 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
 
     private fun hideKeyboard() {
         ViewUtil.hideView(mT9KeypadView)
-        mKeyboardSwitchIv!!
+        mKeyboardSwitchIv
                 .setBackgroundResource(R.drawable.keyboard_show_selector)
     }
 
     private fun showKeyboard() {
         ViewUtil.showView(mT9KeypadView)
-        mKeyboardSwitchIv!!.setBackgroundResource(R.drawable.keyboard_hide_selector)
+        mKeyboardSwitchIv.setBackgroundResource(R.drawable.keyboard_hide_selector)
     }
 
     private fun showKeyboard(keypadContainer: ViewGroup, keypadSwitchButton: ImageView) {
@@ -520,8 +515,6 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
 
     private fun initFolderList(contentView: View) {
         val folderList = contentView.findViewById<RecyclerView>(R.id.folder_list)
-
-        mFolderList = folderList
 
         folderList.layoutManager = LinearLayoutManager(activity, LinearLayoutManager.VERTICAL, false)
 
@@ -592,7 +585,7 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
                             } else {
 
                                 btnMoveFile.text = resources.getString(R.string.move_file_d_d,
-                                        mSelectedFiles.size - conflictFiles.size, mSelectedFiles.size)
+                                        mSelectedFiles?.size?.minus(conflictFiles.size), mSelectedFiles?.size)
                                 btnMoveFile.setTextColor(resources.getColor(R.color.warning))
 
                                 setDetectingResultText(contentView,
@@ -646,7 +639,7 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
         } else null
     }
 
-    override fun onCreateDialog(savedInstanceState: Bundle): Dialog {
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
 
         if (!mCreateDialog) {
             return super.onCreateDialog(savedInstanceState)
@@ -735,7 +728,7 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
                             }
 
                             val successCount = successFiles.size
-                            if (successCount == mSelectedFiles.size) {
+                            if (successCount == mSelectedFiles?.size) {
                                 ToastUtils.toastLong(CoreModule.getInstance().appContext,
                                         R.string.already_moved_d_files, successCount)
                             } else {
@@ -746,7 +739,7 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
                                     ToastUtils.toastShort(CoreModule.getInstance().appContext, R.string.move_files_failed)
                                 }
 
-                                if (successCount > 0 && successCount < mSelectedFiles.size) {
+                                if (successCount > 0 && successCount < mSelectedFiles?.size ?: 0) {
                                     // 部分文件移动失败
                                     //                                            ToastUtils.toastShort(getActivity(), R.string.move_files_successfully_but_);
 
@@ -872,7 +865,7 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
         mListAdapter!!.updateConflictFiles(detectFileExistenceResult.existedFiles)
     }
 
-    override fun onDetectFileExistenceFailed(sourceFiles: List<File>) {
+    override fun onDetectFileExistenceFailed(sourceFiles: List<File>?) {
 
     }
 

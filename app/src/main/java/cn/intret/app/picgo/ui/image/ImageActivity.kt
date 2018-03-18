@@ -141,7 +141,7 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
 
         ActivityCompat.postponeEnterTransition(this)
         setContentView(R.layout.activity_image)
-        ButterKnife.bind(this)
+        ButterKnife.bind(this@ImageActivity)
 
         initToolbar()
 
@@ -585,7 +585,8 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun onEvent(message: RemoveFileMessage) {
 
-        mPagerAdapter!!.removeFile(message.file)
+        mPagerAdapter!!.removeFile(message.getFile())
+
         //        int currentItem = mViewPager.getCurrentItem();
         //        if (SystemUtils.isSameFile(message.getFile(), mPagerAdapter.getImage(currentItem).getFile())) {
         //            try {

@@ -18,12 +18,12 @@ class MoveFileContracts {
 
         fun onDetectFileExistenceResult(detectFileExistenceResult: DetectFileExistenceResult)
 
-        fun onDetectFileExistenceFailed(sourceFiles: List<File>)
+        fun onDetectFileExistenceFailed(sourceFiles: List<File>?)
     }
 
     interface Presenter {
         fun loadFolderList()
 
-        fun detectFileExistence(sourceFiles: List<File>)
+        fun detectFileExistence(sourceFiles: List<File>?)
     }
 }
