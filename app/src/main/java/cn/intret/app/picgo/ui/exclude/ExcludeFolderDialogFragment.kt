@@ -1,13 +1,10 @@
-package cn.intret.app.picgo.ui.main.exclude
+package cn.intret.app.picgo.ui.exclude
 
-import android.app.Dialog
-import android.content.Context
 import android.graphics.Canvas
 import android.net.Uri
 import android.os.Bundle
 import android.support.design.widget.BottomSheetDialogFragment
 import android.support.v4.content.ContextCompat
-import android.support.v7.app.AlertDialog
 import android.support.v7.widget.GridLayoutManager
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
@@ -45,9 +42,6 @@ import com.mikepenz.fastadapter.commons.adapters.FastItemAdapter
 import com.mikepenz.fastadapter.expandable.ExpandableExtension
 import com.mikepenz.fastadapter.select.SelectExtension
 import com.mikepenz.fastadapter_extensions.RangeSelectorHelper
-import io.reactivex.ObservableTransformer
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.schedulers.Schedulers
 import kotterknife.bindView
 import org.greenrobot.eventbus.EventBus
 import java.io.File
@@ -107,10 +101,15 @@ class ExcludeFolderDialogFragment : BottomSheetDialogFragment(), T9KeypadView.On
                               savedInstanceState: Bundle?): View? {
 
         Log.d(TAG, "onCreateView() called with: inflater = [$inflater], container = [$container], savedInstanceState = [$savedInstanceState]")
-
-        return createContentView(container, savedInstanceState)
+        val contentView = LayoutInflater.from(activity).inflate(R.layout.fragment_exclude_folder_list, container, false)
+        return contentView
     }
 
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        createContentView(view, savedInstanceState)
+    }
 
     override fun onStart() {
         super.onStart()
@@ -267,8 +266,8 @@ class ExcludeFolderDialogFragment : BottomSheetDialogFragment(), T9KeypadView.On
         super.onDestroyView()
     }
 
-    private fun createContentView(root: ViewGroup?, savedInstanceState: Bundle?): View {
-        val contentView = LayoutInflater.from(activity).inflate(R.layout.fragment_exclude_folder_list, root, false)
+    private fun createContentView(contentView: View, savedInstanceState: Bundle?): View {
+
         ButterKnife.bind(this@ExcludeFolderDialogFragment, contentView)
 
         initContentView(contentView, savedInstanceState)
@@ -509,67 +508,67 @@ class ExcludeFolderDialogFragment : BottomSheetDialogFragment(), T9KeypadView.On
         } else null
     }
 
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-
-        if (!mCreateDialog) {
-            return super.onCreateDialog(savedInstanceState)
-        }
-        // All later view operation should relative to this content view, butterknife will failed
-        val contentView = createContentView(null, savedInstanceState)
-
-        return AlertDialog.Builder(activity!!)
-                .setTitle(R.string.move_selected_files_to)
-                .setView(contentView)
-                .setPositiveButton(R.string.move_file) { dialog, which -> moveFile(contentView) }
-                .setNegativeButton(R.string.cancel) { dialog, which -> storePosition(contentView) }
-                .setOnCancelListener { dialog ->
-                    // Store folder list position
-                    storePosition(contentView)
-                }
-                .setOnDismissListener { dialog ->
-                    // Store folder list position
-                    storePosition(contentView)
-                }
-                .create()
-
-
-        /*return new MaterialDialog.Builder(this.getContext())
-                .title(R.string.move_selected_files_to)
-                .customView(contentView, false)
-                .positiveText(R.string.move_file)
-                .negativeText(R.string.cancel)
-                .onPositive((dialog, which) -> {
-                    Object tag = contentView.getTag(R.id.item);
-                    if (tag != null && tag instanceof SectionedFolderListAdapter.Item) {
-
-                        File destDir = ((SectionedFolderListAdapter.Item) tag).getFile();
-                        ImageService.getInstance()
-                                .moveFilesToDirectory(destDir, Stream.of(mHiddenFolders).map(File::new).toList())
-                                .compose(RxUtils.applySchedulers())
-                                .subscribe(count -> {
-                                    if (count == mHiddenFolders.size()) {
-                                        ToastUtils.toastLong(getActivity(),
-                                                getActivity().getString(R.string.already_moved_d_files, count));
-                                    } else if (count > 0 && count < mHiddenFolders.size()) {
-                                        // 部分文件移动失败
-                                        ToastUtils.toastShort(getActivity(), R.string.move_files_successfully_but_);
-                                    } else {
-                                        ToastUtils.toastShort(getActivity(), R.string.move_files_failed);
-                                    }
-                                }, throwable -> {
-                                    ToastUtils.toastShort(getActivity(), R.string.move_files_failed);
-                                });
-                    }
-                })
-                .onNegative((dialog, which) -> {
-
-                })
-                //                            .adapter(adapter, new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false))
-                .build();
-*/
-
-
-    }
+//    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+//
+//        if (!mCreateDialog) {
+//            return super.onCreateDialog(savedInstanceState)
+//        }
+//        // All later view operation should relative to this content view, butterknife will failed
+//        val contentView = createContentView(null, savedInstanceState)
+//
+//        return AlertDialog.Builder(activity!!)
+//                .setTitle(R.string.move_selected_files_to)
+//                .setView(contentView)
+//                .setPositiveButton(R.string.move_file) { dialog, which -> moveFile(contentView) }
+//                .setNegativeButton(R.string.cancel) { dialog, which -> storePosition(contentView) }
+//                .setOnCancelListener { dialog ->
+//                    // Store folder list position
+//                    storePosition(contentView)
+//                }
+//                .setOnDismissListener { dialog ->
+//                    // Store folder list position
+//                    storePosition(contentView)
+//                }
+//                .create()
+//
+//
+//        /*return new MaterialDialog.Builder(this.getContext())
+//                .title(R.string.move_selected_files_to)
+//                .customView(contentView, false)
+//                .positiveText(R.string.move_file)
+//                .negativeText(R.string.cancel)
+//                .onPositive((dialog, which) -> {
+//                    Object tag = contentView.getTag(R.id.item);
+//                    if (tag != null && tag instanceof SectionedFolderListAdapter.Item) {
+//
+//                        File destDir = ((SectionedFolderListAdapter.Item) tag).getFile();
+//                        ImageService.getInstance()
+//                                .moveFilesToDirectory(destDir, Stream.of(mHiddenFolders).map(File::new).toList())
+//                                .compose(RxUtils.applySchedulers())
+//                                .subscribe(count -> {
+//                                    if (count == mHiddenFolders.size()) {
+//                                        ToastUtils.toastLong(getActivity(),
+//                                                getActivity().getString(R.string.already_moved_d_files, count));
+//                                    } else if (count > 0 && count < mHiddenFolders.size()) {
+//                                        // 部分文件移动失败
+//                                        ToastUtils.toastShort(getActivity(), R.string.move_files_successfully_but_);
+//                                    } else {
+//                                        ToastUtils.toastShort(getActivity(), R.string.move_files_failed);
+//                                    }
+//                                }, throwable -> {
+//                                    ToastUtils.toastShort(getActivity(), R.string.move_files_failed);
+//                                });
+//                    }
+//                })
+//                .onNegative((dialog, which) -> {
+//
+//                })
+//                //                            .adapter(adapter, new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false))
+//                .build();
+//*/
+//
+//
+//    }
 
     private fun moveFile(contentView: View) {
         val item = getViewItemTag<SectionedFolderListAdapter.Item>(contentView, R.id.item)
