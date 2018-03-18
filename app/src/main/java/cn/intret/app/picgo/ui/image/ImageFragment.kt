@@ -463,11 +463,11 @@ class ImageFragment : Fragment() {
 
     companion object {
 
-        val ARG_FILE_PATH = "arg_file_path"
-        private val ARG_IMAGE_TRANSITION_NAME = "arg_transition_name"
-        private val ARG_FILE_TYPE_TRANSITION_NAME = "arg_file_type_transition_name"
-        private val TAG = "ImageFragment"
-        private val ARG_PERFORM_ENTER_TRANSITION = "arg_perform_enter_transition"
+        private const val ARG_FILE_PATH = "arg_file_path"
+        private const val ARG_IMAGE_TRANSITION_NAME = "arg_transition_name"
+        private const val ARG_FILE_TYPE_TRANSITION_NAME = "arg_file_type_transition_name"
+        private const val TAG = "ImageFragment"
+        private const val ARG_PERFORM_ENTER_TRANSITION = "arg_perform_enter_transition"
 
         /**
          * Use this factory method to create a new instance of

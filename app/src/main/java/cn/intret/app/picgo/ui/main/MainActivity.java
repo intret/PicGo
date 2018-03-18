@@ -1022,7 +1022,7 @@ public class MainActivity extends BaseAppCompatActivity implements MainContract.
             }
             break;
             case R.id.app_bar_view_hidden_folders:
-                ExcludeFolderDialogFragment fragment = ExcludeFolderDialogFragment.newInstance(new ArrayList<String>());
+                ExcludeFolderDialogFragment fragment = ExcludeFolderDialogFragment.Companion.newInstance(new ArrayList<String>());
                 fragment.show(getSupportFragmentManager(), "Hidden File List Dialog");
                 break;
         }

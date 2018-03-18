@@ -53,17 +53,17 @@ import org.greenrobot.eventbus.ThreadMode
 import java.io.File
 import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.collections.ArrayList
 
 
 /**
  * Move selected file ( Fragment argument specified ) to user selected target folder.
  */
 class MoveFileDialogFragment : BottomSheetDialogFragment(),
-        MoveFileContract.View,
+        MoveFileContracts.View,
         T9KeypadView.OnT9KeypadInteractionHandler {
 
-
-    private var mSelectedFiles: List<File>? = null
+    private var mSelectedFiles: List<File> = ArrayList<File>()
 
     private var mListener: OnFragmentInteractionListener? = null
 
@@ -87,7 +87,7 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
 
     internal var mShouldApplyT9Filter = false
 
-    internal lateinit var mPresenter: MoveFileContract.Presenter
+    internal lateinit var mPresenter: MoveFileContracts.Presenter
     internal var mCreateDialog = false
 
 
@@ -188,7 +188,7 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
 
     private fun setAdapterMoveFileSourceDir(adapter: SectionedFolderListAdapter): SectionedFolderListAdapter {
         if (!ListUtils.isEmpty(mSelectedFiles)) {
-            adapter.moveFileSourceDir = mSelectedFiles!![0].parentFile
+            adapter.moveFileSourceDir = mSelectedFiles[0].parentFile
         }
         return adapter
     }
@@ -307,7 +307,7 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
     private fun initHeader(contentView: View) {
         val btnMoveFile = contentView.findViewById<Button>(R.id.btn_positive)
 
-        btnMoveFile.text = resources.getString(R.string.move_file_d_, mSelectedFiles!!.size)
+        btnMoveFile.text = resources.getString(R.string.move_file_d_, mSelectedFiles.size)
         btnMoveFile.setOnClickListener { v ->
             moveFile(contentView)
             dismiss()
@@ -592,7 +592,7 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
                             } else {
 
                                 btnMoveFile.text = resources.getString(R.string.move_file_d_d,
-                                        mSelectedFiles!!.size - conflictFiles.size, mSelectedFiles!!.size)
+                                        mSelectedFiles.size - conflictFiles.size, mSelectedFiles.size)
                                 btnMoveFile.setTextColor(resources.getColor(R.color.warning))
 
                                 setDetectingResultText(contentView,
@@ -735,7 +735,7 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
                             }
 
                             val successCount = successFiles.size
-                            if (successCount == mSelectedFiles!!.size) {
+                            if (successCount == mSelectedFiles.size) {
                                 ToastUtils.toastLong(CoreModule.getInstance().appContext,
                                         R.string.already_moved_d_files, successCount)
                             } else {
@@ -746,7 +746,7 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
                                     ToastUtils.toastShort(CoreModule.getInstance().appContext, R.string.move_files_failed)
                                 }
 
-                                if (successCount > 0 && successCount < mSelectedFiles!!.size) {
+                                if (successCount > 0 && successCount < mSelectedFiles.size) {
                                     // 部分文件移动失败
                                     //                                            ToastUtils.toastShort(getActivity(), R.string.move_files_successfully_but_);
 
@@ -856,7 +856,7 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
         }
     }
 
-    override fun onLoadFolderModelSuccess(folderModel: FolderModel?) {
+    override fun onLoadFolderModelSuccess(folderModel: FolderModel) {
         val adapter = FolderListAdapterUtils.folderModelToSectionedFolderListAdapter(folderModel)
         this.setAdapterMoveFileSourceDir(adapter)
         this.addNewFolderItem(adapter)
@@ -872,8 +872,8 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
         mListAdapter!!.updateConflictFiles(detectFileExistenceResult.existedFiles)
     }
 
-    override fun onDetectFileExistenceFailed(sourceFiles: MutableList<File>?) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override fun onDetectFileExistenceFailed(sourceFiles: List<File>) {
+
     }
 
 }// Required empty public constructor
