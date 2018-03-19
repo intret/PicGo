@@ -317,7 +317,7 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
             val showingImageFile = showingImageFile
             ImageModule.getInstance()
                     .loadImageInfo(showingImageFile)
-                    .compose(workAndShow())
+                    .compose(RxUtils.applySchedulers())
                     .subscribe { info -> updateFileDetailView(showingImageFile, info) }
 
             mBlurLayout.setOnClickListener { v -> hideImageDetailViews() }
@@ -617,7 +617,7 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
                                     .setSortOrder(mSortOrder)
                                     .setSortWay(mSortWay)
                     )
-                    .compose(workAndShow())
+                    .compose(RxUtils.applySchedulers())
                     .map { this.imageListToImageListAdapter(it) }
                     .subscribe({ adapter -> showImageAdapter(adapter, mItemPosition) }, { RxUtils.unhandledThrowable(it) })
 
@@ -687,7 +687,7 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
         // Resolution
         ImageModule.getInstance()
                 .loadImageInfo(image.getFile())
-                .compose(workAndShow())
+                .compose(RxUtils.applySchedulers())
                 .subscribe({ imageFileInformation ->
                     var resText: String? = null
 
@@ -828,7 +828,7 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
         //        ImageService.getInstance().loadRandomImage()
         Observable.just(mImageFilePath!!)
                 .map { File(it) }
-                .compose(workAndShow())
+                .compose(RxUtils.applySchedulers())
                 .map { file -> Image().setFile(file) }
                 .subscribe { image ->
                     val images = LinkedList<Image>()
