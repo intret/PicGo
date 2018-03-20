@@ -7,27 +7,28 @@ import cn.intret.app.picgo.model.image.ImageModule
 import cn.intret.app.picgo.screens.base.BaseLifecyclePresenter
 import cn.intret.app.picgo.utils.RxUtils
 import java.io.File
+import javax.inject.Inject
 
 /**
  * Presenter role of MoveFile dialog's MPV design pattern
  */
 
-class MoveFilePresenter<V>(var mView: V)
+class MoveFilePresenter<V> @Inject constructor(var mView: V)
     : BaseLifecyclePresenter<V>(), MoveFileContracts.Presenter
         where V : MoveFileContracts.View, V : LifecycleOwner {
 
     override fun loadFolderList() {
 
         var lifecycleDisposable =
-        ImageModule
-                .loadFolderModel(true)
+                ImageModule
+                        .loadFolderModel(true)
 
-                .compose(RxUtils.applySchedulers())
-                .`as`(RxUtils.lifecycleDisposable(mView))
+                        .compose(RxUtils.applySchedulers())
+                        .`as`(RxUtils.lifecycleDisposable(mView))
 
-                .subscribe(
-                        { folderModel: FolderModel -> mView.onLoadFolderModelSuccess(folderModel) },
-                        { throwable: Throwable -> mView.onLoadFolderModelFailed() })
+                        .subscribe(
+                                { folderModel: FolderModel -> mView.onLoadFolderModelSuccess(folderModel) },
+                                { throwable: Throwable -> mView.onLoadFolderModelFailed() })
     }
 
     override fun detectFileExistence(sourceFiles: List<File>?) {

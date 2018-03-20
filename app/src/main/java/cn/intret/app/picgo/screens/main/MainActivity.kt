@@ -29,6 +29,7 @@ import butterknife.ButterKnife
 import butterknife.OnClick
 import butterknife.OnLongClick
 import cn.intret.app.picgo.R
+import cn.intret.app.picgo.app.MyApp
 import cn.intret.app.picgo.model.event.*
 import cn.intret.app.picgo.model.image.*
 import cn.intret.app.picgo.model.user.*
@@ -280,6 +281,9 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
     override fun onCreate(savedInstanceState: Bundle?) {
 
         AndroidInjection.inject(this)
+
+        var myApp = application as MyApp
+
 
         super.onCreate(savedInstanceState)
 

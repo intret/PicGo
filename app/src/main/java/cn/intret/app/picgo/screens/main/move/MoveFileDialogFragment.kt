@@ -44,6 +44,10 @@ import com.afollestad.sectionedrecyclerview.SectionedRecyclerViewAdapter
 import com.afollestad.sectionedrecyclerview.SectionedViewHolder
 import com.annimon.stream.Stream
 import com.jakewharton.rxbinding2.widget.RxTextView
+import dagger.android.AndroidInjection
+import dagger.android.DaggerActivity
+import dagger.android.support.AndroidSupportInjection
+import dagger.android.support.DaggerAppCompatActivity
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import kotterknife.bindView
@@ -53,6 +57,7 @@ import org.greenrobot.eventbus.ThreadMode
 import java.io.File
 import java.util.*
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 import kotlin.collections.ArrayList
 
 
@@ -81,10 +86,14 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
 
     private var mDialogInputObservable: Observable<CharSequence>? = null
 
-    internal lateinit var mPresenter: MoveFileContracts.Presenter
+    @Inject
+    lateinit var mPresenter: MoveFileContracts.Presenter
     internal var mCreateDialog = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
+        AndroidSupportInjection.inject(this)
+
         super.onCreate(savedInstanceState)
 
         if (arguments != null) {
@@ -98,7 +107,7 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
                 //mSelectedFiles = defaultIfNull
             }
         }
-        mPresenter = MoveFilePresenter(this)
+//        mPresenter = MoveFilePresenter(this)
 
         EventBus.getDefault().register(this)
     }

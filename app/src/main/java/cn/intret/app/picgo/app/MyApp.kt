@@ -5,6 +5,7 @@ import android.app.ActivityManager
 import android.app.Application
 import android.content.ComponentCallbacks2
 import android.content.Context
+import android.support.v4.app.Fragment
 import android.text.TextUtils
 import android.util.Log
 import cn.intret.app.picgo.BuildConfig
@@ -21,6 +22,7 @@ import com.orhanobut.logger.PrettyFormatStrategy
 import dagger.android.AndroidInjector
 import dagger.android.DispatchingAndroidInjector
 import dagger.android.HasActivityInjector
+import dagger.android.support.HasSupportFragmentInjector
 import io.reactivex.plugins.RxJavaPlugins
 import org.greenrobot.eventbus.EventBus
 import java.io.FileInputStream
@@ -31,7 +33,22 @@ import javax.inject.Inject
  * Application Component
  */
 
-class MyApp : Application(), HasActivityInjector {
+class MyApp : Application(), HasActivityInjector, HasSupportFragmentInjector {
+
+    // ---------------------------------------------------------------------------------------------
+    // HasSupportFragmentInjector
+    // ---------------------------------------------------------------------------------------------
+
+    @Inject
+    lateinit var dispatchingSupportFragmentInjector: DispatchingAndroidInjector<Fragment>
+
+    override fun supportFragmentInjector(): AndroidInjector<Fragment> {
+        return dispatchingSupportFragmentInjector
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // HasSupportFragmentInjector
+    // ---------------------------------------------------------------------------------------------
 
     @Inject
     lateinit var dispatchingActivityInjector: DispatchingAndroidInjector<Activity>
@@ -39,6 +56,10 @@ class MyApp : Application(), HasActivityInjector {
     override fun activityInjector(): AndroidInjector<Activity> {
         return dispatchingActivityInjector
     }
+
+    // ------------------------------------------------
+    // companion
+    // ------------------------------------------------
 
     companion object {
         private val TAG = "MyApp"
@@ -50,6 +71,7 @@ class MyApp : Application(), HasActivityInjector {
     */
     val isBackground: Boolean
         get() {
+
             val context = applicationContext
 
             val activityManager = context
@@ -117,6 +139,11 @@ class MyApp : Application(), HasActivityInjector {
     internal val isPushProcess: Boolean
         get() = TextUtils.equals(processName, "cn.onestone.onestone:pushservice")
 
+    // ---------------------------------------------------------------------------------------------
+    // override
+    // ---------------------------------------------------------------------------------------------
+
+
     override fun onCreate() {
         super.onCreate()
 
@@ -168,6 +195,10 @@ class MyApp : Application(), HasActivityInjector {
 
         Glide.get(this).onLowMemory()
     }
+
+    // ------------------------------------------------
+    // init
+    // ------------------------------------------------
 
     private fun initLibraries() {
 
