@@ -2,7 +2,7 @@ package cn.intret.app.picgo.app.di
 
 import android.content.Context
 import cn.intret.app.picgo.app.MyApp
-import cn.intret.app.picgo.ui.main.di.MainSubcomponent
+import cn.intret.app.picgo.screens.main.di.MainSubcomponent
 import dagger.Module
 import dagger.Provides
 

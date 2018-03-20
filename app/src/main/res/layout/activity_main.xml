@@ -8,7 +8,7 @@
     android:orientation="vertical"
     style="@style/Main"
     android:fitsSystemWindows="true"
-    tools:context="cn.intret.app.picgo.ui.main.MainActivity"
+    tools:context="cn.intret.app.picgo.screens.main.MainActivity"
     >
 
     <!--顶部工具栏-->

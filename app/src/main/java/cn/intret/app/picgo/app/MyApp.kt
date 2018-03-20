@@ -11,7 +11,7 @@ import cn.intret.app.picgo.BuildConfig
 import cn.intret.app.picgo.app.di.DaggerAppComponent
 import cn.intret.app.picgo.model.image.ImageModule
 import cn.intret.app.picgo.model.user.UserModule
-import cn.intret.app.picgo.ui.main.MainActivity
+import cn.intret.app.picgo.screens.main.MainActivity
 import cn.intret.app.picgo.utils.Watch
 import com.bumptech.glide.Glide
 import com.orhanobut.logger.AndroidLogAdapter

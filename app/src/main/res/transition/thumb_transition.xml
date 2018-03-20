@@ -12,6 +12,6 @@
     </changeBounds>
     <changeImageTransform/>
     <transition
-        class="cn.intret.app.picgo.ui.main.SubsamplingScaleImageViewSharedTransition"
+        class="cn.intret.app.picgo.screens.main.SubsamplingScaleImageViewSharedTransition"
         app:imageViewScaleType="fitCenter"/>
 </transitionSet>
