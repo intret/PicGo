@@ -29,6 +29,7 @@ import butterknife.ButterKnife
 import butterknife.OnClick
 import butterknife.OnLongClick
 import cn.intret.app.picgo.R
+import cn.intret.app.picgo.app.MyApp
 import cn.intret.app.picgo.model.event.*
 import cn.intret.app.picgo.model.image.*
 import cn.intret.app.picgo.model.user.*
@@ -64,6 +65,7 @@ import com.annimon.stream.function.Function
 import com.annimon.stream.function.Supplier
 import com.jakewharton.rxrelay2.BehaviorRelay
 import com.orhanobut.logger.Logger
+import dagger.android.AndroidInjection
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -76,6 +78,7 @@ import org.greenrobot.eventbus.ThreadMode
 import java.io.File
 import java.util.*
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 import kotlin.collections.ArrayList
 
 class MainActivity : BaseAppCompatActivity(), MainContract.View {
@@ -186,6 +189,7 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
     private var mUpdateImageConflictFileDisposable: Disposable? = null
     private var mUpdateDetailImageListConflictDisposable: Disposable? = null
 
+    @Inject
     internal lateinit var mPresenter: MainPresenter<MainActivity>
 
     // 拨号盘状态
@@ -275,7 +279,13 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
+        AndroidInjection.inject(this)
+
         super.onCreate(savedInstanceState)
+
+//        DaggerAppComponent.create()
+//                .inject(this)
 
         val watch = Watch.now()
         setContentView(R.layout.activity_main)
@@ -308,7 +318,7 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
 
 
         // TODO: use dagger2 to inject it
-        mPresenter = MainPresenter(this)
+//        mPresenter = MainPresenter(this)
     }
 
     override fun onStart() {

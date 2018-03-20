@@ -1,5 +1,6 @@
 package cn.intret.app.picgo.app
 
+import android.app.Activity
 import android.app.ActivityManager
 import android.app.Application
 import android.content.ComponentCallbacks2
@@ -7,6 +8,7 @@ import android.content.Context
 import android.text.TextUtils
 import android.util.Log
 import cn.intret.app.picgo.BuildConfig
+import cn.intret.app.picgo.app.di.DaggerAppComponent
 import cn.intret.app.picgo.model.image.ImageModule
 import cn.intret.app.picgo.model.user.UserModule
 import cn.intret.app.picgo.ui.main.MainActivity
@@ -16,19 +18,30 @@ import com.orhanobut.logger.AndroidLogAdapter
 import com.orhanobut.logger.LogcatLogStrategy
 import com.orhanobut.logger.Logger
 import com.orhanobut.logger.PrettyFormatStrategy
+import dagger.android.AndroidInjector
+import dagger.android.DispatchingAndroidInjector
+import dagger.android.HasActivityInjector
 import io.reactivex.plugins.RxJavaPlugins
 import org.greenrobot.eventbus.EventBus
 import java.io.FileInputStream
 import java.io.InputStreamReader
+import javax.inject.Inject
 
 /**
  * Application Component
  */
 
-class AppComponent : Application() {
+class MyApp : Application(), HasActivityInjector {
+
+    @Inject
+    lateinit var dispatchingActivityInjector: DispatchingAndroidInjector<Activity>
+
+    override fun activityInjector(): AndroidInjector<Activity> {
+        return dispatchingActivityInjector
+    }
 
     companion object {
-        private val TAG = "AppComponent"
+        private val TAG = "MyApp"
     }
 
     /*
@@ -106,6 +119,10 @@ class AppComponent : Application() {
 
     override fun onCreate() {
         super.onCreate()
+
+        DaggerAppComponent.create()
+                .inject(this)
+
         //LeakCanary.install(this);
 
         val watch = Watch.now()

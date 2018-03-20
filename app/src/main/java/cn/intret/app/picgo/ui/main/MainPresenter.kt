@@ -13,15 +13,17 @@ import cn.intret.app.picgo.ui.base.BaseLifecyclePresenter
 import cn.intret.app.picgo.utils.RxUtils
 import io.reactivex.Observable
 import java.io.File
+import javax.inject.Inject
 
 /**
  * Presenter role of Main page's MVP design pattern.
  *
  * @param <V> View type, Fragment or Activity who implemented [LifecycleOwner]
-</V> */
-class MainPresenter<V>(internal var mView: V)
+*/
+class MainPresenter<V> @Inject constructor (internal var mView: V)
     : BaseLifecyclePresenter<V>(), MainContract.Presenter
         where V : MainContract.View, V : LifecycleOwner {
+
 
     /**
      * @see MainContract.View.onLoadedUserInitialPreferences
