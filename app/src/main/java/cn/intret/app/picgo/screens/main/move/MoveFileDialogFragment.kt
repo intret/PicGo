@@ -44,10 +44,7 @@ import com.afollestad.sectionedrecyclerview.SectionedRecyclerViewAdapter
 import com.afollestad.sectionedrecyclerview.SectionedViewHolder
 import com.annimon.stream.Stream
 import com.jakewharton.rxbinding2.widget.RxTextView
-import dagger.android.AndroidInjection
-import dagger.android.DaggerActivity
 import dagger.android.support.AndroidSupportInjection
-import dagger.android.support.DaggerAppCompatActivity
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import kotterknife.bindView
@@ -574,7 +571,7 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
 
             // TODO: 直接从 adapter 中获取冲突文件信息就可以了
 
-            mSelectedFiles?.let {
+            mSelectedFiles?.whenNotNullNorEmpty {
                 ImageModule
                         .detectFileConflict(item.file, it)
                         .compose(RxUtils.applySchedulers())
@@ -612,7 +609,6 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
                                     this@MoveFileDialogFragment.resources.getColor(android.R.color.holo_red_light))
                         }
             }
-
         }
 
     }
