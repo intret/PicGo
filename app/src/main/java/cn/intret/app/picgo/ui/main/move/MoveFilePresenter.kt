@@ -19,8 +19,8 @@ class MoveFilePresenter<V>(var mView: V)
     override fun loadFolderList() {
 
         var lifecycleDisposable =
-        ImageModule.getInstance()
-                .loadFolderList(true)
+        ImageModule
+                .loadFolderModel(true)
 
                 .compose(RxUtils.applySchedulers())
                 .`as`(RxUtils.lifecycleDisposable(mView))
@@ -31,17 +31,20 @@ class MoveFilePresenter<V>(var mView: V)
     }
 
     override fun detectFileExistence(sourceFiles: List<File>?) {
-        ImageModule.getInstance()
-                .detectFileExistence(sourceFiles)
-                .compose<DetectFileExistenceResult>(RxUtils.applySchedulers<DetectFileExistenceResult>())
-                .`as`(RxUtils.lifecycleDisposable<DetectFileExistenceResult>(mView))
-                .subscribe(
-                        { detectFileExistenceResult: DetectFileExistenceResult ->
-                            mView.onDetectFileExistenceResult(detectFileExistenceResult)
-                        },
-                        { throwable: Throwable ->
-                            mView.onDetectFileExistenceFailed(sourceFiles)
-                        })
+        sourceFiles?.let {
+            ImageModule
+                    .detectFileExistence(it)
+                    .compose<DetectFileExistenceResult>(RxUtils.applySchedulers<DetectFileExistenceResult>())
+                    .`as`(RxUtils.lifecycleDisposable<DetectFileExistenceResult>(mView))
+                    .subscribe(
+                            { detectFileExistenceResult: DetectFileExistenceResult ->
+                                mView.onDetectFileExistenceResult(detectFileExistenceResult)
+                            },
+                            { throwable: Throwable ->
+                                mView.onDetectFileExistenceFailed(sourceFiles)
+                            })
+
+        }
     }
 
 

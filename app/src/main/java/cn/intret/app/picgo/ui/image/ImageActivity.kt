@@ -109,8 +109,8 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
     private val mCancelExitTransition: Boolean = false
     private var mCurrentItem = -1
     private val mViewMode: ViewMode? = null
-    private var mSortWay: SortWay? = null
-    private var mSortOrder: SortOrder? = null
+    private var mSortWay: SortWay = SortWay.UNKNOWN
+    private var mSortOrder: SortOrder = SortOrder.UNKNOWN
     private val mAnimationType = AnimationType.FADE_IN_FADE_OUT
     private var mCurrentFullscreen: Boolean = false
     private var mFullscreenAnimatorSet: AnimatorSet? = null
@@ -287,7 +287,7 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
     @OnClick(R.id.btn_delete)
     fun onClickDeleteButton(view: View) {
 
-        ImageModule.getInstance()
+        ImageModule
                 .removeFile(mPagerAdapter!!.getImage(mCurrentItem).getFile())
                 .subscribe({ aBoolean ->
                     if (aBoolean!!) {
@@ -315,7 +315,7 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
                     .into(mBlurLayout)
 
             val showingImageFile = showingImageFile
-            ImageModule.getInstance()
+            ImageModule
                     .loadImageInfo(showingImageFile)
                     .compose(RxUtils.applySchedulers())
                     .subscribe { info -> updateFileDetailView(showingImageFile, info) }
@@ -349,7 +349,7 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
 
         // 分辨率
         val sizeString = resources.getString(R.string.image_size_d_d,
-                info.mediaResolution.width, info.mediaResolution.height)
+                info.mediaResolution?.width?:0, info.mediaResolution?.height?:0)
 
         ViewUtils.setText(mDetailContainer,
                 R.id.value_resolution,
@@ -609,7 +609,7 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
         if (mDirPath != null && mItemPosition != -1) {
 
             // 浏览文件列表
-            ImageModule.getInstance()
+            ImageModule
                     .loadMediaFileList(File(mDirPath!!),
                             LoadMediaFileParam()
                                     .setFromCacheFirst(true)
@@ -685,16 +685,16 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
         mBrief.text = imagePosition
 
         // Resolution
-        ImageModule.getInstance()
+        ImageModule
                 .loadImageInfo(image.getFile())
                 .compose(RxUtils.applySchedulers())
                 .subscribe({ imageFileInformation ->
                     var resText: String? = null
 
-                    val mediaResolution = imageFileInformation.mediaResolution
-                    resText = MediaUtils.getResolutionString(this, mediaResolution)
-
-                    mResolution.text = resText
+                    imageFileInformation.mediaResolution?.let {
+                        resText = MediaUtils.getResolutionString(this, it)
+                        mResolution.text = resText
+                    }
 
                 }) { throwable -> mResolution.text = "-" }
 
@@ -817,7 +817,7 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
 
         mDirPath = intent.getStringExtra(EXTRA_IMAGE_DIR_PATH)
         mItemPosition = intent.getIntExtra(EXTRA_IMAGE_ITEM_POSITION, -1)
-        //        mViewMode = (ViewMode) intent.getSerializableExtra(EXTRA_VIEW_MODE);
+        //        viewMode = (ViewMode) intent.getSerializableExtra(EXTRA_VIEW_MODE);
 
         mSortWay = intent.getSerializableExtra(EXTRA_SORT_WAY) as SortWay
         mSortOrder = intent.getSerializableExtra(EXTRA_SORT_ORDER) as SortOrder
@@ -882,7 +882,7 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
             return mFile
         }
 
-        fun setFile(file: File): Image {
+        fun setFile(file: File?): Image {
             mFile = file
             return this
         }

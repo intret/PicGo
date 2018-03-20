@@ -1009,14 +1009,14 @@ public class SectionedFolderListAdapter extends SectionedRecyclerViewAdapter<Sec
         public String toString() {
             return "Item{" +
                     "mIsSelected=" + mIsSelected +
-                    ", mFile=" + mFile +
-                    ", mCount=" + mCount +
+                    ", file=" + mFile +
+                    ", count=" + mCount +
                     ", mSelectedCount=" + mSelectedCount +
-                    ", mConflictFiles=" + mConflictFiles +
+                    ", conflictFiles=" + mConflictFiles +
                     ", mThumbList=" + mThumbList +
                     ", mKeywordLength=" + mKeywordLength +
                     ", mKeywordStartIndex=" + mKeywordStartIndex +
-                    ", mName='" + mName + '\'' +
+                    ", name='" + mName + '\'' +
                     ", mItemSubType=" + mItemSubType +
                     '}';
         }

@@ -68,9 +68,9 @@ class ListViewState : Cloneable {
     override fun toString(): String {
         return "ListViewState{" +
                 "mGroupMode=" + mGroupMode +
-                ", mSortOrder=" + mSortOrder +
-                ", mSortWay=" + mSortWay +
-                ", mViewMode=" + mViewMode +
+                ", sortOrder=" + mSortOrder +
+                ", sortWay=" + mSortWay +
+                ", viewMode=" + mViewMode +
                 '}'.toString()
     }
 }

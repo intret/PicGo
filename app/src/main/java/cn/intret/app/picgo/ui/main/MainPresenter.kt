@@ -27,7 +27,7 @@ class MainPresenter<V>(internal var mView: V)
      * @see MainContract.View.onLoadedUserInitialPreferences
      */
     override fun loadInitialPreference() {
-        UserModule.getInstance()
+        UserModule
                 .loadInitialPreference(true)
                 .compose(RxUtils.applySchedulers())
                 .doOnNext { userInitialPreferences -> Log.d(TAG, "Loaded user initial preference : $userInitialPreferences") }
@@ -45,12 +45,12 @@ class MainPresenter<V>(internal var mView: V)
      */
     override fun removeDirectory(dir: File, forceDelete: Boolean) {
 
-        ImageModule.getInstance()
+        ImageModule
                 .removeFolder(dir, forceDelete)
                 .compose(RxUtils.applySchedulers())
                 .`as`(RxUtils.lifecycleDisposable(mView))
                 .subscribe({ deleted ->
-                    if (deleted!!) {
+                    if (deleted) {
                         mView.onDeletedDirectory(dir)
                     } else {
                         mView.onDeleteDirectoryFailed(dir, null!!)
@@ -75,8 +75,8 @@ class MainPresenter<V>(internal var mView: V)
      * @see MainContract.View.onLoadedFolderModel
      */
     override fun loadFolderList(fromCacheFirst: Boolean) {
-        ImageModule.getInstance()
-                .loadFolderList(fromCacheFirst)
+        ImageModule
+                .loadFolderModel(fromCacheFirst)
                 .compose(RxUtils.applySchedulers())
                 .`as`(RxUtils.lifecycleDisposable(mView))
                 .subscribe({ folderModel -> mView.onLoadedFolderModel(folderModel) },
@@ -84,8 +84,8 @@ class MainPresenter<V>(internal var mView: V)
     }
 
     override fun loadFolderList(fromCacheFirst: Boolean, diff: Boolean) {
-        ImageModule.getInstance()
-                .loadFolderList(fromCacheFirst)
+        ImageModule
+                .loadFolderModel(fromCacheFirst)
                 .compose(RxUtils.applySchedulers())
                 .`as`(RxUtils.lifecycleDisposable(mView))
                 .subscribe({ folderModel -> mView.onLoadedFolderModel(folderModel, diff) },
@@ -98,7 +98,7 @@ class MainPresenter<V>(internal var mView: V)
         if (purpose === MainContract.LoadImageListPurpose.RefreshDetailList) {
             loadMediaInfo = true
         }
-        ImageModule.getInstance()
+        ImageModule
                 .loadMediaFileList(dir,
                         LoadMediaFileParam()
                                 .setFromCacheFirst(fromCacheFirst)
@@ -112,7 +112,7 @@ class MainPresenter<V>(internal var mView: V)
     }
 
     override fun diffLoadDefaultMediaFileList(dir: File, fromCacheFirst: Boolean, sortWay: SortWay, sortOrder: SortOrder, hideRefreshControl: Boolean) {
-        ImageModule.getInstance()
+        ImageModule
                 .loadMediaFileList(dir,
                         LoadMediaFileParam()
                                 .setFromCacheFirst(fromCacheFirst)
@@ -130,7 +130,7 @@ class MainPresenter<V>(internal var mView: V)
             Log.e(TAG, "updateFolderListItemThumbnailList: directory is null/empty")
             return
         }
-        ImageModule.getInstance()
+        ImageModule
                 .rescanDirectoryThumbnailList(directory)
                 .compose(RxUtils.applySchedulers())
                 .`as`(RxUtils.lifecycleDisposable(mView))

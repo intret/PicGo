@@ -1,10 +1,10 @@
-package cn.intret.app.picgo.model.image;
+package cn.intret.app.picgo.model.image
 
 /**
  * Image group mode for image list
  */
 
-public enum GroupMode {
+enum class GroupMode {
     DEFAULT,
     DAY,
     WEEK,

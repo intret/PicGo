@@ -29,8 +29,6 @@ import butterknife.ButterKnife
 import butterknife.OnClick
 import butterknife.OnLongClick
 import cn.intret.app.picgo.R
-import cn.intret.app.picgo.app.RxBus
-import cn.intret.app.picgo.app.RxBusImage
 import cn.intret.app.picgo.model.event.*
 import cn.intret.app.picgo.model.image.*
 import cn.intret.app.picgo.model.user.*
@@ -311,8 +309,6 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
 
         // TODO: use dagger2 to inject it
         mPresenter = MainPresenter(this)
-        RxBusImage.get().register(this)
-        RxBus.get().register(this)
     }
 
     override fun onStart() {
@@ -321,7 +317,7 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
         super.onStart()
 
         val watch = Watch.now()
-        //        loadFolderList();
+        //        loadFolderModel();
         reloadImageList(false)
 
         watch.logTotalMS(TAG, "onStart")
@@ -338,8 +334,6 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
     override fun onDestroy() {
         //        stopService(mStartFloatingIntent);
         EventBus.getDefault().unregister(this)
-        RxBus.get().unregister(this)
-        RxBusImage.get().unregister(this)
         super.onDestroy()
     }
 
@@ -390,7 +384,7 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
 
         menuInflater.inflate(R.menu.main_menu, menu)
 
-        val viewMode = UserModule.getInstance().viewMode.get()
+        val viewMode = UserModule.viewMode.get()
         if (viewMode == ViewMode.UNKNOWN) {
             Log.e(TAG, "onCreateOptionsMenu: invalid view mode : $viewMode")
         } else {
@@ -402,7 +396,7 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
             }
         }
 
-        val showHiddenFile = UserModule.getInstance().showHiddenFilePreference.get()
+        val showHiddenFile = UserModule.showHiddenFilePreference.get()
         val item = menu.findItem(R.id.app_bar_show_hidden_folder)
         if (item != null) {
             item.isChecked = showHiddenFile
@@ -523,20 +517,15 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun onEvent(message: MoveFileResultMessage) {
 
-        val destDir = message.getDestDir()
-        if (destDir != null) {
-            val adapter = getDefaultImageListAdapter(destDir)
-            if (adapter != null) {
-                val selectedCount = adapter.selectedItemCount
-                val itemCount = adapter.itemCount
-                mFolderAdapter!!.updateSelectedCount(message.getDestDir(), selectedCount)
-                mFolderAdapter!!.updateItemCount(message.getDestDir(), itemCount)
-            }
-        }
+        message.getDestDir()
+                ?.let { getDefaultImageListAdapter(it) }
+                ?.let {
+                    mFolderAdapter?.updateSelectedCount(message.getDestDir(), it.selectedItemCount)
+                    mFolderAdapter?.updateItemCount(message.getDestDir(), it.itemCount)
+                }
 
-        val successFiles = message.getResult()!!.successFiles
-        if (successFiles != null) {
-            Stream.of(successFiles)
+        message.getResult()?.successFiles?.let {
+            Stream.of(it)
                     .groupBy({ fileFilePair -> fileFilePair.second.parentFile })
                     .forEach { objectListEntry ->
                         val dir = objectListEntry.key
@@ -560,7 +549,7 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
         val compareItems = message.getCompareItems()
 
         for (compareItem in compareItems) {
-            if (compareItem.isResolved) {
+            if (compareItem.resolved) {
 
 
                 val item = compareItem.compareItem
@@ -573,9 +562,6 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
                     ResolveResult.KEEP_BOTH -> {
                     }
                     ResolveResult.NONE -> {
-                    }
-                    null -> {
-
                     }
                 }
             }
@@ -757,7 +743,7 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
     fun onEvent(message: FolderModelChangeMessage) {
         mIsFolderListLoaded = false
         reloadFolderList(true)
-        //        loadFolderList();
+        //        loadFolderModel();
     }
 
     private fun diffUpdateDefaultImageListAdapter(adapter: DefaultImageListAdapter?, fromCacheFirst: Boolean, hideRefreshControlWhenFinish: Boolean) {
@@ -947,8 +933,7 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
                 menuItem.isChecked = !menuItem.isChecked
 
                 // Save option
-                val showHiddenFolderPref = UserModule.getInstance()
-                        .showHiddenFilePreference
+                val showHiddenFolderPref = UserModule.showHiddenFilePreference
 
                 showHiddenFolderPref.set(menuItem.isChecked)
 
@@ -975,7 +960,7 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
 
                 setToolbarViewModeIcon(R.drawable.ic_grid_on_black_24px)
 
-                val prefViewMode = UserModule.getInstance().viewMode
+                val prefViewMode = UserModule.viewMode
                 prefViewMode.set(ViewMode.GRID_VIEW)
 
                 checkMenuItem(menu, R.id.item_grid_view, true)
@@ -1021,13 +1006,13 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
 
     private fun switchToSortWay(way: SortWay) {
         if (moveToListState((mViewState.clone() as ListViewState).setSortWay(way))) {
-            UserModule.getInstance().sortWay.set(way)
+            UserModule.sortWay.set(way)
         }
     }
 
     private fun switchToSortOrder(order: SortOrder) {
         if (moveToListState((mViewState.clone() as ListViewState).setSortOrder(order))) {
-            UserModule.getInstance().sortOrder.set(order)
+            UserModule.sortOrder.set(order)
         }
     }
 
@@ -1043,7 +1028,7 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
                 }
             }
 
-            val prefViewMode = UserModule.getInstance().viewMode
+            val prefViewMode = UserModule.viewMode
             prefViewMode.set(viewMode)
         }
     }
@@ -1184,8 +1169,8 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
                     }
                 }
 
-        ImageModule.getInstance()
-                .loadFolderList(true, t9NumberInput)
+        ImageModule
+                .loadFolderModel(true, t9NumberInput)
                 .map({ FolderListAdapterUtils.folderModelToSectionedFolderListAdapter(it) })
                 .compose(RxUtils.applySchedulers())
                 .subscribe({ newAdapter ->
@@ -1442,7 +1427,7 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
                     if (inputEditText != null) {
                         val folderName = inputEditText.editableText.toString()
                         val dir = File(targetDir, folderName)
-                        ImageModule.getInstance()
+                        ImageModule
                                 .createFolder(dir)
                                 .compose(RxUtils.applySchedulers())
                                 .subscribe({ ok ->
@@ -1706,11 +1691,11 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
             return
         }
 
-        UserModule.getInstance()
+        UserModule
                 .addExcludeFolder(selectedDir)
                 .subscribe({ ok ->
                     if (ok!!) {
-                        ImageModule.getInstance()
+                        ImageModule
                                 .hiddenFolder(selectedDir)
                                 .subscribe { removed ->
                                     if (removed!!) {
@@ -1794,7 +1779,7 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
                 .positiveText(R.string.delete)
                 .onPositive { dialog, which ->
 
-                    ImageModule.getInstance()
+                    ImageModule
                             .removeFolder(selectedDir, false)
                             .compose(RxUtils.applySchedulers())
                             .subscribe({ aBoolean ->
@@ -1843,7 +1828,7 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
 
                             }
 
-                            ImageModule.getInstance()
+                            ImageModule
                                     .renameDirectory(dir, newDirName)
                                     .compose(RxUtils.applySchedulers())
                                     .subscribe({ ok ->
@@ -1996,7 +1981,7 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
      */
 
     private fun moveAdapterSelectedFilesToDir(destDir: File) {
-        ImageModule.getInstance()
+        ImageModule
                 .moveFilesToDirectory(destDir,
                         currentSelectedFilePathList,
                         true,
@@ -2033,9 +2018,12 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
 
         val containerFolders = model.containerFolders
         var i = 0
-        val s = containerFolders.size
+        val s = containerFolders?.size ?: 0
         while (i < s) {
-            sectionItems.add(folderInfoToItem(containerFolders[i]))
+            folderInfoToItem(containerFolders?.get(i))
+                    ?.let {
+                        sectionItems.add(it)
+                    }
             i++
         }
 
@@ -2073,20 +2061,25 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
         //        }
     }
 
-    private fun folderInfoToItem(containerFolder: FolderModel.ContainerFolder): SectionFolderListAdapter.SectionItem {
-        val sectionItem = SectionFolderListAdapter.SectionItem()
-        sectionItem.name = containerFolder.name
-        sectionItem.file = containerFolder.file
-        sectionItem.items = Stream.of(containerFolder.folders)
-                .map { item ->
-                    SectionFolderListAdapter.Item()
-                            .setFile(item.file)
-                            .setName(item.name)
-                            .setCount(item.count)
-                            .setThumbList(item.thumbList)
-                }
-                .toList()
-        return sectionItem
+    private fun folderInfoToItem(containerFolder: FolderModel.ContainerFolder?): SectionFolderListAdapter.SectionItem? {
+        return containerFolder?.let {
+
+            val sectionItem = SectionFolderListAdapter.SectionItem()
+            sectionItem.apply {
+                name = it.mName
+                file = it.mFile
+                items = containerFolder.folders
+                        .map { item ->
+                            SectionFolderListAdapter.Item()
+                                    .setFile(item.file)
+                                    .setName(item.name)
+                                    .setCount(item.count)
+                                    .setThumbList(item.thumbList)
+                        }
+                        .toList()
+
+            }
+        }
     }
 
     @Deprecated("")
@@ -2112,12 +2105,12 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
         }
         mFolderList.addItemDecoration(SectionDecoration(this, object : SectionDecoration.DecorationCallback {
             override fun getGroupId(position: Int): Long {
-                return ImageModule.getInstance().getSectionForPosition(position).toLong()
+                return ImageModule.getSectionForPosition(position).toLong()
                 //                return mFolderListAdapter.getItemCount();
             }
 
             override fun getGroupFirstLine(position: Int): String {
-                return ImageModule.getInstance().getSectionFileName(position)
+                return ImageModule.getSectionFileName(position) ?: ""
             }
         }))
         mFolderList.adapter = mFolderListAdapter
@@ -2277,7 +2270,7 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
 
             mImageRefresh.isRefreshing = showRefreshing
 
-            ImageModule.getInstance()
+            ImageModule
                     .loadMediaFileList(directory,
                             LoadMediaFileParam()
                                     .setFromCacheFirst(fromCacheFirst)
@@ -2407,7 +2400,7 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
             if (listAdapter == null || forceReload) {
                 mImageRefresh.isRefreshing = showRefreshing
 
-                ImageModule.getInstance()
+                ImageModule
                         .loadImageGroupList(directory, groupMode, fromCacheFirst, state.getSortWay(), state.getSortOrder())
                         .map { this.sortImageGroupByViewMode(it) }
                         .map { sectionList ->
@@ -2490,19 +2483,19 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
         return sections
     }
 
-    private fun imageGroupToAdapterSection(imageGroup: ImageGroup, sortWay: SortWay, sortOrder: SortOrder): SectionedImageListAdapter.Section {
+    private fun imageGroupToAdapterSection(imageGroup: ImageGroup, sortWay: SortWay, sortOrder: SortOrder)
+            : SectionedImageListAdapter.Section {
         val section = SectionedImageListAdapter.Section()
 
         section.startDate = imageGroup.startDate
         section.endDate = imageGroup.endDate
 
-        val mediaFiles = imageGroup.mediaFiles
-        if (mediaFiles != null) {
+        val mediaFiles = imageGroup.mediaFiles.let {
             val items = LinkedList<SectionedImageListAdapter.Item>()
             var i = 0
-            val imagesSize = mediaFiles.size
+            val imagesSize = it.size
             while (i < imagesSize) {
-                val mediaFile = mediaFiles[i]
+                val mediaFile = it[i]
                 items.add(SectionedImageListAdapter.Item()
                         .setFile(mediaFile.file)
                         .setDate(mediaFile.date)
@@ -2551,6 +2544,7 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
 
             section.items = sortedItems
         }
+
         section.description = getSectionDescription(section.startDate, this@MainActivity.mViewState.getGroupMode())
         return section
     }
@@ -2577,7 +2571,7 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
     private fun loadAdapterSections(directory: File, mode: GroupMode): Observable<LinkedList<SectionedImageListAdapter.Section>> {
         return Observable.create { e ->
 
-            val imageFiles = ImageModule.getInstance().listMediaFiles(directory)
+            val imageFiles = ImageModule.listMediaFiles(directory)
             val sections = Stream.of(imageFiles)
                     .groupBy<Int> { file ->
                         val d = file.lastModified()
@@ -2684,7 +2678,7 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
 
             mImageRefresh.isRefreshing = showRefreshing
 
-            ImageModule.getInstance()
+            ImageModule
                     .loadMediaFileList(directory,
                             LoadMediaFileParam()
                                     .setFromCacheFirst(fromCacheFirst)
@@ -2920,7 +2914,7 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
                     val item = DefaultImageListAdapter.Item()
                     item.file = image.file
                     item.date = image.date
-                    item.fileSize = image.fileSize
+                    item.fileSize = image.getFileSize()
 
                     if (selectedFiles != null) {
                         if (selectedFiles.contains(item.file)) {
@@ -3123,11 +3117,13 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
 
     private fun updateFolderListConflictItems(sourceFiles: List<File>) {
 
-        ImageModule.getInstance()
+        ImageModule
                 .detectFileExistence(sourceFiles)
                 .compose(RxUtils.applySchedulers())
                 .subscribe({ detectFileExistenceResult ->
-                    mFolderAdapter!!.updateConflictFiles(detectFileExistenceResult.existedFiles)
+                    detectFileExistenceResult?.existedFiles?.let {
+                        mFolderAdapter?.updateConflictFiles(it.toMap())
+                    }
                 },
                         { RxUtils.unhandledThrowable(it) })
     }
@@ -3149,7 +3145,7 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
 
     private fun addRecentHistoryRecord(directory: File) {
 
-        UserModule.getInstance()
+        UserModule
                 .addOpenFolderRecentRecord(directory)
                 .compose(RxUtils.applySchedulers())
                 .subscribe({
@@ -3229,7 +3225,7 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
             Log.e(TAG, "updateFolderListItemThumbnailList: directory is null/empty")
             return
         }
-        ImageModule.getInstance()
+        ImageModule
                 .rescanDirectoryThumbnailList(directory)
                 .compose(RxUtils.applySchedulers())
                 .subscribe({ files ->
@@ -3240,7 +3236,7 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
     private fun loadImages(directory: File): Observable<List<DefaultImageListAdapter.Item>> {
         return Observable.create { e ->
             val items = LinkedList<DefaultImageListAdapter.Item>()
-            val images = ImageModule.getInstance().listMediaFiles(directory)
+            val images = ImageModule.listMediaFiles(directory)
 
             for (file in images) {
 
@@ -3370,7 +3366,7 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
 
                     val selectedFiles = currImageAdapter.selectedFiles
 
-                    ImageModule.getInstance()
+                    ImageModule
                             .removeFiles(selectedFiles)
                             .compose(RxUtils.applySchedulers())
                             .subscribe({ integerListPair ->
@@ -3398,7 +3394,7 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
         showMoveFileFragmentDialog(ArrayList(selectedFiles))
 
         /*ImageService.getInstance()
-                .loadFolderList(true)
+                .loadFolderModel(true)
                 .compose(applySchedulers())
                 .map(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
                 .subscribe(adapter -> {
@@ -3428,7 +3424,7 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
                     if (tag != null && tag is SectionedFolderListAdapter.Item) {
 
                         val destDir = tag.file
-                        ImageModule.getInstance()
+                        ImageModule
                                 .moveFilesToDirectory(destDir, selectedFiles)
                                 .compose(RxUtils.applySchedulers())
                                 .subscribe({ count ->

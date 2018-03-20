@@ -91,7 +91,7 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
             val files = arguments!!.getStringArrayList(ARG_SELECTED_FILES)
             mSelectedFiles = LinkedList<File>()
             if (files == null) {
-               // mSelectedFiles = LinkedList<File>()
+                // mSelectedFiles = LinkedList<File>()
             } else {
                 var list = files.map { File(it) }.toList()
                 var defaultIfNull = org.apache.commons.collections4.ListUtils.defaultIfNull(list, LinkedList<File>())
@@ -166,8 +166,7 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
         //        });
 
         // Restore position
-        val visibleItemPosition = UserModule.getInstance()
-                .moveFileDialogFirstVisibleItemPosition
+        val visibleItemPosition = UserModule.moveFileDialogFirstVisibleItemPosition
         if (visibleItemPosition != RecyclerView.NO_POSITION) {
             mFolderList.scrollToPosition(visibleItemPosition)
         }
@@ -208,7 +207,7 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
                                 if (inputEditText != null) {
                                     val folderName = inputEditText.editableText.toString()
                                     val dir = File(section.file, folderName)
-                                    ImageModule.getInstance()
+                                    ImageModule
                                             .createFolder(dir)
                                             .compose(RxUtils.applySchedulers())
                                             .subscribe({ ok ->
@@ -369,7 +368,7 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
                         val folderName = inputEditText.editableText.toString()
 
                         val newFolder = File(targetDir, folderName)
-                        ImageModule.getInstance()
+                        ImageModule
                                 .createFolder(newFolder)
                                 .compose(RxUtils.applySchedulers())
                                 .subscribe({ ok ->
@@ -441,8 +440,8 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
     }
 
     private fun filterFolderList(folderList: RecyclerView?, inputString: String, scrollToDir: File?) {
-        ImageModule.getInstance()
-                .loadFolderList(true, inputString)
+        ImageModule
+                .loadFolderModel(true, inputString)
                 .map<SectionedFolderListAdapter>(FolderListAdapterUtils::folderModelToSectionedFolderListAdapter)
                 .map<SectionedFolderListAdapter>(this::setAdapterMoveFileSourceDir)
                 .map<SectionedFolderListAdapter>(this::addNewFolderItem)
@@ -566,39 +565,45 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
 
             // TODO: 直接从 adapter 中获取冲突文件信息就可以了
 
-            ImageModule.getInstance()
-                    .detectFileConflict(item.file, mSelectedFiles)
-                    .compose(RxUtils.applySchedulers())
-                    .subscribe({ moveFileDetectResult ->
-                        val colorOk = this@MoveFileDialogFragment.resources.getColor(android.R.color.holo_green_dark)
-                        val colorConflict = this@MoveFileDialogFragment.resources.getColor(android.R.color.holo_red_dark)
+            mSelectedFiles?.let {
+                ImageModule
+                        .detectFileConflict(item.file, it)
+                        .compose(RxUtils.applySchedulers())
+                        .subscribe({ moveFileDetectResult ->
+                            val colorOk = this@MoveFileDialogFragment.resources.getColor(android.R.color.holo_green_dark)
+                            val colorConflict = this@MoveFileDialogFragment.resources.getColor(android.R.color.holo_red_dark)
 
-                        if (moveFileDetectResult != null) {
-                            val conflictFiles = moveFileDetectResult.conflictFiles
-                            val canMoveFiles = moveFileDetectResult.canMoveFiles
-                            val btnMoveFile = contentView.findViewById<Button>(R.id.btn_positive)
+                            if (moveFileDetectResult != null) {
+                                val conflictFiles = moveFileDetectResult.conflictFiles
+                                val canMoveFiles = moveFileDetectResult.canMoveFiles
+                                val btnMoveFile = contentView.findViewById<Button>(R.id.btn_positive)
 
-                            if (conflictFiles.isEmpty()) {
-                                setDetectingResultText(contentView, getString(R.string.can_move_all_files, canMoveFiles.size), colorOk)
+                                conflictFiles?.let {
+                                    if (it.isEmpty()) {
+                                        setDetectingResultText(contentView, getString(R.string.can_move_all_files,
+                                                canMoveFiles?.size ?: 0), colorOk)
 
-                                btnMoveFile.setTextColor(resources.getColor(R.color.colorAccent))
-                            } else {
+                                        btnMoveFile.setTextColor(resources.getColor(R.color.colorAccent))
+                                    } else {
 
-                                btnMoveFile.text = resources.getString(R.string.move_file_d_d,
-                                        mSelectedFiles?.size?.minus(conflictFiles.size), mSelectedFiles?.size)
-                                btnMoveFile.setTextColor(resources.getColor(R.color.warning))
+                                        btnMoveFile.text = resources.getString(R.string.move_file_d_d,
+                                                mSelectedFiles?.size?.minus(conflictFiles.size), mSelectedFiles?.size)
+                                        btnMoveFile.setTextColor(resources.getColor(R.color.warning))
 
-                                setDetectingResultText(contentView,
-                                        getString(R.string.target_directory_exists__d_files_in_the_same_name,
-                                                item.file.name,
-                                                conflictFiles.size), colorConflict)
+                                        setDetectingResultText(contentView,
+                                                getString(R.string.target_directory_exists__d_files_in_the_same_name,
+                                                        item.file.name,
+                                                        conflictFiles.size), colorConflict)
+                                    }
+                                }
                             }
+                        }) { throwable ->
+                            throwable.printStackTrace()
+                            setDetectingResultText(contentView, getString(R.string.detect_move_file_action_result_failed),
+                                    this@MoveFileDialogFragment.resources.getColor(android.R.color.holo_red_light))
                         }
-                    }) { throwable ->
-                        throwable.printStackTrace()
-                        setDetectingResultText(contentView, getString(R.string.detect_move_file_action_result_failed),
-                                this@MoveFileDialogFragment.resources.getColor(android.R.color.holo_red_light))
-                    }
+            }
+
         }
 
     }
@@ -706,53 +711,56 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
         if (item != null) {
 
             val destDir = item.file
-            ImageModule.getInstance()
-                    .moveFilesToDirectory(destDir, mSelectedFiles, true, false)
-                    .compose(RxUtils.applySchedulers())
-                    .subscribe({ moveFileResult ->
-                        storePosition(contentView)
+            mSelectedFiles?.let {
 
-                        if (moveFileResult != null) {
-                            val successFiles = moveFileResult.successFiles
-                            val conflictFiles = moveFileResult.conflictFiles
-                            val failedFiles = moveFileResult.failedFiles
+                ImageModule
+                        .moveFilesToDirectory(destDir, it, true, false)
+                        .compose(RxUtils.applySchedulers())
+                        .subscribe({ moveFileResult ->
+                            storePosition(contentView)
 
-                            try {
-                                EventBus.getDefault().post(
-                                        MoveFileResultMessage()
-                                                .setDestDir(destDir)
-                                                .setResult(moveFileResult))
+                            if (moveFileResult != null) {
+                                val successFiles = moveFileResult.successFiles
+                                val conflictFiles = moveFileResult.conflictFiles
+                                val failedFiles = moveFileResult.failedFiles
 
-                            } catch (e: Throwable) {
-                                e.printStackTrace()
-                            }
+                                try {
+                                    EventBus.getDefault().post(
+                                            MoveFileResultMessage()
+                                                    .setDestDir(destDir)
+                                                    .setResult(moveFileResult))
 
-                            val successCount = successFiles.size
-                            if (successCount == mSelectedFiles?.size) {
-                                ToastUtils.toastLong(CoreModule.getInstance().appContext,
-                                        R.string.already_moved_d_files, successCount)
-                            } else {
-                                Log.w(TAG, "移动文件冲突: $conflictFiles")
-                                if (!conflictFiles.isEmpty()) {
-
-                                } else {
-                                    ToastUtils.toastShort(CoreModule.getInstance().appContext, R.string.move_files_failed)
+                                } catch (e: Throwable) {
+                                    e.printStackTrace()
                                 }
 
-                                if (successCount > 0 && successCount < mSelectedFiles?.size ?: 0) {
-                                    // 部分文件移动失败
-                                    //                                            ToastUtils.toastShort(getActivity(), R.string.move_files_successfully_but_);
-
+                                val successCount = successFiles.size
+                                if (successCount == mSelectedFiles?.size) {
+                                    ToastUtils.toastLong(CoreModule.appContext,
+                                            R.string.already_moved_d_files, successCount)
                                 } else {
+                                    Log.w(TAG, "移动文件冲突: $conflictFiles")
+                                    if (!conflictFiles.isEmpty()) {
+
+                                    } else {
+                                        ToastUtils.toastShort(CoreModule.appContext, R.string.move_files_failed)
+                                    }
+
+                                    if (successCount > 0 && successCount < mSelectedFiles?.size ?: 0) {
+                                        // 部分文件移动失败
+                                        //                                            ToastUtils.toastShort(getActivity(), R.string.move_files_successfully_but_);
+
+                                    } else {
+                                    }
                                 }
                             }
+                        }) { throwable ->
+                            throwable.printStackTrace()
+                            if (activity != null) {
+                                ToastUtils.toastShort(activity, getString(R.string.move_files_failed))
+                            }
                         }
-                    }) { throwable ->
-                        throwable.printStackTrace()
-                        if (activity != null) {
-                            ToastUtils.toastShort(activity, getString(R.string.move_files_failed))
-                        }
-                    }
+            }
         }
     }
 
@@ -761,10 +769,10 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
         val lm = rv.layoutManager
         if (lm is LinearLayoutManager) {
             val firstVisibleItemPosition = lm.findFirstVisibleItemPosition()
-            UserModule.getInstance().moveFileDialogFirstVisibleItemPosition = firstVisibleItemPosition
+            UserModule.moveFileDialogFirstVisibleItemPosition = firstVisibleItemPosition
         } else if (lm is GridLayoutManager) {
             val firstVisibleItemPosition = lm.findFirstVisibleItemPosition()
-            UserModule.getInstance().moveFileDialogFirstVisibleItemPosition = firstVisibleItemPosition
+            UserModule.moveFileDialogFirstVisibleItemPosition = firstVisibleItemPosition
         }
     }
 
@@ -862,7 +870,9 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
 
     override fun onDetectFileExistenceResult(detectFileExistenceResult: DetectFileExistenceResult) {
         Log.w(TAG, "onStart: 文件冲突 $detectFileExistenceResult")
-        mListAdapter!!.updateConflictFiles(detectFileExistenceResult.existedFiles)
+        detectFileExistenceResult.existedFiles?.let {
+            mListAdapter?.updateConflictFiles(it.toMap())
+        }
     }
 
     override fun onDetectFileExistenceFailed(sourceFiles: List<File>?) {

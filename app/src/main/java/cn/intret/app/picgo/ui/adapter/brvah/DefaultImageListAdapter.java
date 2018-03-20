@@ -42,7 +42,7 @@ public class DefaultImageListAdapter extends BaseImageAdapter<DefaultImageListAd
         @Override
         public String toString() {
             return "Item{" + this.hashCode() +
-                    "mFile=" + mFile +
+                    "file=" + mFile +
                     ", mSelected=" + mSelected +
                     '}';
         }

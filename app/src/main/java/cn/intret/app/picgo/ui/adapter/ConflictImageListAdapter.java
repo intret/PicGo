@@ -111,8 +111,8 @@ public class ConflictImageListAdapter extends RecyclerView.Adapter<ConflictImage
         @Override
         public String toString() {
             return "Item{" +
-                    "mSourceFile=" + mSourceFile +
-                    ", mTargetFile=" + mTargetFile +
+                    "sourceFile=" + mSourceFile +
+                    ", targetFile=" + mTargetFile +
                     '}';
         }
 

@@ -146,7 +146,7 @@ dependencies {
     // Image
     compile 'com.davemorrissey.labs:subsampling-scale-image-view:3.6.0'
     compile 'com.github.bumptech.glide:glide:4.6.1'
-    annotationProcessor 'com.github.bumptech.glide:compiler:4.6.1'
+    kapt 'com.github.bumptech.glide:compiler:4.6.1'
     implementation('com.github.bumptech.glide:recyclerview-integration:4.3.0') {
         // Excludes the support library because it's already included by Glide.
         transitive = false
@@ -164,6 +164,7 @@ dependencies {
     compile 'com.annimon:stream:1.1.9'
 
     compile 'io.reactivex.rxjava2:rxkotlin:2.2.0'
+    compile "org.jetbrains.anko:anko:$anko_version"
 
     // data
     compile 'com.google.code.gson:gson:2.8.1'
@@ -207,5 +208,5 @@ dependencies {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
     testCompile 'junit:junit:4.12'
-    compile "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 }

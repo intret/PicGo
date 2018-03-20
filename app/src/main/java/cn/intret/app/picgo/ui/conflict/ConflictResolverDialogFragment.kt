@@ -141,12 +141,7 @@ class ConflictResolverDialogFragment : BottomSheetDialogFragment() {
 
         val items = mAdapter!!.items
         val compareItems = Stream.of(items)
-                .map { item ->
-                    CompareItem()
-                            .setResult(item.resolveResult)
-                            .setSourceFile(item.sourceFile)
-                            .setTargetFile(item.targetFile)
-                }
+                .map { item -> CompareItem(item.resolveResult, item.targetFile, item.sourceFile) }
                 .toList()
 
         val param = mAdapter!!.resolveResultCount
@@ -169,7 +164,7 @@ class ConflictResolverDialogFragment : BottomSheetDialogFragment() {
 
                     Logger.d("解决图片文文件名冲突")
 
-                    ImageModule.getInstance()
+                    ImageModule
                             .resolveFileNameConflict(compareItems)
                             .compose(RxUtils.applySchedulers())
                             .doOnNext { this.onCompareItemResult(it) }
@@ -180,8 +175,6 @@ class ConflictResolverDialogFragment : BottomSheetDialogFragment() {
                 }
                 .negativeText(R.string.cancel)
                 .show()
-
-
     }
 
     private fun onCompleteResolve(compareItems: List<CompareItemResolveResult>) {
@@ -198,7 +191,7 @@ class ConflictResolverDialogFragment : BottomSheetDialogFragment() {
     }
 
     private fun onCompareItemResult(compareItemResolveResult: CompareItemResolveResult) {
-        if (compareItemResolveResult.isResolved) {
+        if (compareItemResolveResult.resolved) {
 
             val compareItem = compareItemResolveResult.compareItem
             when (compareItem.result) {
@@ -228,7 +221,7 @@ class ConflictResolverDialogFragment : BottomSheetDialogFragment() {
         val allFiles = LinkedList(mConflictFiles!!)
         allFiles.addAll(targetFiles)
 
-        ImageModule.getInstance()
+        ImageModule
 
                 // 加载图片文件信息
                 .loadImageFilesInfoMap(allFiles)

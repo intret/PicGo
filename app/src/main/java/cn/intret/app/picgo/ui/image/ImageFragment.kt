@@ -244,7 +244,7 @@ class ImageFragment : Fragment() {
                 .itemsCallback { dialog, itemView, position, text ->
                     when (position) {
                         0 // delete files
-                        -> ImageModule.getInstance()
+                        -> ImageModule
                                 .removeFile(File(mFilePath!!))
                                 .subscribe({ aBoolean ->
                                     if (aBoolean!!) {
@@ -267,7 +267,7 @@ class ImageFragment : Fragment() {
 
     private fun handleClickEvent() {
 
-        val fullscreen = UserModule.getInstance().imageClickToFullscreen
+        val fullscreen = UserModule.imageClickToFullscreen
         if (fullscreen) {
             // 点击图片进入全屏
             EventBus.getDefault().post(TapImageMessage())

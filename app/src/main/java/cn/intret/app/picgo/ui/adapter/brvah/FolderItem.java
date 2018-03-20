@@ -18,7 +18,6 @@ public class FolderItem extends ImageFolder implements MultiItemEntity, Cloneabl
 
     boolean mIsSelected;
     public String title;
-    public File mFile;
     List<File> mConflictFiles;
     boolean mIsSelectionSourceDir = false;
     int mSelectedCount = -1;
@@ -83,15 +82,6 @@ public class FolderItem extends ImageFolder implements MultiItemEntity, Cloneabl
 
     public FolderItem setTitle(String title) {
         this.title = title;
-        return this;
-    }
-
-    public File getFile() {
-        return mFile;
-    }
-
-    public FolderItem setFile(File file) {
-        mFile = file;
         return this;
     }
 
