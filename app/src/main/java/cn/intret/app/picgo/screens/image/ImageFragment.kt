@@ -12,8 +12,8 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewTreeObserver
 import android.widget.ImageView
+import androidx.view.doOnPreDraw
 import butterknife.ButterKnife
 import butterknife.Unbinder
 import cn.intret.app.picgo.R
@@ -102,17 +102,13 @@ class ImageFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
         // Inflate the layout for this fragment
-        val contentView = inflater.inflate(R.layout.fragment_image, container, false)
-
-        bind = ButterKnife.bind(this, contentView)
-
-
-        return contentView
+        return inflater.inflate(R.layout.fragment_image, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        bind = ButterKnife.bind(this, view)
         //if (mPerformEnterTransition) {
         tryToSetTransitionNameFromIntent()
         //}
@@ -385,45 +381,12 @@ class ImageFragment : Fragment() {
      * asynchronously load/scale a bitmap before the transition can begin).
      */
     private fun scheduleStartPostponedTransition(sharedElement: View) {
-        //        sharedElement.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-        //            @Override
-        //            public void onGlobalLayout() {
-        //                sharedElement.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-        //                ActivityCompat.startPostponedEnterTransition(ImageFragment.this.getActivity());
-        //            }
-        //        });
 
-        //        ViewTreeObserver.OnPreDrawListener listener = new ViewTreeObserver.OnPreDrawListener() {
-        //            @Override
-        //            public boolean onPreDraw() {
-        //                sharedElement.getViewTreeObserver().removeOnPreDrawListener(this);
-        //
-        //                FragmentActivity activity = ImageFragment.this.getActivity();
-        //                if (activity != null) {
-        //                    Log.d(TAG, "onPreDraw: perform enter transition for " + mImageTransitionName + " " + mFilePath);
-        //                    ActivityCompat.startPostponedEnterTransition(activity);
-        //                } else {
-        //                    Log.e(TAG, "Cannot perform enter transition for fragment because no attached activity.");
-        //                }
-        //                return true;
-        //            }
-        //        };
-        sharedElement.viewTreeObserver.addOnPreDrawListener(OnPreDrawObserver(sharedElement))
-    }
-
-    internal inner class OnPreDrawObserver(var mView: View) : ViewTreeObserver.OnPreDrawListener {
-
-        override fun onPreDraw(): Boolean {
-
+        sharedElement.doOnPreDraw {
             if (mAlreadyPerformAnimation) {
-                return true
-            }
 
-            mAlreadyPerformAnimation = true
-
-            val viewTreeObserver = mView.viewTreeObserver
-            if (viewTreeObserver.isAlive) {
-                viewTreeObserver.removeOnPreDrawListener(this@OnPreDrawObserver)
+            } else {
+                mAlreadyPerformAnimation = true
 
                 val activity = this@ImageFragment.activity
                 if (activity != null) {
@@ -433,7 +396,6 @@ class ImageFragment : Fragment() {
                     Log.w(TAG, "Cannot perform enter transition for fragment because no attached activity.")
                 }
             }
-            return true
         }
     }
 

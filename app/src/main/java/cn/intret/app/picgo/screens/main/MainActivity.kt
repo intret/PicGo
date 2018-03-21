@@ -35,7 +35,7 @@ import cn.intret.app.picgo.model.image.*
 import cn.intret.app.picgo.model.user.*
 import cn.intret.app.picgo.screens.adapter.*
 import cn.intret.app.picgo.screens.adapter.brvah.*
-import cn.intret.app.picgo.screens.base.BaseAppCompatActivity
+import cn.intret.app.picgo.screens.base.BaseDaggerAppCompatActivity
 import cn.intret.app.picgo.screens.conflict.ConflictResolverDialogFragment
 import cn.intret.app.picgo.screens.event.CurrentImageChangeMessage
 import cn.intret.app.picgo.screens.event.MoveFileResultMessage
@@ -80,7 +80,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.collections.ArrayList
 
-class MainActivity : BaseAppCompatActivity(), MainContract.View {
+class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
 
     /* --------------------------------------------------
      * 图片列表

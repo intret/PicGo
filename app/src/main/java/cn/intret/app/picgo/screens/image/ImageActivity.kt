@@ -49,6 +49,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.request.RequestOptions
 import com.github.chrisbanes.photoview.PhotoView
 import com.orhanobut.logger.Logger
+import com.pawegio.kandroid.animListener
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import jp.wasabeef.blurry.Blurry
@@ -287,14 +288,20 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
     @OnClick(R.id.btn_delete)
     fun onClickDeleteButton(view: View) {
 
-        ImageModule
-                .removeFile(mPagerAdapter!!.getImage(mCurrentItem).getFile())
-                .subscribe({ aBoolean ->
-                    if (aBoolean!!) {
-                    } else {
-                        ToastUtils.toastShort(this, R.string.remove_file_failed)
-                    }
-                }) { throwable -> ToastUtils.toastShort(this, R.string.remove_file_failed) }
+        mPagerAdapter?.getImage(mCurrentItem)?.getFile()?.let {
+
+            ImageModule
+                    .removeFile(it)
+                    .subscribe(
+                            { aBoolean ->
+                                if (aBoolean!!) {
+                                } else {
+                                    ToastUtils.toastShort(this, R.string.remove_file_failed)
+                                }
+                            },
+                            { throwable -> ToastUtils.toastShort(this, R.string.remove_file_failed) }
+                    )
+        }
 
     }
 
@@ -349,7 +356,7 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
 
         // 分辨率
         val sizeString = resources.getString(R.string.image_size_d_d,
-                info.mediaResolution?.width?:0, info.mediaResolution?.height?:0)
+                info.mediaResolution?.width ?: 0, info.mediaResolution?.height ?: 0)
 
         ViewUtils.setText(mDetailContainer,
                 R.id.value_resolution,
@@ -443,32 +450,20 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
         if (mAnimationType == AnimationType.FADE_IN_FADE_OUT) {
 
             val e = alphaAnimatorOfView(mBottomToolbar)
+            e.apply {
+                animListener {
+                    onAnimationEnd {
+                        //                    mBottomToolbar.setEnabled(false);
 
-            e.addListener(object : Animator.AnimatorListener {
-                override fun onAnimationStart(animator: Animator) {
-
+                        //                    if (mBottomToolbar.getAlpha() == 0) {
+                        //                        mBottomToolbar.setEnabled(false);
+                        //                    } else {
+                        //                        mBottomToolbar.setEnabled(true);
+                        //                    }
+                    }
                 }
+            }
 
-                override fun onAnimationEnd(animator: Animator) {
-
-
-                    //                    mBottomToolbar.setEnabled(false);
-
-                    //                    if (mBottomToolbar.getAlpha() == 0) {
-                    //                        mBottomToolbar.setEnabled(false);
-                    //                    } else {
-                    //                        mBottomToolbar.setEnabled(true);
-                    //                    }
-                }
-
-                override fun onAnimationCancel(animator: Animator) {
-
-                }
-
-                override fun onAnimationRepeat(animator: Animator) {
-
-                }
-            })
             animators.add(e)
 
         } else if (mAnimationType == AnimationType.SLIDE_IN_SLIDE_OUT) {
@@ -476,6 +471,7 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
         }
 
         // Cancel previous animation
+
         if (mFullscreenAnimatorSet != null) {
             if (mFullscreenAnimatorSet!!.isRunning) {
                 return
@@ -486,34 +482,27 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
 
         // Start new animation
         mFullscreenAnimatorSet = AnimatorSet()
-        mFullscreenAnimatorSet!!.duration = 200
-        mFullscreenAnimatorSet!!.playTogether(animators)
-        mFullscreenAnimatorSet!!.addListener(object : Animator.AnimatorListener {
-            override fun onAnimationStart(animation: Animator) {
-                if (isCurrentFullscreen) {
-                    mBottomToolbar.visibility = View.VISIBLE
+        mFullscreenAnimatorSet?.apply {
+            duration = 200
+            playTogether(animators)
+            animListener {
+                onAnimationStart {
+                    if (isCurrentFullscreen) {
+                        mBottomToolbar.visibility = View.VISIBLE
+                    }
+                }
+                onAnimationEnd {
+                    if (isCurrentFullscreen) {
+                        mBottomToolbar.visibility = View.INVISIBLE
+                    } else {
+                        mBottomToolbar.visibility = View.VISIBLE
+                    }
+                    ViewUtils.setViewAndChildrenEnabled(mBottomToolbar, !isCurrentFullscreen)
                 }
             }
-
-            override fun onAnimationEnd(animation: Animator) {
-                if (isCurrentFullscreen) {
-                    mBottomToolbar.visibility = View.INVISIBLE
-                } else {
-                    mBottomToolbar.visibility = View.VISIBLE
-                }
-                ViewUtils.setViewAndChildrenEnabled(mBottomToolbar, !isCurrentFullscreen)
-            }
-
-            override fun onAnimationCancel(animation: Animator) {
-
-            }
-
-            override fun onAnimationRepeat(animation: Animator) {
-
-            }
-        })
-        mFullscreenAnimatorSet!!.start()
-
+        }.also {
+            it?.start()
+        }
     }
 
     override fun onScaleProgress(scale: Float) {
@@ -540,8 +529,8 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
         SLIDE_IN_SLIDE_OUT
     }
 
-    private fun alphaAnimatorOfView(v: View?): ObjectAnimator {
-        val alphaStart = v!!.alpha
+    private fun alphaAnimatorOfView(v: View): ObjectAnimator {
+        val alphaStart = v.alpha
         val alphaEnd = if (isCurrentFullscreen) VIEW_NORMAL_ALPHA else VIEW_FULL_SCREEN_ALPHA
         return ObjectAnimator.ofFloat(v, "alpha", alphaStart, alphaEnd)
     }
@@ -585,7 +574,7 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun onEvent(message: RemoveFileMessage) {
 
-        mPagerAdapter!!.removeFile(message.getFile())
+        mPagerAdapter?.removeFile(message.getFile())
 
         //        int currentItem = mViewPager.getCurrentItem();
         //        if (SystemUtils.isSameFile(message.getFile(), mPagerAdapter.getImage(currentItem).getFile())) {
@@ -609,32 +598,38 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
         if (mDirPath != null && mItemPosition != -1) {
 
             // 浏览文件列表
-            ImageModule
-                    .loadMediaFileList(File(mDirPath!!),
-                            LoadMediaFileParam()
-                                    .setFromCacheFirst(true)
-                                    .setLoadMediaInfo(false)
-                                    .setSortOrder(mSortOrder)
-                                    .setSortWay(mSortWay)
-                    )
-                    .compose(RxUtils.applySchedulers())
-                    .map { this.imageListToImageListAdapter(it) }
-                    .subscribe({ adapter -> showImageAdapter(adapter, mItemPosition) }, { RxUtils.unhandledThrowable(it) })
+            mDirPath?.let {
+                ImageModule
+                        .loadMediaFileList(File(it),
+                                LoadMediaFileParam()
+                                        .setFromCacheFirst(true)
+                                        .setLoadMediaInfo(false)
+                                        .setSortOrder(mSortOrder)
+                                        .setSortWay(mSortWay)
+                        )
+                        .compose(RxUtils.applySchedulers())
+                        .map { this.imageListToImageListAdapter(it) }
+                        .subscribe({ adapter -> showImageAdapter(adapter, mItemPosition) }, { RxUtils.unhandledThrowable(it) })
+            }
+
 
         } else if (mImageFilePath != null) {
 
             // 浏览单个文件
-            Observable.just(mImageFilePath!!)
-                    .map { File(it) }
-                    .map { file ->
-                        val mediaFile = MediaFile()
-                        mediaFile.file = file
-                        mediaFile.date = Date(file.lastModified())
-                        mediaFile
-                    }
-                    .map { ListUtils.objectToLinkedList(it) }
-                    .map { this.imageListToImageListAdapter(it) }
-                    .subscribe({ adapter -> showImageAdapter(adapter, 0) }, { RxUtils.unhandledThrowable(it) })
+            mImageFilePath?.let {
+
+                Observable.just(it)
+                        .map { File(it) }
+                        .map { file ->
+                            val mediaFile = MediaFile()
+                            mediaFile.file = file
+                            mediaFile.date = Date(file.lastModified())
+                            mediaFile
+                        }
+                        .map { ListUtils.objectToLinkedList(it) }
+                        .map { this.imageListToImageListAdapter(it) }
+                        .subscribe({ adapter -> showImageAdapter(adapter, 0) }, { RxUtils.unhandledThrowable(it) })
+            }
         }
     }
 
@@ -678,6 +673,7 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
     }
 
     private fun showImageInfo(position: Int) {
+
         val image = mPagerAdapter!!.getImage(position)
         val total = mPagerAdapter!!.count
 
@@ -689,11 +685,8 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
                 .loadImageInfo(image.getFile())
                 .compose(RxUtils.applySchedulers())
                 .subscribe({ imageFileInformation ->
-                    var resText: String? = null
-
                     imageFileInformation.mediaResolution?.let {
-                        resText = MediaUtils.getResolutionString(this, it)
-                        mResolution.text = resText
+                        mResolution.text = MediaUtils.getResolutionString(this, it)
                     }
 
                 }) { throwable -> mResolution.text = "-" }
@@ -753,11 +746,9 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
      * @return true if we were successful in adding a listener to the enter transition
      */
     private fun addTransitionListener(): Boolean {
-        val transition = window.sharedElementEnterTransition
-
-        if (transition != null) {
+        window.sharedElementEnterTransition.let {
             // There is an entering shared element transition so add a listener to it
-            transition.addListener(object : Transition.TransitionListener {
+            it.addListener(object : Transition.TransitionListener {
                 override fun onTransitionEnd(transition: Transition) {
                     // As the transition has ended, we can now load the full-size image
                     loadFullSizeImage()
@@ -785,9 +776,6 @@ class ImageActivity : BaseAppCompatActivity(), ImageFragment.OnFragmentInteracti
             })
             return true
         }
-
-        // If we reach here then we have not added a listener
-        return false
     }
 
 

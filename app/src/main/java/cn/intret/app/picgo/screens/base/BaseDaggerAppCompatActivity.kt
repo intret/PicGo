@@ -3,13 +3,13 @@ package cn.intret.app.picgo.screens.base
 import android.annotation.SuppressLint
 import android.annotation.TargetApi
 import android.os.Build
-import android.support.v7.app.AppCompatActivity
 import android.util.TypedValue
 import android.view.View
 import android.view.WindowManager
+import dagger.android.support.DaggerAppCompatActivity
 
 @SuppressLint("Registered")
-open class BaseAppCompatActivity : AppCompatActivity() {
+open class BaseDaggerAppCompatActivity : DaggerAppCompatActivity() {
 
     val actionBarHeight: Int
         get() {
