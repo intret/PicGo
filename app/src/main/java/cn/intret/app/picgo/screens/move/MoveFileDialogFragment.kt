@@ -1,10 +1,9 @@
-package cn.intret.app.picgo.screens.main.move
+package cn.intret.app.picgo.screens.move
 
 import android.app.Dialog
 import android.content.Context
 import android.net.Uri
 import android.os.Bundle
-import android.support.design.widget.BottomSheetDialogFragment
 import android.support.v7.app.AlertDialog
 import android.support.v7.widget.GridLayoutManager
 import android.support.v7.widget.LinearLayoutManager
@@ -22,7 +21,8 @@ import android.widget.ImageView
 import android.widget.TextView
 import butterknife.ButterKnife
 import cn.intret.app.picgo.R
-import cn.intret.app.picgo.app.CoreModule
+import cn.intret.app.picgo.di.ActivityScoped
+import cn.intret.app.picgo.model.CoreModule
 import cn.intret.app.picgo.model.event.FolderModelChangeMessage
 import cn.intret.app.picgo.model.image.DetectFileExistenceResult
 import cn.intret.app.picgo.model.image.FolderModel
@@ -37,6 +37,7 @@ import cn.intret.app.picgo.screens.event.MoveFileResultMessage
 import cn.intret.app.picgo.utils.*
 import cn.intret.app.picgo.view.T9KeypadView
 import cn.intret.app.picgo.widget.RecyclerItemTouchListener
+import cn.intret.app.picgo.workaround.DaggerBottomSheetDialogFragment
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.sectionedrecyclerview.ItemCoord
@@ -44,7 +45,7 @@ import com.afollestad.sectionedrecyclerview.SectionedRecyclerViewAdapter
 import com.afollestad.sectionedrecyclerview.SectionedViewHolder
 import com.annimon.stream.Stream
 import com.jakewharton.rxbinding2.widget.RxTextView
-import dagger.android.support.AndroidSupportInjection
+import com.pawegio.kandroid.inflateLayout
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import kotterknife.bindView
@@ -61,7 +62,8 @@ import kotlin.collections.ArrayList
 /**
  * Move selected file ( Fragment argument specified ) to user selected target folder.
  */
-class MoveFileDialogFragment : BottomSheetDialogFragment(),
+@ActivityScoped
+class MoveFileDialogFragment : DaggerBottomSheetDialogFragment(),
         MoveFileContracts.View,
         T9KeypadView.OnT9KeypadInteractionHandler {
 
@@ -88,9 +90,6 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
     internal var mCreateDialog = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
-        AndroidSupportInjection.inject(this)
-
         super.onCreate(savedInstanceState)
 
         if (arguments != null) {
@@ -113,7 +112,7 @@ class MoveFileDialogFragment : BottomSheetDialogFragment(),
                               savedInstanceState: Bundle?): View? {
 
         Log.d(TAG, "onCreateView() called with: inflater = [$inflater], container = [$container], savedInstanceState = [$savedInstanceState]")
-        return LayoutInflater.from(activity).inflate(R.layout.fragment_move_file_dialog, container, false)
+        return context?.inflateLayout(R.layout.fragment_move_file_dialog, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

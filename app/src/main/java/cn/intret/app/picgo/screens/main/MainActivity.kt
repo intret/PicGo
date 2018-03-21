@@ -43,7 +43,7 @@ import cn.intret.app.picgo.screens.exclude.ExcludeFolderDialogFragment
 import cn.intret.app.picgo.screens.floating.FloatWindowService
 import cn.intret.app.picgo.screens.image.DragPhotoActivity
 import cn.intret.app.picgo.screens.image.ImageActivity
-import cn.intret.app.picgo.screens.main.move.MoveFileDialogFragment
+import cn.intret.app.picgo.screens.move.MoveFileDialogFragment
 import cn.intret.app.picgo.screens.pref.SettingActivity
 import cn.intret.app.picgo.utils.*
 import cn.intret.app.picgo.view.T9KeypadView
@@ -65,7 +65,6 @@ import com.annimon.stream.function.Function
 import com.annimon.stream.function.Supplier
 import com.jakewharton.rxrelay2.BehaviorRelay
 import com.orhanobut.logger.Logger
-import dagger.android.AndroidInjection
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -279,8 +278,6 @@ class MainActivity : BaseAppCompatActivity(), MainContract.View {
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
-        AndroidInjection.inject(this)
 
         var myApp = application as MyApp
 

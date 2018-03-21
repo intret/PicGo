@@ -1,4 +1,4 @@
-package cn.intret.app.picgo.app
+package cn.intret.app.picgo.model
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -9,6 +9,6 @@ object CoreModule {
     var appContext: Context? = null
 
     fun init(appContext: Context) {
-        this.appContext = appContext
+        CoreModule.appContext = appContext
     }
 }

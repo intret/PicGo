@@ -31,7 +31,9 @@ import java.security.InvalidParameterException
 import java.util.*
 import java.util.concurrent.locks.ReadWriteLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
+import javax.inject.Singleton
 
+@Singleton
 @SuppressLint("StaticFieldLeak")
 object ImageModule : BaseModule() {
 

@@ -1,9 +1,8 @@
-package cn.intret.app.picgo.screens.main.move
-
-import java.io.File
+package cn.intret.app.picgo.screens.move
 
 import cn.intret.app.picgo.model.image.DetectFileExistenceResult
 import cn.intret.app.picgo.model.image.FolderModel
+import java.io.File
 
 /**
  * Contracts of MoveFile's MVP design pattern

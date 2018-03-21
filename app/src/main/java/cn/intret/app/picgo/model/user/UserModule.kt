@@ -24,12 +24,14 @@ import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 import java.io.File
 import java.util.*
+import javax.inject.Singleton
 
 /**
  * Singleton Module for external storage (SDCard) multimedia files management.
  *
  *
  */
+@Singleton
 @SuppressLint("StaticFieldLeak")
 object UserModule : BaseModule() {
 

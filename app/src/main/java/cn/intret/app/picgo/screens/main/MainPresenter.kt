@@ -3,6 +3,7 @@ package cn.intret.app.picgo.screens.main
 import android.arch.lifecycle.LifecycleOwner
 import android.util.Log
 import cn.intret.app.picgo.R
+import cn.intret.app.picgo.di.ActivityScoped
 import cn.intret.app.picgo.model.NotEmptyException
 import cn.intret.app.picgo.model.image.ImageModule
 import cn.intret.app.picgo.model.image.LoadMediaFileParam
@@ -20,6 +21,7 @@ import javax.inject.Inject
  *
  * @param <V> View type, Fragment or Activity who implemented [LifecycleOwner]
 */
+@ActivityScoped
 class MainPresenter<V> @Inject constructor (internal var mView: V)
     : BaseLifecyclePresenter<V>(), MainContract.Presenter
         where V : MainContract.View, V : LifecycleOwner {

@@ -2,12 +2,12 @@ package cn.intret.app.picgo.screens.base
 
 import android.annotation.TargetApi
 import android.os.Build
-import android.support.v7.app.AppCompatActivity
 import android.util.TypedValue
 import android.view.View
 import android.view.WindowManager
+import dagger.android.support.DaggerAppCompatActivity
 
-open class BaseAppCompatActivity : AppCompatActivity() {
+open class BaseAppCompatActivity : DaggerAppCompatActivity() {
 
     val actionBarHeight: Int
         get() {

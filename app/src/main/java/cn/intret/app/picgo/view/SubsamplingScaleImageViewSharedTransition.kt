@@ -1,4 +1,4 @@
-package cn.intret.app.picgo.screens.main
+package cn.intret.app.picgo.view
 
 import android.animation.Animator
 import android.animation.PropertyValuesHolder
@@ -10,11 +10,9 @@ import android.transition.Transition
 import android.transition.TransitionValues
 import android.util.AttributeSet
 import android.view.ViewGroup
-
+import cn.intret.app.picgo.R
 import com.davemorrissey.labs.subscaleview.ImageViewState
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
-
-import cn.intret.app.picgo.R
 
 /**
  * While changing size of [com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView], change scale and center for smooth transition.

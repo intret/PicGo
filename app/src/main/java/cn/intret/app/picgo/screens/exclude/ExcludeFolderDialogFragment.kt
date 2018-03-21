@@ -18,7 +18,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import butterknife.ButterKnife
 import cn.intret.app.picgo.R
-import cn.intret.app.picgo.app.CoreModule
+import cn.intret.app.picgo.model.CoreModule
 import cn.intret.app.picgo.model.image.ImageModule
 import cn.intret.app.picgo.model.user.UserModule
 import cn.intret.app.picgo.screens.adapter.SectionedFolderListAdapter

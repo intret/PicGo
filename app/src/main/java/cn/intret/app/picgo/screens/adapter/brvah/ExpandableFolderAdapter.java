@@ -39,7 +39,7 @@ public class ExpandableFolderAdapter
 
         public ItemViewHolder(View view) {
             super(view);
-//            ButterKnife.bind(this, view);
+//            ButterKnife.bindMainActivity(this, view);
 
             // Setup view holder. You'd want some views to be optional, e.g. the
             // header/footer will have views that normal item views do or do not have.

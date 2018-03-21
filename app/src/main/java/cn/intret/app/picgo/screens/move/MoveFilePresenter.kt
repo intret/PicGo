@@ -1,4 +1,4 @@
-package cn.intret.app.picgo.screens.main.move
+package cn.intret.app.picgo.screens.move
 
 import android.arch.lifecycle.LifecycleOwner
 import cn.intret.app.picgo.model.image.DetectFileExistenceResult
