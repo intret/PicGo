@@ -65,8 +65,8 @@ import com.annimon.stream.function.Function
 import com.annimon.stream.function.Supplier
 import com.jakewharton.rxrelay2.BehaviorRelay
 import com.orhanobut.logger.Logger
+import com.pawegio.kandroid.w
 import io.reactivex.Observable
-import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import kotterknife.bindView
@@ -80,12 +80,16 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.collections.ArrayList
 
+/**
+ * Main screen of app
+ * TODO: extract drawer to fragment
+ */
 class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
 
-    /* --------------------------------------------------
-     * 图片列表
-     * --------------------------------------------------
-     */
+    // ---------------------------------------------------------------------------------------------
+    // 图片列表
+    // ---------------------------------------------------------------------------------------------
+
     internal val mImageRefresh: SwipeRefreshLayout by bindView(R.id.refresh)
     internal val mImageList: SuperRecyclerView by bindView(R.id.img_list)
     internal val mEmptyView: View by bindView(R.id.empty_view)
@@ -94,16 +98,15 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
     internal val mModeRadioGroup: RadioGroup by bindView(R.id.view_mode)
     internal val mImageToolbar: ViewGroup by bindView(R.id.image_tool_bar)
 
-    /* --------------------------------------------------
-     * 抽屉菜单/文件夹列表
-     * --------------------------------------------------
-     */
+    // ---------------------------------------------------------------------------------------------
+    // 抽屉菜单/文件夹列表
+    // ---------------------------------------------------------------------------------------------
+
 
     internal val mDrawerLayout: DrawerLayout by bindView(R.id.drawer_layout)
     internal val mFolderListRefresh: SwipeRefreshLayout by bindView(R.id.folder_list_refresh)
     internal val mFolderList: EmptyRecyclerView by bindView(R.id.drawer_folder_list)
     internal val mFolderListEmptyView: TextView by bindView(R.id.folder_list_empty_view)
-
 
     internal val mKeypadContainer: ViewGroup by bindView(R.id.t9_keypad_container)
     internal val mKeypad: T9KeypadView by bindView(R.id.t9_keypad)
@@ -113,34 +116,38 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
 
     private var mDialpadSwitchBadge: BadgeView? = null
 
-    /*
-     * ActionBar/Toolbar
-     */
+    // ------------------------------------------------
+    // ActionBar/Toolbar
+    // ------------------------------------------------
+
 
     private var mToolbar: Toolbar? = null
     private var mDrawerToggle: ActionBarDrawerToggle? = null
 
-    /*
-     * Folder list
-     */
+    // ------------------------------------------------
+    // Folder list
+    // ------------------------------------------------
+
     private var mFolderListAdapter: FolderListAdapter? = null
 
-    /*
-     * The showing image list corresponding folder
-     */
+    // ------------------------------------------------
+    // The showing image list corresponding folder
+    // ------------------------------------------------
+
     private var mCurrentFolder: File? = null
     private var mFolderAdapter: SectionedFolderListAdapter? = null
 
-    /*
-     * Floating view
-     */
+    // ------------------------------------------------
+    // Floating view
+    // ------------------------------------------------
+
     private var mStartFloatingIntent: Intent? = null
 
 
-    /* --------------------------------------------------
-     * Image List
-     * --------------------------------------------------
-     */
+    // ---------------------------------------------------------------------------------------------
+    // Image List
+    // ---------------------------------------------------------------------------------------------
+
 
     /**
      * Default image list adapter cache
@@ -164,9 +171,9 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
     internal var mImageSelectCountRelay: BehaviorRelay<DefaultImageListAdapter> = BehaviorRelay.create()
     internal var mDetailImageSelectCountRelay: BehaviorRelay<DetailImageAdapter> = BehaviorRelay.create()
 
-    /*
-     * Image list configuration
-     */
+    // ------------------------------------------------
+    // Image list configuration
+    // ------------------------------------------------
 
     private var mSpanCount: Int = 0 // 图片列表网格列数
     private var mCurrentViewerImageIndex = -1 // 图片查看器显示的图片索引
@@ -175,9 +182,10 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
     private var mViewState = ListViewState()
     private var mMovingViewState: Boolean = false
 
-    /*
-     * Data loading status
-     */
+    // ------------------------------------------------
+    // Data loading status
+    // ------------------------------------------------
+
     private var mIsFolderListLoaded = false
     private var mIsImageListLoaded = false
 
@@ -514,9 +522,10 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
         fragment.show(supportFragmentManager, "Conflict Resolver Dialog")
     }
 
-    /*
-     * 消息处理
-     */
+    // ---------------------------------------------------------------------------------------------
+    // EventBus 消息处理
+    // ---------------------------------------------------------------------------------------------
+
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun onEvent(message: RecentOpenFolderListChangeMessage) {
         Log.d(TAG, "onEvent() called with: message = [$message]")
@@ -628,6 +637,7 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
             ViewMode.GRID_VIEW -> {
                 if (mCurrentImageAdapter != null) {
                     if (mCurrentImageAdapter!!.directory == message.getDir()) {
+                        Log.w(TAG, "set mCurrentImageAdapter/mImageList.adapter to null")
                         mCurrentImageAdapter = null
                         mImageList.adapter = null
                     }
@@ -636,6 +646,7 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
             ViewMode.LIST_VIEW -> {
                 if (mCurrentDetailImageAdapter != null) {
                     if (mCurrentDetailImageAdapter!!.directory == message.getDir()) {
+                        Log.w(TAG, "set mCurrentDetailImageAdapter/mImageList.adapter to null")
                         mCurrentDetailImageAdapter = null
                         mImageList.adapter = null
                     }
@@ -1156,28 +1167,30 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
 
 
         // DialPad
-        mKeypad.dialpadInputObservable
+        mKeypad.keypadInputObservable
                 .debounce(300, TimeUnit.MILLISECONDS)
                 .subscribe { input ->
                     if (mEnableT9Filter) {
-                        updateFolderList(input.toString())
+                        filterFolderList(input.toString())
                     }
                 }
 
     }
 
-    private fun updateFolderList(t9NumberInput: String) {
-        Single.just(t9NumberInput)
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe { s ->
-                    if (StringUtils.isEmpty(t9NumberInput)) {
-                        mDialpadSwitchBadge!!.setBadgeCount(0)
-                        mDialpadSwitchBadge!!.visibility = View.INVISIBLE
-                    } else {
-                        mDialpadSwitchBadge!!.setBadgeCount(t9NumberInput.length)
-                        mDialpadSwitchBadge!!.visibility = View.VISIBLE
-                    }
+    private fun filterFolderList(t9NumberInput: String) {
+        runOnUiThread {
+            if (t9NumberInput.isEmpty()) {
+                mDialpadSwitchBadge?.apply {
+                    setBadgeCount(0)
+                    visibility = View.INVISIBLE
                 }
+            } else {
+                mDialpadSwitchBadge?.apply {
+                    setBadgeCount(t9NumberInput.length)
+                    visibility = View.VISIBLE
+                }
+            }
+        }
 
         ImageModule
                 .loadFolderModel(true, t9NumberInput)
@@ -1185,16 +1198,29 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
                 .compose(RxUtils.applySchedulers())
                 .subscribe({ newAdapter ->
 
-                    val adapter = mFolderList.adapter
-                    if (adapter is SectionedFolderListAdapter) {
-                        adapter.diffUpdate(newAdapter)
-                        mCurrentT9Number = t9NumberInput
+                    if (mFolderList.adapter == null) {
+                        mFolderList.adapter = newAdapter
                     } else {
-                        Log.w(TAG, "initDrawer:  没处理 dialpad 输入变更更新")
+                        val adapter = mFolderList.adapter
+                        if (adapter is SectionedFolderListAdapter) {
+
+                            newAdapter.itemCount.takeIf { it <= 0 }
+                                    .run { w("Filtering with string '$t9NumberInput' results empty adapter") }
+
+                            adapter.diffUpdate(newAdapter)
+                            mCurrentT9Number = t9NumberInput
+                        } else {
+                            Log.w(TAG, "initDrawer:  没处理 dialpad 输入变更更新")
+                        }
                     }
 
                 }, { RxUtils.unhandledThrowable(it) })
     }
+
+    // ---------------------------------------------------------------------------------------------
+    // View onClick
+    // ---------------------------------------------------------------------------------------------
+
 
     @OnClick(R.id.keyboard_switch_layout)
     fun onButtonClickKeypadLayout(view: View) {
@@ -1215,7 +1241,7 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
     @OnLongClick(R.id.keyboard_switch)
     fun onLongClickButtonDialpadSwitch(view: View): Boolean {
         if (!TextUtils.isEmpty(mCurrentT9Number)) {
-            //            updateFolderList("");
+            //            filterFolderList("");
             mKeypad.clearT9Input()
             mKeypadContainer.visibility = View.INVISIBLE
         }
@@ -1312,9 +1338,10 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
         mExpandableFolderAdapter!!.expandAll()
     }
 
-    /*
-     * 文件夹列表
-     */
+
+    // ---------------------------------------------------------------------------------------------
+    // 文件夹列表
+    // ---------------------------------------------------------------------------------------------
 
     private fun showFolderList(model: FolderModel) {
 
@@ -1986,9 +2013,10 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
         }
     }
 
-    /*
-     * 文件操作
-     */
+
+    // ---------------------------------------------------------------------------------------------
+    // 文件操作
+    // ---------------------------------------------------------------------------------------------
 
     private fun moveAdapterSelectedFilesToDir(destDir: File) {
         ImageModule
@@ -2019,9 +2047,10 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
     }
 
 
-    /*
-     * 文件夹列表
-     */
+    // ---------------------------------------------------------------------------------------------
+    // 文件夹列表
+    // ---------------------------------------------------------------------------------------------
+
     private fun showFolderModel(model: FolderModel) {
 
         val sectionItems = LinkedList<SectionFolderListAdapter.SectionItem>()
@@ -2077,7 +2106,7 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
             val sectionItem = SectionFolderListAdapter.SectionItem()
             sectionItem.apply {
                 name = it.mName
-                file = it.mFile
+                file = it.file
                 items = containerFolder.folders
                         .map { item ->
                             SectionFolderListAdapter.Item()
@@ -2133,9 +2162,10 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
         //        }
     }
 
-    /*
-     * Actionbar
-     */
+
+    // ---------------------------------------------------------------------------------------------
+    // Actionbar
+    // ---------------------------------------------------------------------------------------------
 
     fun updateActionBarTitle(name: String) {
         val actionBar = supportActionBar
@@ -2144,9 +2174,10 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
         }
     }
 
-    /*
-     * Image list
-     */
+
+    // ---------------------------------------------------------------------------------------------
+    // Image list
+    // ---------------------------------------------------------------------------------------------
 
     private fun reloadCurrentImageList() {
         showImageList(mCurrentFolder, false, true, true)
@@ -3497,6 +3528,11 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
 
         return root
     }
+
+    // ---------------------------------------------------------------------------------------------
+    // MVP View interface
+    // ---------------------------------------------------------------------------------------------
+
 
     override fun onLoadedUserInitialPreferences(userInitialPreferences: UserInitialPreferences) {
         mRecentHistory = Stream.of<RecentRecord>(userInitialPreferences.recentRecords).map<File> { r -> File(r.filePath) }.toList()

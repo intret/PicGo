@@ -3,9 +3,6 @@ package cn.intret.app.picgo.model.image
 import java.io.File
 import java.util.LinkedList
 import kotlin.collections.ArrayList
-import kotlin.collections.List
-import kotlin.collections.MutableList
-import kotlin.collections.toList
 
 /**
  * 表示图片目录的数据模型，一个父文件夹包含多个‘含有图片的文件夹’
@@ -35,7 +32,7 @@ class FolderModel : Cloneable {
      * TODO merge with class [ImageFolder]
      */
     class ContainerFolder : Cloneable {
-        internal lateinit var mFile: File
+        internal lateinit var file: File
         internal lateinit var mName: String
 
         internal var mFolders: MutableList<ImageFolder>? = null
@@ -54,17 +51,9 @@ class FolderModel : Cloneable {
             return this
         }
 
-        fun getFile(): File {
-            return mFile
-        }
-
         fun setFile(file: File): ContainerFolder {
-            mFile = file
+            this.file = file
             return this
-        }
-
-        fun getName(): String {
-            return mName
         }
 
         fun setName(name: String): ContainerFolder {
@@ -75,21 +64,17 @@ class FolderModel : Cloneable {
         @Throws(CloneNotSupportedException::class)
         public override fun clone(): Any {
             val clone = super.clone() as ContainerFolder
-            clone.setFile(File(mFile.absolutePath))
-            if (mFolders != null) {
-                val newFolders = LinkedList<ImageFolder>()
-                var i = 0
-                val mFoldersSize = mFolders!!.size
-                while (i < mFoldersSize) {
-                    val folder = mFolders!![i]
-                    newFolders.add(folder.clone() as ImageFolder)
-                    i++
-                }
-                clone.setFolders(newFolders)
+            clone.file = File(file.absolutePath)
+            clone.mFolders = this.mFolders?.let {
+                it.map { it.clone() as ImageFolder }.toMutableList()
             }
-
             return clone
         }
+
+        override fun toString(): String {
+            return "ContainerFolder(file=$file, mName='$mName', mFolders=$mFolders)"
+        }
+
     }
 
     fun addFolderSection(section: ContainerFolder) {
@@ -99,17 +84,16 @@ class FolderModel : Cloneable {
     @Throws(CloneNotSupportedException::class)
     public override fun clone(): Any {
         val clone = super.clone() as FolderModel
-        if (mContainerFolders != null) {
-            val containerFolders = LinkedList<ContainerFolder>()
-            var i = 0
-            val mParentFolderInfosSize = mContainerFolders!!.size
-            while (i < mParentFolderInfosSize) {
-                val containerFolder = mContainerFolders!![i]
-                containerFolders.add(containerFolder.clone() as ContainerFolder)
-                i++
-            }
-            clone.mContainerFolders = containerFolders
+        clone.mContainerFolders = this.mContainerFolders?.let {
+            it.map { it.clone() as ContainerFolder }.toMutableList()
         }
+        clone.mIsT9FilterMode = this.mIsT9FilterMode
         return clone
     }
+
+    override fun toString(): String {
+        return "FolderModel(mIsT9FilterMode=$mIsT9FilterMode, mContainerFolders=$mContainerFolders)"
+    }
+
+
 }

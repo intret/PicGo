@@ -31,3 +31,4 @@ inline fun <E: Any, T: Collection<E>, R: Any> T?.whenNullOrEmpty(func: () -> R?)
     }
     return null
 }
+

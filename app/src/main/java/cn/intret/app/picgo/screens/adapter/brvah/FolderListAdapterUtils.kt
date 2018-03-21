@@ -1,13 +1,11 @@
 package cn.intret.app.picgo.screens.adapter.brvah
 
-import com.annimon.stream.Stream
-import com.chad.library.adapter.base.entity.MultiItemEntity
-
-import java.util.LinkedList
-
 import cn.intret.app.picgo.model.image.FolderModel
 import cn.intret.app.picgo.model.image.ImageFolder
 import cn.intret.app.picgo.screens.adapter.SectionedFolderListAdapter
+import cn.intret.app.picgo.utils.whenNotNullNorEmpty
+import com.annimon.stream.Stream
+import java.util.*
 
 object FolderListAdapterUtils {
 
@@ -28,8 +26,8 @@ object FolderListAdapterUtils {
     private fun parentFolderToItem(containerFolder: FolderModel.ContainerFolder): SectionedFolderListAdapter.Section {
         val section = SectionedFolderListAdapter.Section()
 
-        return section.setName(containerFolder.getName())
-                .setFile(containerFolder.getFile())
+        return section.setName(containerFolder.mName)
+                .setFile(containerFolder.file)
                 .setItems(
                         Stream.of(containerFolder.folders)
                                 .map { item ->
@@ -54,50 +52,37 @@ object FolderListAdapterUtils {
     }
 
     fun imageFolderToExpandableFolderItem(folder: ImageFolder): FolderItem {
-        val folderItem: FolderItem
-        folderItem = FolderItem()
-        folderItem.file = folder.file
-        folderItem.count = folder.count
-        folderItem.setName(folder.name)
-        folderItem.setTitle(folder.name)
-        folderItem.setThumbList(folder.thumbList)
-        folderItem.setMatchKeywords(folder.matchKeywords?.toString())
-        folderItem.setMatchLength(folder.getMatchLength())
-        folderItem.setMatchStartIndex(folder.getMatchStartIndex())
-        folderItem.setMediaFiles(folder.getMediaFiles())
-        folderItem.setPinyinSearchUnit(folder.getPinyinSearchUnit())
-        return folderItem
+        return FolderItem()
+                .apply {
+                    file = folder.file
+                    count = folder.count
+                    setNameAndCreateSearchUnit(folder.name)
+                    setTitle(folder.name)
+                    setThumbList(folder.thumbList)
+                    setMatchKeywords(folder.matchKeywords?.toString())
+                    setMatchLength(folder.getMatchLength())
+                    setMatchStartIndex(folder.getMatchStartIndex())
+                    setMediaFiles(folder.getMediaFiles())
+                    setPinyinSearchUnit(folder.getPinyinSearchUnit())
+                }
     }
 
     fun containerFolderToFolderSection(containerFolder: FolderModel.ContainerFolder): FolderSection {
-        val folderSection: FolderSection
-        folderSection = FolderSection()
-                .setTitle(containerFolder.getName())
-                .setFile(containerFolder.getFile())
+        return FolderSection().apply {
+            setTitle(containerFolder.mName)
+            file = containerFolder.file
 
-        val folders = containerFolder.folders
+            val folders = containerFolder.folders
+            val folderItems = Stream.of(folders)
+                    .map { imageFolderToExpandableFolderItem(it) }
+                    .toList()
 
-        val folderItems = Stream.of(folders)
-                .map { imageFolderToExpandableFolderItem(it) }
-                .toList()
-
-        folderSection.subItems = folderItems
-        return folderSection
+            subItems = folderItems
+        }
     }
 
     fun folderModelToExpandableFolderAdapter(model: FolderModel): ExpandableFolderAdapter {
-        val data = LinkedList<MultiItemEntity>()
-        val containerFolders = model.containerFolders
-        var i = 0
-        val containerFoldersSize = containerFolders!!.size
-        while (i < containerFoldersSize) {
-            val containerFolder = containerFolders[i]
-
-            val folderSection = containerFolderToFolderSection(containerFolder)
-            data.add(folderSection)
-            i++
-        }
-
-        return ExpandableFolderAdapter(data)
+        val items = model.containerFolders.whenNotNullNorEmpty { it.map { containerFolderToFolderSection(it) } }
+        return ExpandableFolderAdapter(items)
     }
 }

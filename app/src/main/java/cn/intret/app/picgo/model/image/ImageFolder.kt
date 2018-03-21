@@ -4,7 +4,6 @@ package cn.intret.app.picgo.model.image
 import com.t9search.model.PinyinSearchUnit
 import com.t9search.util.PinyinUtil
 import java.io.File
-import java.util.*
 
 
 /**
@@ -39,8 +38,9 @@ open class ImageFolder : Cloneable {
 
     var thumbList: MutableList<File>?
         get() = mThumbList
-        set(value) {mThumbList = value}
-
+        set(value) {
+            mThumbList = value
+        }
 
 
     fun getPinyinSearchUnit(): PinyinSearchUnit? {
@@ -67,7 +67,8 @@ open class ImageFolder : Cloneable {
     }
 
 
-    fun setName(name: String?): ImageFolder {
+    fun setNameAndCreateSearchUnit(name: String?): ImageFolder {
+
         this.name = name
 
         // Generate Pinyin search data
@@ -75,7 +76,6 @@ open class ImageFolder : Cloneable {
         PinyinUtil.parse(mPinyinSearchUnit)
 
         matchKeywords = StringBuffer()
-        matchKeywords!!.delete(0, matchKeywords!!.length)
         setMatchStartIndex(-1)
         setMatchLength(0)
 
@@ -91,7 +91,7 @@ open class ImageFolder : Cloneable {
     }
 
     fun clearMatchKeywords() {
-        matchKeywords?.let { it.delete(0, it.length)}
+        matchKeywords?.let { it.delete(0, it.length) }
     }
 
     fun getMatchStartIndex(): Int {
@@ -115,22 +115,22 @@ open class ImageFolder : Cloneable {
     @Throws(CloneNotSupportedException::class)
     public override fun clone(): Any {
         val clone = super.clone() as ImageFolder
-        clone.matchKeywords = StringBuffer(this.matchKeywords!!.toString())
-        clone.setPinyinSearchUnit(this.mPinyinSearchUnit?.clone() as PinyinSearchUnit? ?:PinyinSearchUnit())
+        clone.matchKeywords = StringBuffer(this.matchKeywords.toString())
+        clone.setPinyinSearchUnit(this.mPinyinSearchUnit?.clone() as PinyinSearchUnit?
+                ?: PinyinSearchUnit())
         clone.file = File(this.file.absolutePath)
-        clone.name = this.name
+        clone.setNameAndCreateSearchUnit(this.name)
 
-
-        if (mThumbList != null) {
-            clone.mThumbList = LinkedList()
-            var i = 0
-            val mThumbListSize = mThumbList!!.size
-            while (i < mThumbListSize) {
-                val file = mThumbList!![i]
-                clone.mThumbList!!.add(File(file.absolutePath))
-                i++
-            }
+        clone.mThumbList = this.mThumbList?.let {
+            it.map { File(it.absolutePath) }.toMutableList()
         }
+
         return clone
     }
+
+    override fun toString(): String {
+        return "ImageFolder(count=$count, name=$name, mMediaFiles=${mMediaFiles?.size
+                ?: 0}, mPinyinSearchUnit=$mPinyinSearchUnit, matchKeywords=$matchKeywords, mMatchStartIndex=$mMatchStartIndex, mMatchLength=$mMatchLength)"
+    }
+
 }

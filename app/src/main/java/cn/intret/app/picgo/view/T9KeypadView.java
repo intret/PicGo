@@ -27,7 +27,7 @@ public class T9KeypadView extends LinearLayout implements
     private static final char DIAL_0_SECOND_MEANING = '+';
     private static final char DIAL_J_SECOND_MEANING = ';';
 
-    public Observable<CharSequence> getDialpadInputObservable() {
+    public Observable<CharSequence> getKeypadInputObservable() {
         return mDialpadInputObservable;
     }
 
@@ -83,9 +83,9 @@ public class T9KeypadView extends LinearLayout implements
         LayoutInflater inflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         mDialpadView = inflater.inflate(R.layout.t9_keypad_layout, this);
 
-        mTelephoneDialCloseBtn = (Button) mDialpadView.findViewById(R.id.telephone_dial_close_btn);
-        mDialDeleteBtn = (Button) mDialpadView.findViewById(R.id.dial_delete_btn);
-        mT9InputEt = (EditText) mDialpadView.findViewById(R.id.dial_input_edit_text);
+        mTelephoneDialCloseBtn = mDialpadView.findViewById(R.id.telephone_dial_close_btn);
+        mDialDeleteBtn = mDialpadView.findViewById(R.id.dial_delete_btn);
+        mT9InputEt = mDialpadView.findViewById(R.id.dial_input_edit_text);
         mT9InputEt.setBackground(getContext().getResources().getDrawable(R.drawable.bg_empty));
         mT9InputEt.setCursorVisible(false);
     }

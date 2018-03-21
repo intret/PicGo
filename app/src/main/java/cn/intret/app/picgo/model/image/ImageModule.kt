@@ -29,9 +29,10 @@ import java.io.FileNotFoundException
 import java.io.IOException
 import java.security.InvalidParameterException
 import java.util.*
-import java.util.concurrent.locks.ReadWriteLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import javax.inject.Singleton
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 @Singleton
 @SuppressLint("StaticFieldLeak")
@@ -56,7 +57,7 @@ object ImageModule : BaseModule() {
     private var mSortOrder = SortOrder.UNKNOWN
 
     internal var mFolderModel: FolderModel? = null
-    internal var mFolderModelRWLock: ReadWriteLock = ReentrantReadWriteLock()
+    internal var mFolderModelLock: ReentrantReadWriteLock = ReentrantReadWriteLock()
     private var mExcludeFolderListPref: ObjectGuarder<Preference<LinkedList<File>>>? = null
 
     /*
@@ -65,19 +66,12 @@ object ImageModule : BaseModule() {
 
     val folderListCount: Int
         get() {
-            try {
-                mFolderModelRWLock.readLock().lock()
+            mFolderModelLock.read {
                 if (mFolderModel == null) {
-
-                    loadGalleryFolderList().subscribe { folderInfos ->
-
-                    }
-                    return mFolderModel!!.containerFolders?.size ?: 0
-                } else {
-                    return mFolderModel!!.containerFolders?.size ?: 0
+                    loadGalleryFolderList()
+                            .subscribe { folderInfos -> }
                 }
-            } finally {
-                mFolderModelRWLock.readLock().unlock()
+                return mFolderModel?.containerFolders?.size ?: 0
             }
         }
 
@@ -104,7 +98,6 @@ object ImageModule : BaseModule() {
     }
 
     init {
-
         loadUserExcludeFileList()
     }
 
@@ -181,9 +174,8 @@ object ImageModule : BaseModule() {
 
     @Deprecated("")
     fun getSectionForPosition(position: Int): Int {
-        try {
 
-            mFolderModelRWLock.readLock().lock()
+        mFolderModelLock.read {
             if (mFolderModel == null) {
                 return 0
             } else {
@@ -210,10 +202,7 @@ object ImageModule : BaseModule() {
                 throw InvalidParameterException(
                         String.format(Locale.getDefault(),
                                 "Invalid parameter 'position' value '%d', exceeds total item size %d", position, begin))
-
             }
-        } finally {
-            mFolderModelRWLock.readLock().unlock()
         }
     }
 
@@ -256,11 +245,11 @@ object ImageModule : BaseModule() {
 
                         filteredFolders.add(folder)
                     } else {
-                        //                        Log.d(TAG, "T9: folder [" + folder.getName() + "]  -------------- T9 keyboard input : " + t9Numbers);
+                        Log.d(TAG, "T9: folder [${folder.name}] not matches T9 keyboard input : [$t9Numbers]")
                     }
                 }
 
-                Log.d(TAG, "----- 最后剩下 " + filteredFolders.size + "/" + folders.size + " 项 -----")
+                Log.d(TAG, "----- 文件夹过滤最后剩下 " + filteredFolders.size + "/" + folders.size + " 项 -----")
                 containerFolder.setFolders(filteredFolders)
             }
         }
@@ -294,13 +283,16 @@ object ImageModule : BaseModule() {
                             val subFolderList = fileListEntry.value
 
                             val imageFolders = Stream.of(subFolderList)
-                                    .map { this.createImageFolder(it) }
+                                    .map(this::createImageFolder)
                                     .toList()
 
-                            folderModel.addFolderSection(FolderModel.ContainerFolder()
-                                    .setFile(parentDir)
-                                    .setName(parentDir.name)
-                                    .setFolders(imageFolders)
+                            folderModel.addFolderSection(
+                                    FolderModel.ContainerFolder()
+                                            .apply {
+                                                file = parentDir
+                                                mName = parentDir.name
+                                                setFolders(imageFolders)
+                                            }
                             )
                         }
             }
@@ -316,19 +308,19 @@ object ImageModule : BaseModule() {
             Log.d(TAG, "loadFolderModel() called with: fromCacheFirst = [$fromCacheFirst]")
 
             if (fromCacheFirst) {
-                try {
+                mFolderModelLock.read {
+                    mFolderModel?.let {
 
-                    mFolderModelRWLock.readLock().lock()
-                    if (mFolderModel != null) {
+                        val cloneFolderModel = it.clone() as FolderModel
+//                        Log.d(TAG, "loadFolderModel: get clone $cloneFolderModel of mFolderModel = [$mFolderModel]")
 
-                        val clone = mFolderModel!!.clone() as FolderModel
-                        Log.d(TAG, "loadFolderModel: get clone $clone of $mFolderModel")
-                        emitter.onNext(clone)
+                        emitter.onNext(cloneFolderModel)
                         emitter.onComplete()
                         return@create
                     }
-                } finally {
-                    mFolderModelRWLock.readLock().unlock()
+
+                    emitter.onComplete()
+                    return@create
                 }
             }
 
@@ -345,21 +337,21 @@ object ImageModule : BaseModule() {
                     }
                     .also {
 
-                        watch.logGlanceMS(TAG, "Load folder list")
-                        val cloneModel: FolderModel
-                        try {
-                            mFolderModelRWLock.writeLock().lock()
+                        watch.logGlanceMS(TAG, "Loaded folder model")
+
+                        var cloneModel: FolderModel? = null
+                        mFolderModelLock.write {
                             mFolderModel = folderModel
-
+                            watch.logGlanceMS(TAG, "Cached folder model")
                             cloneModel = mFolderModel?.clone() as FolderModel
-                        } finally {
-                            mFolderModelRWLock.writeLock().unlock()
                         }
-                        watch.logGlanceMS(TAG, "Cache folder list")
 
-
-                        emitter.onNext(cloneModel)
-                        emitter.onComplete()
+                        if (cloneModel != null) {
+                            emitter.onNext(it)
+                            emitter.onComplete()
+                        } else {
+                            emitter.onError(RuntimeException("create folder model failed"))
+                        }
                     }
         }
     }
@@ -403,20 +395,17 @@ object ImageModule : BaseModule() {
         }
     }
 
-    private fun createThumbnailList(files: Array<File>?, thumbnailCount: Int): MutableList<File>? {
+    private fun createThumbnailList(files: List<File>?, thumbnailCount: Int): MutableList<File>? {
         // TODO: filter image
 
-        var thumbFileList: MutableList<File>? = null
-        if (files != null) {
-            if (files.size > 0) {
-                // 按照时间排序并取前三个文件
-                thumbFileList = Stream.of(*files)
-                        .sorted { file1, file2 -> java.lang.Long.compare(file2.lastModified(), file1.lastModified()) }
-                        .takeWhileIndexed { index, value -> index < thumbnailCount }
-                        .toList().toMutableList()
-            }
-        }
+        val thumbFileList: MutableList<File>? = files?.whenNotNullNorEmpty {
+            // 按照时间排序并取前三个文件
+            Stream.of(files)
+                    .sorted { file1, file2 -> java.lang.Long.compare(file2.lastModified(), file1.lastModified()) }
+                    .takeWhileIndexed { index, value -> index < thumbnailCount }
+                    .toList().toMutableList()
 
+        }
         return thumbFileList
     }
 
@@ -453,7 +442,7 @@ object ImageModule : BaseModule() {
             }
         }
 
-        containerFolder.mFile = dir
+        containerFolder.file = dir
         containerFolder.mName = dir.name
         containerFolder.mFolders = subFolders
 
@@ -466,10 +455,11 @@ object ImageModule : BaseModule() {
         val imageFiles = folder!!.listFiles(PathUtils.MEDIA_FILENAME_FILTER)
         return ImageFolder().apply {
             file = folder
-            name = folder.name
+            setNameAndCreateSearchUnit(folder.name)
+
             count = (imageFiles?.size ?: 0)
 
-            setThumbList(createThumbnailList(imageFiles, DEFAULT_THUMBNAIL_COUNT))
+            setThumbList(createThumbnailList(imageFiles.toList(), DEFAULT_THUMBNAIL_COUNT))
             setMediaFiles(imageFiles)
         }
     }
@@ -482,26 +472,30 @@ object ImageModule : BaseModule() {
     fun rescanDirectoryThumbnailList(dir: File): Observable<List<File>> {
         return Observable.create { e ->
             val imageFiles = dir.listFiles(PathUtils.MEDIA_FILENAME_FILTER)
-            val thumbnailList = createThumbnailList(imageFiles, DEFAULT_THUMBNAIL_COUNT)
+            val thumbnailList = createThumbnailList(imageFiles.toList(), DEFAULT_THUMBNAIL_COUNT)
 
-            try {
-                mFolderModelRWLock.writeLock().lock()
-                if (updateFileModelThumbnailList(mFolderModel, dir, thumbnailList)) {
-                    Log.d(TAG, "已经更新目录缩略图列表：$dir")
-                    val event = RescanFolderThumbnailListMessage()
-                            .setDirectory(dir)
-                            .setThumbnails(thumbnailList!!)
-                    mBus.post(event)
+            mFolderModelLock.write {
+
+                try {
+                    if (updateFileModelThumbnailList(mFolderModel, dir, thumbnailList)) {
+                        Log.d(TAG, "已经更新目录缩略图列表：$dir")
+                        val event = RescanFolderThumbnailListMessage()
+                                .setDirectory(dir)
+                                .setThumbnails(thumbnailList!!)
+                        mBus.post(event)
+                    }
+                    return@write true
+                } catch (th: Throwable) {
+                    return@write false
                 }
-            } catch (th: Throwable) {
-                e.onError(th)
-                return@create
-            } finally {
-                mFolderModelRWLock.writeLock().unlock()
-
+            }.let {
+                if (it) {
+                    e.onNext(thumbnailList!!.toList())
+                    e.onComplete()
+                } else {
+                    e.onError(RuntimeException("Update folder thumbnail list for folder model failed. "))
+                }
             }
-            e.onNext(thumbnailList!!.toList())
-            e.onComplete()
         }
     }
 
@@ -961,14 +955,14 @@ object ImageModule : BaseModule() {
 
     fun getSectionFileName(position: Int): String? {
         try {
-            mFolderModelRWLock.readLock().lock()
+            mFolderModelLock.readLock().lock()
 
             val sectionForPosition = getSectionForPosition(position)
             val containerFolder = mFolderModel?.containerFolders?.get(sectionForPosition)
 
             return containerFolder?.mName ?: ""
         } finally {
-            mFolderModelRWLock.readLock().unlock()
+            mFolderModelLock.readLock().unlock()
         }
     }
 
@@ -1054,7 +1048,7 @@ object ImageModule : BaseModule() {
             FileUtils.moveDirectory(srcDir, destDir)
 
             try {
-                mFolderModelRWLock.writeLock().lock()
+                mFolderModelLock.writeLock().lock()
 
                 var found = false
                 mFolderModel?.let {
@@ -1066,7 +1060,7 @@ object ImageModule : BaseModule() {
                             folders.forEach {
                                 if (it.file == srcDir) {
                                     found = true
-                                    it.name = newDirName
+                                    it.setNameAndCreateSearchUnit(newDirName)
 
                                     val newDir = File(srcDir.parentFile, newDirName)
                                     it.file = newDir
@@ -1102,7 +1096,7 @@ object ImageModule : BaseModule() {
             } catch (e1: Exception) {
                 e1.printStackTrace()
             } finally {
-                mFolderModelRWLock.writeLock().unlock()
+                mFolderModelLock.writeLock().unlock()
             }
 
 
@@ -1167,7 +1161,7 @@ object ImageModule : BaseModule() {
 
             // 更新缓存
             val containerFolders = Stream.of(mFolderModel!!.containerFolders)
-                    .filter { value -> SystemUtils.isSameFile(value.getFile(), dir.parentFile) }
+                    .filter { value -> SystemUtils.isSameFile(value.file, dir.parentFile) }
                     .limit(1)
                     .toList()
 
@@ -1232,7 +1226,7 @@ object ImageModule : BaseModule() {
             mBus.post(cn.intret.app.picgo.model.event.DeleteFolderMessage(dir))
 
             try {
-                mFolderModelRWLock.writeLock().lock()
+                mFolderModelLock.writeLock().lock()
                 Stream.of(mFolderModel!!.containerFolders)
                         .forEach { containerFolder ->
                             val folders = containerFolder.folders
@@ -1247,7 +1241,7 @@ object ImageModule : BaseModule() {
 
                 mBus.post(FolderModelChangeMessage())
             } finally {
-                mFolderModelRWLock.writeLock().unlock()
+                mFolderModelLock.writeLock().unlock()
             }
 
             e.onNext(true)
@@ -1339,7 +1333,7 @@ object ImageModule : BaseModule() {
         return Observable.create { e ->
             val result = DetectFileExistenceResult()
             try {
-                mFolderModelRWLock.readLock().lock()
+                mFolderModelLock.readLock().lock()
 
                 mFolderModel?.containerFolders?.forEach {
                     for (imageFolder in it.folders) {
@@ -1363,7 +1357,7 @@ object ImageModule : BaseModule() {
             } catch (th: Throwable) {
                 e.onError(th)
             } finally {
-                mFolderModelRWLock.readLock().unlock()
+                mFolderModelLock.readLock().unlock()
             }
         }
     }
@@ -1692,7 +1686,7 @@ object ImageModule : BaseModule() {
     fun hiddenFolder(selectedDir: File): Observable<Boolean> {
         return Observable.create { e ->
             try {
-                mFolderModelRWLock.writeLock().lock()
+                mFolderModelLock.writeLock().lock()
 
                 var foundIndex = -1
                 var foundSubIndex = -1
@@ -1725,7 +1719,7 @@ object ImageModule : BaseModule() {
                     e.onComplete()
                 }
             } finally {
-                mFolderModelRWLock.writeLock().unlock()
+                mFolderModelLock.writeLock().unlock()
             }
         }
     }

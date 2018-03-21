@@ -331,7 +331,7 @@ class ExcludeFolderDialogFragment : BottomSheetDialogFragment(), T9KeypadView.On
 
 
         t9KeypadView
-                .dialpadInputObservable
+                .keypadInputObservable
                 .debounce(369, TimeUnit.MILLISECONDS)
                 .subscribe { input ->
 

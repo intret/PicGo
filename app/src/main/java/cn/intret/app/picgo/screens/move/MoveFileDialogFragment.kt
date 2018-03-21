@@ -420,7 +420,7 @@ class MoveFileDialogFragment : DaggerBottomSheetDialogFragment(),
 
 
         t9KeypadView
-                .dialpadInputObservable
+                .keypadInputObservable
                 .debounce(369, TimeUnit.MILLISECONDS)
                 .subscribe { input ->
                     Log.d(TAG, "initDialPad: dial")
