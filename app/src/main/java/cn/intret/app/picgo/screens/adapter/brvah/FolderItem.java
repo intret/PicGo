@@ -11,7 +11,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import cn.intret.app.picgo.model.image.ImageFolder;
-import cn.intret.app.picgo.screens.adapter.HorizontalImageListAdapter;
+import cn.intret.app.picgo.screens.adapter.ThumbnailListAdapter;
 
 
 public class FolderItem extends ImageFolder implements MultiItemEntity, Cloneable {
@@ -21,7 +21,7 @@ public class FolderItem extends ImageFolder implements MultiItemEntity, Cloneabl
     List<File> mConflictFiles;
     boolean mIsSelectionSourceDir = false;
     int mSelectedCount = -1;
-    HorizontalImageListAdapter adapter;
+    ThumbnailListAdapter adapter;
     private RecyclerView.LayoutManager layoutManager;
 
     @Override

@@ -408,7 +408,7 @@ object UserModule : BaseModule() {
     }
 
     /*
-     * Hidden folders
+     * Hidden subFolders
      */
     fun addExcludeFolder(dir: File): Observable<Boolean> {
 

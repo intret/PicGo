@@ -155,11 +155,11 @@ public class SectionedLabelListAdapter extends SectionedRecyclerViewAdapter<Sect
         vh.name.setText(item.getName());
     }
 
-    private List<HorizontalImageListAdapter.Item> filesToItems(List<File> thumbList) {
+    private List<ThumbnailListAdapter.Item> filesToItems(List<File> thumbList) {
         if (thumbList == null) {
             return null;
         }
-        return com.annimon.stream.Stream.of(thumbList).map(file -> new HorizontalImageListAdapter.Item().setFile(file)).toList();
+        return com.annimon.stream.Stream.of(thumbList).map(file -> new ThumbnailListAdapter.Item().setFile(file)).toList();
     }
 
     @Override

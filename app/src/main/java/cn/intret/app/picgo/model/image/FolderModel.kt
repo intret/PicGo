@@ -33,20 +33,17 @@ class FolderModel : Cloneable {
      */
     class ContainerFolder : Cloneable {
         internal lateinit var file: File
-        internal lateinit var mName: String
+        internal lateinit var name: String
 
-        internal var mFolders: MutableList<ImageFolder>? = null
-
-        val folders: List<ImageFolder>
-            get() = mFolders?.toList() ?: LinkedList()
+        internal var subFolders: MutableList<ImageFolder>? = null
 
         fun setFolders(folders: List<ImageFolder>): ContainerFolder {
-            if (mFolders == null) {
-                mFolders = ArrayList<ImageFolder>()
+            if (this.subFolders == null) {
+                this.subFolders = ArrayList<ImageFolder>()
             }
 
-            mFolders?.clear()
-            mFolders?.addAll(folders)
+            this.subFolders?.clear()
+            this.subFolders?.addAll(folders)
 
             return this
         }
@@ -57,7 +54,7 @@ class FolderModel : Cloneable {
         }
 
         fun setName(name: String): ContainerFolder {
-            mName = name
+            this.name = name
             return this
         }
 
@@ -65,14 +62,14 @@ class FolderModel : Cloneable {
         public override fun clone(): Any {
             val clone = super.clone() as ContainerFolder
             clone.file = File(file.absolutePath)
-            clone.mFolders = this.mFolders?.let {
+            clone.subFolders = this.subFolders?.let {
                 it.map { it.clone() as ImageFolder }.toMutableList()
             }
             return clone
         }
 
         override fun toString(): String {
-            return "ContainerFolder(file=$file, mName='$mName', mFolders=$mFolders)"
+            return "ContainerFolder(file=$file, name='$name', subFolders=${this.subFolders})"
         }
 
     }

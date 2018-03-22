@@ -5,50 +5,44 @@ import cn.intret.app.picgo.model.image.ImageFolder
 import cn.intret.app.picgo.screens.adapter.SectionedFolderListAdapter
 import cn.intret.app.picgo.utils.whenNotNullNorEmpty
 import com.annimon.stream.Stream
-import java.util.*
 
 object FolderListAdapterUtils {
 
     fun folderModelToSectionedFolderListAdapter(model: FolderModel): SectionedFolderListAdapter {
-        val sections = LinkedList<SectionedFolderListAdapter.Section>()
+        val sections = model.containerFolders?.map(this::parentFolderToItem)
+        val mutableList = sections?.toMutableList()
+                ?: mutableListOf<SectionedFolderListAdapter.Section>()
 
-        val containerFolders = model.containerFolders
-        var i = 0
-        val s = containerFolders!!.size
-        while (i < s) {
-            sections.add(parentFolderToItem(containerFolders[i]))
-            i++
-        }
-
-        return SectionedFolderListAdapter(sections).setHighlightItemName(model.isT9FilterMode())
+        return SectionedFolderListAdapter(mutableList).setHighlightItemName(model.mIsT9FilterMode)
     }
 
     private fun parentFolderToItem(containerFolder: FolderModel.ContainerFolder): SectionedFolderListAdapter.Section {
-        val section = SectionedFolderListAdapter.Section()
-
-        return section.setName(containerFolder.mName)
-                .setFile(containerFolder.file)
-                .setItems(
-                        Stream.of(containerFolder.folders)
-                                .map { item ->
-                                    SectionedFolderListAdapter.Item()
-                                            .setFile(item.file)
-                                            .setName(item.name)
-                                            .setKeywordStartIndex(item.getMatchStartIndex())
-                                            .setKeywordLength(item.getMatchLength())
-                                            .setCount(item.count)
-                                            .setThumbList(item.thumbList)
-                                }
-                                .toList()
-                )
+        return SectionedFolderListAdapter.Section().apply {
+            name = containerFolder.name
+            file = containerFolder.file
+            items = containerFolder.subFolders
+                    ?.map { item ->
+                        SectionedFolderListAdapter.Item().apply {
+                            this.mFile = item.file
+                            this.mName = item.name
+                            this.mKeywordStartIndex = item.matchStartIndex
+                            this.mKeywordLength = item.matchLength
+                            this.mCount = item.count
+                            setThumbList(item.thumbnailList)
+                        }
+                    }
+                    ?.toMutableList()
+        }
     }
 
     fun imageFolderToFolderListAdapterItem(imageFolder: ImageFolder): FolderListAdapter.Item {
         return FolderListAdapter.Item()
-                .setName(imageFolder.name)
-                .setCount(imageFolder.count.toLong())
-                .setDirectory(imageFolder.file)
-                .setThumbList(imageFolder.thumbList)
+                .apply {
+                    name = imageFolder.name
+                    count = imageFolder.count.toLong()
+                    directory = imageFolder.file
+                    thumbList = imageFolder.thumbnailList
+                }
     }
 
     fun imageFolderToExpandableFolderItem(folder: ImageFolder): FolderItem {
@@ -57,22 +51,22 @@ object FolderListAdapterUtils {
                     file = folder.file
                     count = folder.count
                     setNameAndCreateSearchUnit(folder.name)
-                    setTitle(folder.name)
-                    setThumbList(folder.thumbList)
+                    title = folder.name
+                    thumbnailList = folder.thumbnailList
                     setMatchKeywords(folder.matchKeywords?.toString())
-                    setMatchLength(folder.getMatchLength())
-                    setMatchStartIndex(folder.getMatchStartIndex())
-                    setMediaFiles(folder.getMediaFiles())
-                    setPinyinSearchUnit(folder.getPinyinSearchUnit())
+                    matchLength = folder.matchLength
+                    matchStartIndex = folder.matchStartIndex
+                    mediaFiles = folder.mediaFiles
+                    pinyinSearchUnit = folder.pinyinSearchUnit
                 }
     }
 
     fun containerFolderToFolderSection(containerFolder: FolderModel.ContainerFolder): FolderSection {
         return FolderSection().apply {
-            setTitle(containerFolder.mName)
+            setTitle(containerFolder.name)
             file = containerFolder.file
 
-            val folders = containerFolder.folders
+            val folders = containerFolder.subFolders
             val folderItems = Stream.of(folders)
                     .map { imageFolderToExpandableFolderItem(it) }
                     .toList()

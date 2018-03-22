@@ -23,8 +23,8 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
-import cn.intret.app.picgo.screens.adapter.HorizontalImageListAdapter;
 import cn.intret.app.picgo.screens.adapter.SectionedFolderListAdapter;
+import cn.intret.app.picgo.screens.adapter.ThumbnailListAdapter;
 
 /**
  * 抽屉菜单列表
@@ -209,7 +209,7 @@ public class FolderListAdapter
         Item item = mItems.get(position);
         holder.itemView.setTag(R.id.item, item);
 
-        SparseArray<HorizontalImageListAdapter.Item> items = new SparseArray<>();
+        SparseArray<ThumbnailListAdapter.Item> items = new SparseArray<>();
         item.getThumbList();
 
         holder.name.setText(item.getName());

@@ -14,70 +14,64 @@ open class ImageFolder : Cloneable {
      * Folder file
      */
     lateinit var file: File
+
     /*
      * File count in folder
      */
     var count: Int = 0
+
     /**
      * Folder name
      */
     var name: String? = null
 
-    internal var mThumbList: MutableList<File>? = null
-    internal var mMediaFiles: Array<File>? = null
-
-    /*
-     * T9 键盘过滤信息
+    /**
+     * Thumbnail image file list
      */
-    internal var mPinyinSearchUnit: PinyinSearchUnit? = null
+    var thumbnailList: MutableList<File>? = null
+
+    /**
+     * sub folder list which each item contains image files
+     */
+    var subFolders: MutableList<ImageFolder>? = null
+
+    /**
+     * Media file list, contains video/image files
+     */
+    var mediaFiles: Array<File>? = null
+
+    // ------------------------------------------------
+    // T9 键盘过滤信息
+    // ------------------------------------------------
+
+
+    var pinyinSearchUnit: PinyinSearchUnit? = null
 
     var matchKeywords: StringBuffer? = StringBuffer()
         private set        //Used to save the type of Match Keywords.(name or phoneNumber)
-    private var mMatchStartIndex: Int = 0                //the match start  position of mMatchKeywords in original string(name or phoneNumber).
-    private var mMatchLength: Int = 0                    //the match length of mMatchKeywords in original string(name or phoneNumber).
-
-    var thumbList: MutableList<File>?
-        get() = mThumbList
-        set(value) {
-            mThumbList = value
-        }
 
 
-    fun getPinyinSearchUnit(): PinyinSearchUnit? {
-        return mPinyinSearchUnit
-    }
+    /**
+     * the match start  position of mMatchKeywords in original string(name or phoneNumber).
+     */
+    var matchStartIndex: Int = 0
 
-    fun setPinyinSearchUnit(pinyinSearchUnit: PinyinSearchUnit?): ImageFolder {
-        mPinyinSearchUnit = pinyinSearchUnit
-        return this
-    }
-
-    fun getMediaFiles(): Array<File>? {
-        return mMediaFiles
-    }
-
-    fun setMediaFiles(mediaFiles: Array<File>?): ImageFolder {
-        mMediaFiles = mediaFiles
-        return this
-    }
-
-    fun setThumbList(thumbList: MutableList<File>?): ImageFolder {
-        this.mThumbList = thumbList
-        return this
-    }
-
+    /**
+     * the match length of mMatchKeywords in original string(name or phoneNumber).
+     */
+    var matchLength: Int = 0
 
     fun setNameAndCreateSearchUnit(name: String?): ImageFolder {
 
         this.name = name
 
         // Generate Pinyin search data
-        setPinyinSearchUnit(PinyinSearchUnit(name))
-        PinyinUtil.parse(mPinyinSearchUnit)
+        pinyinSearchUnit = PinyinSearchUnit(name)
+        PinyinUtil.parse(pinyinSearchUnit)
 
         matchKeywords = StringBuffer()
-        setMatchStartIndex(-1)
-        setMatchLength(0)
+        matchStartIndex = -1
+        matchLength = 0
 
         return this
     }
@@ -94,34 +88,15 @@ open class ImageFolder : Cloneable {
         matchKeywords?.let { it.delete(0, it.length) }
     }
 
-    fun getMatchStartIndex(): Int {
-        return mMatchStartIndex
-    }
-
-    fun setMatchStartIndex(matchStartIndex: Int): ImageFolder {
-        mMatchStartIndex = matchStartIndex
-        return this
-    }
-
-    fun getMatchLength(): Int {
-        return mMatchLength
-    }
-
-    fun setMatchLength(matchLength: Int): ImageFolder {
-        mMatchLength = matchLength
-        return this
-    }
-
     @Throws(CloneNotSupportedException::class)
     public override fun clone(): Any {
         val clone = super.clone() as ImageFolder
         clone.matchKeywords = StringBuffer(this.matchKeywords.toString())
-        clone.setPinyinSearchUnit(this.mPinyinSearchUnit?.clone() as PinyinSearchUnit?
-                ?: PinyinSearchUnit())
+        clone.pinyinSearchUnit = this.pinyinSearchUnit?.clone() as PinyinSearchUnit? ?: PinyinSearchUnit()
         clone.file = File(this.file.absolutePath)
         clone.setNameAndCreateSearchUnit(this.name)
 
-        clone.mThumbList = this.mThumbList?.let {
+        clone.thumbnailList = this.thumbnailList?.let {
             it.map { File(it.absolutePath) }.toMutableList()
         }
 
@@ -129,8 +104,8 @@ open class ImageFolder : Cloneable {
     }
 
     override fun toString(): String {
-        return "ImageFolder(count=$count, name=$name, mMediaFiles=${mMediaFiles?.size
-                ?: 0}, mPinyinSearchUnit=$mPinyinSearchUnit, matchKeywords=$matchKeywords, mMatchStartIndex=$mMatchStartIndex, mMatchLength=$mMatchLength)"
+        return "ImageFolder(count=$count, name=$name, mediaFiles=${mediaFiles?.size
+                ?: 0}, pinyinSearchUnit=$pinyinSearchUnit, matchKeywords=$matchKeywords, matchStartIndex=$matchStartIndex, matchLength=$matchLength)"
     }
 
 }

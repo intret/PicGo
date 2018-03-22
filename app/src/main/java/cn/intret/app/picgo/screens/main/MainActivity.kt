@@ -62,6 +62,7 @@ import com.annimon.stream.Collector
 import com.annimon.stream.Stream
 import com.annimon.stream.function.BiConsumer
 import com.annimon.stream.function.Function
+import com.annimon.stream.function.Predicate
 import com.annimon.stream.function.Supplier
 import com.jakewharton.rxrelay2.BehaviorRelay
 import com.orhanobut.logger.Logger
@@ -661,7 +662,7 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
     fun onEvent(message: RescanFolderThumbnailListMessage) {
         Log.d(TAG, "onEvent() called with: message = [$message]")
 
-        mFolderAdapter!!.updateThumbList(message.getDirectory(), message.getThumbnails())
+        mFolderAdapter!!.updateThumbList(message.getDirectory(), message.getThumbnails().toMutableList())
     }
 
     @Subscribe(threadMode = ThreadMode.ASYNC)
@@ -1250,11 +1251,16 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
 
     @OnClick(R.id.conflict_filter_switch)
     fun onClickButtonFolderToolFilterMode() {
-        if (mFolderAdapter != null) {
-            if (mFolderAdapter!!.isFiltering) {
-                mFolderAdapter!!.leaveFilterMode()
+        mFolderAdapter?.let {
+            if (it.isFiltering()) {
+                it.leaveFilterMode()
             } else {
-                mFolderAdapter!!.filter { value -> value.itemSubType == SectionedFolderListAdapter.ItemSubType.CONFLICT_COUNT || value.itemSubType == SectionedFolderListAdapter.ItemSubType.SOURCE_DIR }
+                it.filter(
+                        Predicate<SectionedFolderListAdapter.Item> { item ->
+                            item.mItemSubType == SectionedFolderListAdapter.ItemSubType.CONFLICT_COUNT
+                                    || item.mItemSubType == SectionedFolderListAdapter.ItemSubType.SOURCE_DIR
+                        }
+                )
             }
         }
     }
@@ -1343,7 +1349,7 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
     // 文件夹列表
     // ---------------------------------------------------------------------------------------------
 
-    private fun showFolderList(model: FolderModel) {
+    private fun showFolderList(folderModel: FolderModel) {
 
         mIsFolderListLoaded = true
 
@@ -1362,13 +1368,13 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
                 showFolderSectionHeaderOptionPopupMenu(v, section)
             }
 
-            override fun onItemClick(sectionItem: SectionedFolderListAdapter.Section, section: Int, item: SectionedFolderListAdapter.Item, relativePos: Int) {
-                Log.d(TAG, "onItemClick: 显示目录图片 " + item.file)
+            override fun onItemClick(sectionItem: SectionedFolderListAdapter.Section?, section: Int, item: SectionedFolderListAdapter.Item, relativePos: Int) {
+                Log.d(TAG, "onItemClick: 显示目录图片 " + item.mFile)
                 mDrawerLayout.closeDrawers()
-                showImageList(item.file, true, false, true)
+                showImageList(item.mFile, true, false, true)
             }
 
-            override fun onItemLongClick(v: View, sectionItem: SectionedFolderListAdapter.Section, section: Int, item: SectionedFolderListAdapter.Item, relativePos: Int) {
+            override fun onItemLongClick(v: View, sectionItem: SectionedFolderListAdapter.Section?, section: Int, item: SectionedFolderListAdapter.Item, relativePos: Int) {
                 showFolderItemContextPopupWindow(v, item)
             }
 
@@ -1378,14 +1384,21 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
         }
 
         // Create adapter
-        val listAdapter = FolderListAdapterUtils.folderModelToSectionedFolderListAdapter(model)
-        listAdapter.isShowHeaderOptionButton = true
-        listAdapter.onItemClickListener = onItemClickListener
-        listAdapter.isShowSourceDirBadgeWhenEmpty = false
-        if (mCurrentFolder != null) {
-            listAdapter.selectItem(mCurrentFolder)
-            listAdapter.moveFileSourceDir = mCurrentFolder
-        }
+        val listAdapter = FolderListAdapterUtils.folderModelToSectionedFolderListAdapter(folderModel)
+        listAdapter
+                .apply {
+                    setShowHeaderOptionButton(true)
+                    setShowSourceDirBadgeWhenEmpty(false)
+
+                    mOnItemClickListener = onItemClickListener
+                }
+                .also { adatepr ->
+                    mCurrentFolder?.let {
+                        adatepr.selectItem(mCurrentFolder)
+                        adatepr.setMoveFileSourceDir(mCurrentFolder)
+                    }
+                }
+
 
         if (mFolderListRefresh.isRefreshing) {
             mFolderListRefresh.isRefreshing = false
@@ -1406,10 +1419,13 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
         // List item click event
         val itemTouchListener = RecyclerItemTouchListener(this,
                 mFolderList,
-                { view, position -> this.onClickFolderListItem(view, position) }
-        ) { view, position ->
-            //onLongClickFolderListItem(view, position);
-        }
+                { view, position ->
+                    this.onClickFolderListItem(view, position)
+                }
+                ,
+                { view, position ->
+                    //onLongClickFolderListItem(view, position);
+                })
         mFolderList.addOnItemTouchListener(itemTouchListener)
 
         // show firstOf folder's images in activity content field.
@@ -1430,7 +1446,7 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
         popupMenu.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 R.id.create_folder -> {
-                    showCreateFolderDialog(section.file)
+                    section.file?.let { showCreateFolderDialog(it) }
                 }
                 R.id.folder_detail -> ToastUtils.toastShort(this@MainActivity, R.string.unimplemented)
             }
@@ -1504,13 +1520,19 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
 
     private fun showFolderItemContextPopupWindow(v: View, item: SectionedFolderListAdapter.Item?) {
 
+
         if (mFolderItemContextMenu != null) {
-            Log.w(TAG, "showFolderItemContextPopupWindow: already shown the popup menu, " + item!!.name)
+            Log.w(TAG, "showFolderItemContextPopupWindow: already shown the popup menu, " + item!!.mName)
             return
         }
 
-        Logger.d("show context menu : " + item!!.name)
-        val selectedDir = item.file
+        Logger.d("show context menu : " + item!!.mName)
+        if (item.mFile == null) {
+            Log.w(TAG, "show context menu for ${item.mName} with null file object.")
+            return
+        }
+
+        val selectedDir = item.mFile
 
         // Window properties
         val backgroundDrawable = ColorDrawable(resources.getColor(R.color.gray_98))
@@ -1536,7 +1558,7 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
                         .setIcon(resources.getDrawable(R.drawable.ic_mode_edit_black_24px))
                         .setName(getString(R.string.rename))
                         .setAction {
-                            showFolderRenameDialog(item, selectedDir)
+                            showFolderRenameDialog(item, selectedDir!!)
                             true
                         }
         )
@@ -1558,7 +1580,7 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
                         .setIcon(resources.getDrawable(R.drawable.ic_delete_black_24px))
                         .setName(getString(R.string.delete))
                         .setAction {
-                            onClickMenuItemDeleteDirectory(item.file)
+                            onClickMenuItemDeleteDirectory(item.mFile!!)
                             true
                         }
         )
@@ -1586,7 +1608,7 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
                                 .setIcon(null)
                                 .setName(getString(R.string.move_selected_images_to_here))
                                 .setAction {
-                                    showFolderMoveToHereDialog(selectedDir)
+                                    showFolderMoveToHereDialog(selectedDir!!)
                                     true
                                 }
                 )
@@ -1603,7 +1625,7 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
                                 .setIcon(null)
                                 .setName(getString(R.string.move_selected_images_to_here))
                                 .setAction {
-                                    showFolderMoveToHereDialog(selectedDir)
+                                    showFolderMoveToHereDialog(selectedDir!!)
                                     true
                                 }
                 )
@@ -1645,7 +1667,7 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
 
     private fun showFolderItemContextPopupMenu(v: View, item: SectionedFolderListAdapter.Item) {
 
-        val selectedDir = item.file
+        val selectedDir = item.mFile
 
         val popupMenu = PopupMenu(this, v, Gravity.NO_GRAVITY, R.attr.actionOverflowMenuStyle, 0)
         var menuOrder = 0
@@ -1653,15 +1675,15 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
 
         val menu = popupMenu.menu
         menu.add(menuCategory, R.id.menu_item_rename,
-                menuOrder, getString(R.string.rename_folder_s, selectedDir.name))
+                menuOrder, getString(R.string.rename_folder_s, selectedDir?.name))
 
         menuOrder++
         menu.add(menuCategory, R.id.menu_item_move,
-                menuOrder, getString(R.string.move_folder_s, item.file.name))
+                menuOrder, getString(R.string.move_folder_s, item.mFile?.name))
 
         menuOrder++
         menu.add(menuCategory, R.id.menu_item_delete,
-                menuOrder, getString(R.string.remove_folder_s, item.file.name))
+                menuOrder, getString(R.string.remove_folder_s, item.mFile?.name))
 
 
         menuCategory++
@@ -1707,13 +1729,13 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
                     hideFolder(selectedDir)
                 }
                 R.id.menu_item_rename -> {
-                    showFolderRenameDialog(item, selectedDir)
+                    selectedDir?.let { showFolderRenameDialog(item, it) }
                 }
                 R.id.menu_item_move -> {
 
                 }
                 R.id.menu_item_move_file_to_here -> {
-                    showFolderMoveToHereDialog(selectedDir)
+                    selectedDir?.let { showFolderMoveToHereDialog(it) }
                 }
             }
             false
@@ -1749,11 +1771,11 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
 
 
         val menuItems = LinkedList<String>()
-        val selectedDir = item.file
+        val selectedDir = item.mFile
 
-        menuItems.add(getString(R.string.rename_folder_s, selectedDir.name))
-        menuItems.add(getString(R.string.move_folder_s, item.file.name))
-        menuItems.add(getString(R.string.remove_folder_s, item.file.name))
+        menuItems.add(getString(R.string.rename_folder_s, selectedDir?.name))
+        menuItems.add(getString(R.string.move_folder_s, item.mFile?.name))
+        menuItems.add(getString(R.string.remove_folder_s, item.mFile?.name))
 
         menuItems.add(getString(R.string.exclude_folder))
 
@@ -1790,15 +1812,17 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
                 .itemsCallback { dialog, itemView, position, text ->
                     when (position) {
                         0 -> { // rename
-                            showFolderRenameDialog(item, selectedDir)
+                            selectedDir?.let { showFolderRenameDialog(item, it) }
                         }
                         1 // 移动
                         -> {
                         }
                         2 // 删除
-                        -> showDeleteFolderDialog(selectedDir)
+                        -> {
+                            selectedDir?.let { showDeleteFolderDialog(it) }
+                        }
                         3 -> {
-                            showFolderMoveToHereDialog(selectedDir)
+                            showFolderMoveToHereDialog(selectedDir!!)
                         }
                         4 -> {
 
@@ -1833,10 +1857,10 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
         val builder = MaterialDialog.Builder(this)
                 .title(R.string.folder_rename)
                 .alwaysCallInputCallback()
-                .input(getString(R.string.input_new_directory_name), item!!.name) { dlg, input ->
+                .input(getString(R.string.input_new_directory_name), item!!.mName) { dlg, input ->
 
-                    val isValid = !StringUtils.equals(input, item.name)
-                    Log.d(TAG, " name " + input + " " + item.name + " " + isValid)
+                    val isValid = !StringUtils.equals(input, item.mName)
+                    Log.d(TAG, " name " + input + " " + item.mName + " " + isValid)
 
                     val actionButton = dlg.getActionButton(DialogAction.POSITIVE)
                     actionButton?.apply {
@@ -1890,30 +1914,34 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
         SectionedListItemClickDispatcher<SectionedFolderListAdapter>(mFolderAdapter)
                 .dispatchItemClick(position) { adapter, coord ->
                     val item = adapter.getItem(coord)
+                    item?.let {
+                        val selectedItem = adapter.selectedItem
+                        val moveFileSourceDir = adapter.getMoveFileSourceDir()
+                        if (it.mFile == moveFileSourceDir) {
+                            Log.w(TAG, "onClickFolderListItem: 点击的项是移动操作的源目录，不显示冲突对话框")
+                            return@dispatchItemClick
+                        }
 
-                    val selectedItem = adapter.selectedItem
-                    val moveFileSourceDir = adapter.moveFileSourceDir
-                    if (item!!.file == moveFileSourceDir) {
-                        Log.w(TAG, "onClickFolderListItem: 点击的项是移动操作的源目录，不显示冲突对话框")
-                        return@dispatchItemClick
-                    }
+                        if (!ListUtils.isEmpty(it.conflictFiles)) {
 
-                    if (!ListUtils.isEmpty(item.conflictFiles)) {
+                            it.mFile?.let {
 
-                        val fragment = ConflictResolverDialogFragment
-                                .newInstance(item.file.absolutePath,
-                                        ArrayList(
-                                                Stream.of(item.conflictFiles)
-                                                        .map { file -> File(moveFileSourceDir, file.name) }
-                                                        .map { it.absolutePath }
-                                                        .toList())
-                                )
-                        fragment.show(supportFragmentManager, "Conflict Resolver Dialog")
-                    } else {
-                        Log.d(TAG, "onItemClick: 显示 " + item.file)
-                        adapter.selectItem(item.file)
-                        showImageList(item.file, false, true, true)
-                        //                    mDrawerLayout.closeDrawers();
+                                val fragment = ConflictResolverDialogFragment
+                                        .newInstance(it.absolutePath,
+                                                ArrayList(
+                                                        Stream.of(item.conflictFiles)
+                                                                .map { file -> File(moveFileSourceDir, file.name) }
+                                                                .map { it.absolutePath }
+                                                                .toList())
+                                        )
+                                fragment.show(supportFragmentManager, "Conflict Resolver Dialog")
+                            }
+                        } else {
+                            Log.d(TAG, "onItemClick: 显示 " + it.mFile)
+                            adapter.selectItem(item.mFile)
+                            showImageList(item.mFile, false, true, true)
+                            //                    mDrawerLayout.closeDrawers();
+                        }
                     }
                 }
     }
@@ -1952,16 +1980,12 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
 
                     items = Stream.of(selectionModeAdapters)
                             .map { entry ->
-                                FlatFolderListAdapter.Item()
-                                        .setDirectory(entry.value.directory)
-                                        .setCount(entry.value.selectedItemCount)
-                                        .setThumbList(
+                                FlatFolderListAdapter.Item().apply {
 
-                                                Stream.of(entry.value
-                                                        .getSelectedItemUntil(MOVE_FILE_DIALOG_THUMBNAIL_COUNT))
-                                                        .map({ it.file })
-                                                        .toList()
-                                        )
+                                    mDirectory = entry.value.directory
+                                    mCount = (entry.value.selectedItemCount)
+                                    mThumbList = entry.value.getSelectedItemUntil(MOVE_FILE_DIALOG_THUMBNAIL_COUNT).map { it.file }.toList()
+                                }
                             }.toList()
                 }
             }
@@ -2001,7 +2025,7 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
                         if (which == DialogAction.POSITIVE) {
                             val selectedItem = selectedFolderListAdapter.selectedItem
                             Stream.of(selectedItem)
-                                    .map({ it.directory })
+                                    .map({ it.mDirectory })
                                     .forEach { f ->
                                         // TODO show progress
                                         moveAdapterSelectedFilesToDir(dir)
@@ -2050,6 +2074,7 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
     // ---------------------------------------------------------------------------------------------
     // 文件夹列表
     // ---------------------------------------------------------------------------------------------
+
 
     private fun showFolderModel(model: FolderModel) {
 
@@ -2105,17 +2130,17 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
 
             val sectionItem = SectionFolderListAdapter.SectionItem()
             sectionItem.apply {
-                name = it.mName
+                name = it.name
                 file = it.file
-                items = containerFolder.folders
-                        .map { item ->
+                items = containerFolder.subFolders
+                        ?.map { item ->
                             SectionFolderListAdapter.Item()
                                     .setFile(item.file)
                                     .setName(item.name)
                                     .setCount(item.count)
-                                    .setThumbList(item.thumbList)
+                                    .setThumbList(item.thumbnailList)
                         }
-                        .toList()
+                        ?.toList()
 
             }
         }
@@ -3004,9 +3029,7 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
         mCurrentImageAdapter = adapterToShow
 
         // Sync data with folder list adapter
-        if (mFolderAdapter != null) {
-            mFolderAdapter!!.moveFileSourceDir = adapterToShow.directory
-        }
+        mFolderAdapter?.let { it.mMoveFileSourceDir = adapterToShow.directory }
 
         // RecyclerView Layout
         mGridLayoutManager = GridLayoutManager(this, mSpanCount, GridLayoutManager.VERTICAL, false)
@@ -3060,9 +3083,7 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
         mCurrentDetailImageAdapter = adapter
 
         // Folder List : Sync data with folder list
-        if (mFolderAdapter != null) {
-            mFolderAdapter!!.moveFileSourceDir = adapter.directory
-        }
+        mFolderAdapter?.let { it.mMoveFileSourceDir = adapter.directory }
 
         // RecyclerView Layout
         mLinearLayoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
@@ -3464,20 +3485,21 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
                     val tag = contentView.getTag(R.id.item)
                     if (tag != null && tag is SectionedFolderListAdapter.Item) {
 
-                        val destDir = tag.file
-                        ImageModule
-                                .moveFilesToDirectory(destDir, selectedFiles)
-                                .compose(RxUtils.applySchedulers())
-                                .subscribe({ count ->
-                                    if (count == selectedFiles.size) {
-                                        ToastUtils.toastLong(this@MainActivity, this@MainActivity.getString(R.string.already_moved_d_files, count))
-                                    } else if (count > 0 && count < selectedFiles.size) {
-                                        // 部分文件移动失败
-                                        ToastUtils.toastShort(this@MainActivity, R.string.move_files_successfully_but_)
-                                    } else {
-                                        ToastUtils.toastShort(this@MainActivity, R.string.move_files_failed)
-                                    }
-                                }) { throwable -> ToastUtils.toastShort(this@MainActivity, R.string.move_files_failed) }
+                        tag.mFile?.let {
+                            ImageModule
+                                    .moveFilesToDirectory(it, selectedFiles)
+                                    .compose(RxUtils.applySchedulers())
+                                    .subscribe({ count ->
+                                        if (count == selectedFiles.size) {
+                                            ToastUtils.toastLong(this@MainActivity, this@MainActivity.getString(R.string.already_moved_d_files, count))
+                                        } else if (count > 0 && count < selectedFiles.size) {
+                                            // 部分文件移动失败
+                                            ToastUtils.toastShort(this@MainActivity, R.string.move_files_successfully_but_)
+                                        } else {
+                                            ToastUtils.toastShort(this@MainActivity, R.string.move_files_failed)
+                                        }
+                                    }) { throwable -> ToastUtils.toastShort(this@MainActivity, R.string.move_files_failed) }
+                        }
                     }
                 }
                 .onNegative { dialog, which ->
@@ -3516,7 +3538,8 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
                         override fun onItem(adapter: SectionedRecyclerViewAdapter<*>, coord: ItemCoord) {
                             val item = mFolderAdapter!!.getItem(coord)
 
-                            desc.text = getString(R.string.move_selected_images_to_directory_s, item!!.file.name)
+                            desc.text = getString(R.string.move_selected_images_to_directory_s, item?.mFile?.name
+                                    ?: "")
                             root.setTag(R.id.item, item)
                         }
                     })
@@ -3557,6 +3580,7 @@ class MainActivity : BaseDaggerAppCompatActivity(), MainContract.View {
     }
 
     override fun onLoadedFolderModel(folderModel: FolderModel) {
+        Log.w(TAG, "onLoadedFolderModel() called with folderModel = [$folderModel]")
         showFolderList(folderModel)
     }
 

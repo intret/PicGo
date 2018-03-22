@@ -181,9 +181,9 @@ class ExcludeFolderDialogFragment : BottomSheetDialogFragment(), T9KeypadView.On
                 .compose(RxUtils.applySchedulers())
                 .map { FolderListAdapterUtils.folderModelToSectionedFolderListAdapter(it) }
                 .map { adapter ->
-                    adapter.isSelectable = false
-                    adapter.isShowCloseButton = true
-                    adapter.onItemClickListener = object : SectionedFolderListAdapter.OnItemClickListener {
+                    adapter.mIsSelectable = false
+                    adapter.mShowCloseButton = true
+                    adapter.mOnItemClickListener = object : SectionedFolderListAdapter.OnItemClickListener {
                         override fun onSectionHeaderClick(section: SectionedFolderListAdapter.Section, sectionIndex: Int, adapterPosition: Int) {
 
                         }
@@ -192,11 +192,11 @@ class ExcludeFolderDialogFragment : BottomSheetDialogFragment(), T9KeypadView.On
 
                         }
 
-                        override fun onItemClick(sectionItem: SectionedFolderListAdapter.Section, section: Int, item: SectionedFolderListAdapter.Item, relativePos: Int) {
+                        override fun onItemClick(sectionItem: SectionedFolderListAdapter.Section?, section: Int, item: SectionedFolderListAdapter.Item, relativePos: Int) {
 
                         }
 
-                        override fun onItemLongClick(v: View, sectionItem: SectionedFolderListAdapter.Section, section: Int, item: SectionedFolderListAdapter.Item, relativePos: Int) {
+                        override fun onItemLongClick(v: View, sectionItem: SectionedFolderListAdapter.Section?, section: Int, item: SectionedFolderListAdapter.Item, relativePos: Int) {
 
                         }
 
@@ -206,7 +206,7 @@ class ExcludeFolderDialogFragment : BottomSheetDialogFragment(), T9KeypadView.On
                                     .excludeFolderPreference
                                     .map { pref ->
                                         val files = pref.get()
-                                        files.remove(item.file)
+                                        files.remove(item.mFile)
                                         pref.set(files)
 
                                         true
@@ -246,7 +246,7 @@ class ExcludeFolderDialogFragment : BottomSheetDialogFragment(), T9KeypadView.On
 
     private fun setAdapterMoveFileSourceDir(adapter: SectionedFolderListAdapter): SectionedFolderListAdapter {
         if (!ListUtils.isEmpty(mHiddenFolders)) {
-            adapter.moveFileSourceDir = mHiddenFolders!![0].parentFile
+            adapter.mMoveFileSourceDir = mHiddenFolders!![0].parentFile
         }
         return adapter
     }
@@ -430,7 +430,7 @@ class ExcludeFolderDialogFragment : BottomSheetDialogFragment(), T9KeypadView.On
     private fun onClickFolderListItem(item: SectionedFolderListAdapter.Item, contentView: View) {
 
 
-        val msg = getString(R.string.move_selected_images_to_directory_s, item.file.name)
+        val msg = getString(R.string.move_selected_images_to_directory_s, item.mFile?.name)
 
         // 移动文件描述信息
         ViewUtils.setText(contentView, R.id.desc, msg)
@@ -438,42 +438,46 @@ class ExcludeFolderDialogFragment : BottomSheetDialogFragment(), T9KeypadView.On
         setStatusDetecting(contentView)
 
         mHiddenFolders?.let {
-            ImageModule
-                    .detectFileConflict(item.file, it)
-                    .compose(RxUtils.applySchedulers())
-                    .subscribe({ moveFileDetectResult ->
-                        val colorOk = this@ExcludeFolderDialogFragment.resources.getColor(android.R.color.holo_green_dark)
-                        val colorConflict = this@ExcludeFolderDialogFragment.resources.getColor(android.R.color.holo_red_dark)
+            item.mFile?.let { targetDir ->
+                ImageModule
+                        .detectFileConflict(targetDir, it)
+                        .compose(RxUtils.applySchedulers())
+                        .subscribe({ moveFileDetectResult ->
+                            val colorOk = this@ExcludeFolderDialogFragment.resources.getColor(android.R.color.holo_green_dark)
+                            val colorConflict = this@ExcludeFolderDialogFragment.resources.getColor(android.R.color.holo_red_dark)
 
-                        moveFileDetectResult?.let {
-                            val conflictFiles = moveFileDetectResult.conflictFiles
-                            val canMoveFiles = moveFileDetectResult.canMoveFiles
-                            val btnMoveFile = contentView.findViewById<Button>(R.id.btn_positive)
+                            moveFileDetectResult?.let {
+                                val conflictFiles = moveFileDetectResult.conflictFiles
+                                val canMoveFiles = moveFileDetectResult.canMoveFiles
+                                val btnMoveFile = contentView.findViewById<Button>(R.id.btn_positive)
 
-                            conflictFiles?.let {
+                                conflictFiles?.let {
 
-                                if (it.isEmpty()) {
-                                    setDetectingResultText(contentView, getString(R.string.can_move_all_files, canMoveFiles?.size?:0), colorOk)
+                                    if (it.isEmpty()) {
+                                        setDetectingResultText(contentView, getString(R.string.can_move_all_files, canMoveFiles?.size
+                                                ?: 0), colorOk)
 
-                                    btnMoveFile.setTextColor(resources.getColor(R.color.colorAccent))
-                                } else {
+                                        btnMoveFile.setTextColor(resources.getColor(R.color.colorAccent))
+                                    } else {
 
-                                    btnMoveFile.text = resources.getString(R.string.move_file_d_d,
-                                            mHiddenFolders!!.size - conflictFiles.size, mHiddenFolders!!.size)
-                                    btnMoveFile.setTextColor(resources.getColor(R.color.warning))
+                                        btnMoveFile.text = resources.getString(R.string.move_file_d_d,
+                                                mHiddenFolders!!.size - conflictFiles.size, mHiddenFolders!!.size)
+                                        btnMoveFile.setTextColor(resources.getColor(R.color.warning))
 
-                                    setDetectingResultText(contentView,
-                                            getString(R.string.target_directory_exists__d_files_in_the_same_name,
-                                                    item.file.name,
-                                                    conflictFiles.size), colorConflict)
+                                        setDetectingResultText(contentView,
+                                                getString(R.string.target_directory_exists__d_files_in_the_same_name,
+                                                        targetDir.name,
+                                                        conflictFiles.size), colorConflict)
+                                    }
                                 }
                             }
+                        }) { throwable ->
+                            throwable.printStackTrace()
+                            setDetectingResultText(contentView, getString(R.string.detect_move_file_action_result_failed),
+                                    this@ExcludeFolderDialogFragment.resources.getColor(android.R.color.holo_red_light))
                         }
-                    }) { throwable ->
-                        throwable.printStackTrace()
-                        setDetectingResultText(contentView, getString(R.string.detect_move_file_action_result_failed),
-                                this@ExcludeFolderDialogFragment.resources.getColor(android.R.color.holo_red_light))
-                    }
+            }
+
         }
 
 
@@ -581,56 +585,58 @@ class ExcludeFolderDialogFragment : BottomSheetDialogFragment(), T9KeypadView.On
         val item = getViewItemTag<SectionedFolderListAdapter.Item>(contentView, R.id.item)
         if (item != null) {
 
-            val destDir = item.file
             mHiddenFolders?.let {
 
-                ImageModule
-                        .moveFilesToDirectory(destDir, it, true, false)
-                        .compose(RxUtils.applySchedulers())
-                        .subscribe({ moveFileResult ->
-                            storePosition(contentView)
+                item.mFile?.let { destDir ->
+                    ImageModule
+                            .moveFilesToDirectory(destDir, it, true, false)
+                            .compose(RxUtils.applySchedulers())
+                            .subscribe({ moveFileResult ->
+                                storePosition(contentView)
 
-                            if (moveFileResult != null) {
-                                val successFiles = moveFileResult.successFiles
-                                val conflictFiles = moveFileResult.conflictFiles
-                                val failedFiles = moveFileResult.failedFiles
+                                if (moveFileResult != null) {
+                                    val successFiles = moveFileResult.successFiles
+                                    val conflictFiles = moveFileResult.conflictFiles
+                                    val failedFiles = moveFileResult.failedFiles
 
-                                try {
-                                    EventBus.getDefault().post(
-                                            MoveFileResultMessage()
-                                                    .setDestDir(destDir)
-                                                    .setResult(moveFileResult))
+                                    try {
+                                        EventBus.getDefault().post(
+                                                MoveFileResultMessage()
+                                                        .setDestDir(destDir)
+                                                        .setResult(moveFileResult))
 
-                                } catch (e: Throwable) {
-                                    e.printStackTrace()
-                                }
-
-                                val successCount = successFiles.size
-                                if (successCount == it.size) {
-                                    ToastUtils.toastLong(CoreModule.appContext,
-                                            R.string.already_moved_d_files, successCount)
-                                } else {
-                                    Log.w(TAG, "移动文件冲突: $conflictFiles")
-                                    if (!conflictFiles.isEmpty()) {
-
-                                    } else {
-                                        ToastUtils.toastShort(CoreModule.appContext, R.string.move_files_failed)
+                                    } catch (e: Throwable) {
+                                        e.printStackTrace()
                                     }
 
-                                    if (successCount > 0 && successCount < mHiddenFolders!!.size) {
-                                        // 部分文件移动失败
-                                        //                                            ToastUtils.toastShort(getActivity(), R.string.move_files_successfully_but_);
-
+                                    val successCount = successFiles.size
+                                    if (successCount == it.size) {
+                                        ToastUtils.toastLong(CoreModule.appContext,
+                                                R.string.already_moved_d_files, successCount)
                                     } else {
+                                        Log.w(TAG, "移动文件冲突: $conflictFiles")
+                                        if (!conflictFiles.isEmpty()) {
+
+                                        } else {
+                                            ToastUtils.toastShort(CoreModule.appContext, R.string.move_files_failed)
+                                        }
+
+                                        if (successCount > 0 && successCount < mHiddenFolders!!.size) {
+                                            // 部分文件移动失败
+                                            //                                            ToastUtils.toastShort(getActivity(), R.string.move_files_successfully_but_);
+
+                                        } else {
+                                        }
                                     }
                                 }
+                            }) { throwable ->
+                                throwable.printStackTrace()
+                                if (activity != null) {
+                                    ToastUtils.toastShort(activity, getString(R.string.move_files_failed))
+                                }
                             }
-                        }) { throwable ->
-                            throwable.printStackTrace()
-                            if (activity != null) {
-                                ToastUtils.toastShort(activity, getString(R.string.move_files_failed))
-                            }
-                        }
+                }
+
             }
 
         }

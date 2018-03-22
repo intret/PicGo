@@ -185,7 +185,7 @@ object ImageModule : BaseModule() {
                 mFolderModel?.containerFolders?.let {
                     for (sectionIndex in it.indices) {
                         val containerFolder = it[sectionIndex]
-                        val size = containerFolder.folders.size
+                        val size = containerFolder.subFolders?.size ?: 0
 
                         end += size
 
@@ -203,102 +203,6 @@ object ImageModule : BaseModule() {
                         String.format(Locale.getDefault(),
                                 "Invalid parameter 'position' value '%d', exceeds total item size %d", position, begin))
             }
-        }
-    }
-
-    /**
-     * @param fromCacheFirst
-     * @param t9NumberInput  为 null 或者空字符串时，获取的文件列表不进行 T9 过滤，并且是正常模式，并非过滤模式。
-     * @return
-     */
-    fun loadFolderModel(fromCacheFirst: Boolean, t9NumberInput: String?): Observable<FolderModel> {
-        return loadFolderModel(fromCacheFirst)
-                .map { model ->
-                    if (StringUtils.isBlank(t9NumberInput)) {
-                        return@map model
-                    }
-
-                    // The variable 'model' is a copy of original model, we can modify it.
-                    filterModelByT9NumberInput(model, t9NumberInput)
-
-                    model.mIsT9FilterMode = true
-                    model
-                }
-    }
-
-    private fun filterModelByT9NumberInput(model: FolderModel, t9Numbers: String?) {
-        model.containerFolders?.forEachIndexed { index, containerFolder ->
-            val folders = containerFolder.folders
-            run {
-                val filteredFolders = LinkedList<ImageFolder>()
-                for (folder in folders) {
-                    val pinyinSearchUnit = folder.getPinyinSearchUnit()
-
-                    // Pinyin match
-
-                    if (T9Util.match(pinyinSearchUnit, t9Numbers)) {
-
-                        folder.setMatchKeywords(pinyinSearchUnit?.matchKeyword.toString())
-                        folder.setMatchStartIndex(folder.name?.indexOf(pinyinSearchUnit?.matchKeyword.toString())
-                                ?: 0)
-                        folder.setMatchLength(folder.matchKeywords?.length ?: 0)
-
-                        filteredFolders.add(folder)
-                    } else {
-                        Log.d(TAG, "T9: folder [${folder.name}] not matches T9 keyboard input : [$t9Numbers]")
-                    }
-                }
-
-                Log.d(TAG, "----- 文件夹过滤最后剩下 " + filteredFolders.size + "/" + folders.size + " 项 -----")
-                containerFolder.setFolders(filteredFolders)
-            }
-        }
-    }
-
-    fun loadHiddenFileListModel(t9NumberInput: String): Observable<FolderModel> {
-        return loadHiddenFileListModel()
-                .map { model ->
-                    if (StringUtils.isBlank(t9NumberInput)) {
-                        return@map model
-                    }
-
-                    // The variable 'model' is a copy of original model, we can modify it.
-                    filterModelByT9NumberInput(model, t9NumberInput)
-
-                    model.mIsT9FilterMode = true
-                    model
-                }
-    }
-
-    fun loadHiddenFileListModel(): Observable<FolderModel> {
-
-        return Observable.create { e ->
-
-            val folderModel = FolderModel()
-            mHiddenFolders.readConsume { `object` ->
-                Stream.of(`object`)
-                        .groupBy { it.parentFile }
-                        .forEach { fileListEntry ->
-                            val parentDir = fileListEntry.key
-                            val subFolderList = fileListEntry.value
-
-                            val imageFolders = Stream.of(subFolderList)
-                                    .map(this::createImageFolder)
-                                    .toList()
-
-                            folderModel.addFolderSection(
-                                    FolderModel.ContainerFolder()
-                                            .apply {
-                                                file = parentDir
-                                                mName = parentDir.name
-                                                setFolders(imageFolders)
-                                            }
-                            )
-                        }
-            }
-
-            e.onNext(folderModel)
-            e.onComplete()
         }
     }
 
@@ -356,6 +260,102 @@ object ImageModule : BaseModule() {
         }
     }
 
+    /**
+     * @param fromCacheFirst
+     * @param t9NumberInput  为 null 或者空字符串时，获取的文件列表不进行 T9 过滤，并且是正常模式，并非过滤模式。
+     * @return
+     */
+    fun loadFolderModel(fromCacheFirst: Boolean, t9NumberInput: String?): Observable<FolderModel> {
+        return loadFolderModel(fromCacheFirst)
+                .map { model ->
+                    if (StringUtils.isBlank(t9NumberInput)) {
+                        return@map model
+                    }
+
+                    // The variable 'model' is a copy of original model, we can modify it.
+                    filterModelByT9NumberInput(model, t9NumberInput)
+
+                    model.mIsT9FilterMode = true
+                    model
+                }
+    }
+
+    private fun filterModelByT9NumberInput(model: FolderModel, t9Numbers: String?) {
+        model.containerFolders?.forEachIndexed { _, containerFolder ->
+
+            containerFolder.subFolders?.let {
+                val filteredFolders = LinkedList<ImageFolder>()
+                for (folder in it) {
+                    val pinyinSearchUnit = folder.pinyinSearchUnit
+
+                    // Pinyin match
+
+                    if (T9Util.match(pinyinSearchUnit, t9Numbers)) {
+
+                        folder.setMatchKeywords(pinyinSearchUnit?.matchKeyword.toString())
+                        folder.matchStartIndex = (folder.name?.indexOf(pinyinSearchUnit?.matchKeyword.toString())
+                                ?: 0)
+                        folder.matchLength = (folder.matchKeywords?.length ?: 0)
+
+                        filteredFolders.add(folder)
+                    } else {
+                        Log.d(TAG, "T9: folder [${folder.name}] not matches T9 keyboard input : [$t9Numbers]")
+                    }
+                }
+
+                Log.d(TAG, "----- 文件夹过滤最后剩下 " + filteredFolders.size + "/" + it.size + " 项 -----")
+                containerFolder.setFolders(filteredFolders)
+            }
+        }
+    }
+
+    fun loadHiddenFileListModel(t9NumberInput: String): Observable<FolderModel> {
+        return loadHiddenFileListModel()
+                .map { model ->
+                    if (StringUtils.isBlank(t9NumberInput)) {
+                        return@map model
+                    }
+
+                    // The variable 'model' is a copy of original model, we can modify it.
+                    filterModelByT9NumberInput(model, t9NumberInput)
+
+                    model.mIsT9FilterMode = true
+                    model
+                }
+    }
+
+    fun loadHiddenFileListModel(): Observable<FolderModel> {
+
+        return Observable.create { e ->
+
+            val folderModel = FolderModel()
+            mHiddenFolders.readConsume { `object` ->
+                Stream.of(`object`)
+                        .groupBy { it.parentFile }
+                        .forEach { fileListEntry ->
+                            val parentDir = fileListEntry.key
+                            val subFolderList = fileListEntry.value
+
+                            val imageFolders = Stream.of(subFolderList)
+                                    .map(this::createImageFolder)
+                                    .toList()
+
+                            folderModel.addFolderSection(
+                                    FolderModel.ContainerFolder()
+                                            .apply {
+                                                file = parentDir
+                                                name = parentDir.name
+                                                setFolders(imageFolders)
+                                            }
+                            )
+                        }
+            }
+
+            e.onNext(folderModel)
+            e.onComplete()
+        }
+    }
+
     @Throws(FileNotFoundException::class)
     private fun loadImageDirectoryInto(folderModel: FolderModel, picturesDir: File) {
         listImageDirectories(picturesDir, FOLDER_LIST_NAME_ASC_COMPARATOR)
@@ -396,7 +396,7 @@ object ImageModule : BaseModule() {
     }
 
     private fun createThumbnailList(files: List<File>?, thumbnailCount: Int): MutableList<File>? {
-        // TODO: filter image
+        // TODO: showFiltereSections image
 
         val thumbFileList: MutableList<File>? = files?.whenNotNullNorEmpty {
             // 按照时间排序并取前三个文件
@@ -443,8 +443,8 @@ object ImageModule : BaseModule() {
         }
 
         containerFolder.file = dir
-        containerFolder.mName = dir.name
-        containerFolder.mFolders = subFolders
+        containerFolder.name = dir.name
+        containerFolder.subFolders = subFolders
 
         model.addFolderSection(containerFolder)
     }
@@ -459,8 +459,9 @@ object ImageModule : BaseModule() {
 
             count = (imageFiles?.size ?: 0)
 
-            setThumbList(createThumbnailList(imageFiles.toList(), DEFAULT_THUMBNAIL_COUNT))
-            setMediaFiles(imageFiles)
+            thumbnailList = createThumbnailList(imageFiles.toList(), DEFAULT_THUMBNAIL_COUNT)
+
+            mediaFiles = imageFiles
         }
     }
 
@@ -502,41 +503,21 @@ object ImageModule : BaseModule() {
     private fun updateFileModelThumbnailList(folderModel: FolderModel?, dir: File, thumbnailList: List<File>?): Boolean {
         val imageFolder = getFileModelImageFolder(folderModel, dir)
         if (imageFolder != null) {
-            if (org.apache.commons.collections4.ListUtils.isEqualList(imageFolder.thumbList, thumbnailList)) {
+            if (org.apache.commons.collections4.ListUtils.isEqualList(imageFolder.thumbnailList, thumbnailList)) {
                 Log.d(TAG, "updateFileModelThumbnailList: two thumbnail list (cache one and new one) are equal, don't update")
                 return false
             }
-            imageFolder.setThumbList(thumbnailList?.toMutableList())
+            imageFolder.thumbnailList = thumbnailList?.toMutableList()
             return true
         }
         return false
     }
 
     private fun getFileModelImageFolder(folderModel: FolderModel?, dir: File): ImageFolder? {
-        var imageFolder: ImageFolder
-        val containerFolders = folderModel!!.containerFolders
-        var i = 0
-        val parentFolderInfosSize = containerFolders?.size ?: 0
-        while (i < parentFolderInfosSize) {
-            containerFolders?.get(i)?.let {
-                val folders = it.folders
-                var i1 = 0
-                val foldersSize = folders.size
-                while (i1 < foldersSize) {
-                    imageFolder = folders[i1]
-                    if (imageFolder.file == dir) {
-                        return imageFolder
-                    }
-                    i1++
-                }
-                i++
-            }
+        folderModel?.containerFolders?.forEach {
+            return it.subFolders?.find { it.file == dir }
         }
         return null
-    }
-
-    private fun cacheImageGroupList(mode: GroupMode) {
-
     }
 
     /**
@@ -940,12 +921,12 @@ object ImageModule : BaseModule() {
 
         return loadFolderModel(true)
                 .map { folderModel ->
-                    val containerFolders = folderModel.containerFolders
-
-                    val imageFolderList = LinkedList<ImageFolder>()
+                    val imageFolderList = mutableListOf<ImageFolder>()
                     folderModel.containerFolders?.let {
                         it.forEachIndexed { index, containerFolder ->
-                            imageFolderList.addAll(containerFolder.folders)
+                            containerFolder.subFolders?.let {
+                                imageFolderList.addAll(it)
+                            }
                         }
                     }
 
@@ -960,7 +941,7 @@ object ImageModule : BaseModule() {
             val sectionForPosition = getSectionForPosition(position)
             val containerFolder = mFolderModel?.containerFolders?.get(sectionForPosition)
 
-            return containerFolder?.mName ?: ""
+            return containerFolder?.name ?: ""
         } finally {
             mFolderModelLock.readLock().unlock()
         }
@@ -1053,37 +1034,61 @@ object ImageModule : BaseModule() {
                 var found = false
                 mFolderModel?.let {
 
-                    mFolderModel?.containerFolders?.forEach {
-                        val folders = it.folders
+                    mFolderModel?.containerFolders?.forEach { container ->
+                        val folders = container.subFolders
 
-                        run subloop@{
-                            folders.forEach {
-                                if (it.file == srcDir) {
-                                    found = true
-                                    it.setNameAndCreateSearchUnit(newDirName)
+                        container.subFolders?.let { subFolder ->
+                            run subloop@{
+                                subFolder.find { it.subFolders == srcDir }
+                                        ?.apply {
+                                            this.setNameAndCreateSearchUnit(newDirName)
 
-                                    val newDir = File(srcDir.parentFile, newDirName)
-                                    it.file = newDir
+                                            val newDir = File(srcDir.parentFile, newDirName)
+                                            this.file = newDir
 
-                                    Log.d(TAG, "renameDirectory: rename folder [" + srcDir.name + "] in cache to new name [" + newDirName + "]")
+                                            Log.d(TAG, "renameDirectory: rename folder [" + srcDir.name + "] in cache to new name [" + newDirName + "]")
 
-                                    // Notify
-                                    mBus.post(RenameDirectoryMessage()
-                                            .setOldDirectory(srcDir)
-                                            .setNewDirectory(destDir))
-                                    return@subloop
-                                }
+                                            // Notify
+                                            mBus.post(RenameDirectoryMessage()
+                                                    .setOldDirectory(srcDir)
+                                                    .setNewDirectory(destDir))
+
+                                            val sortedImageFolderList = Stream.of(folders)
+                                                    .sorted { o1, o2 -> StringUtils.compare(o1.name, o2.name) }
+                                                    .toList()
+                                            container.subFolders = sortedImageFolderList
+
+                                            mBus.post(RescanFolderListMessage("renameDirectory"))
+                                        }
+//                                subFolder.forEach {
+//                                    if (it.file == srcDir) {
+//                                        found = true
+//                                        it.setNameAndCreateSearchUnit(newDirName)
+//
+//                                        val newDir = File(srcDir.parentFile, newDirName)
+//                                        it.file = newDir
+//
+//                                        Log.d(TAG, "renameDirectory: rename folder [" + srcDir.name + "] in cache to new name [" + newDirName + "]")
+//
+//                                        // Notify
+//                                        mBus.post(RenameDirectoryMessage()
+//                                                .setOldDirectory(srcDir)
+//                                                .setNewDirectory(destDir))
+//                                        return@subloop
+//                                    }
+//                                }
                             }
+
+//                            if (found) {
+//                                val sortedImageFolderList = Stream.of(folders)
+//                                        .sorted { o1, o2 -> StringUtils.compare(o1.name, o2.name) }
+//                                        .toList()
+//                                container.subFolders = sortedImageFolderList
+//
+//                                mBus.post(RescanFolderListMessage("renameDirectory"))
+//                            }
                         }
 
-                        if (found) {
-                            val sortedImageFolderList = Stream.of(folders)
-                                    .sorted { o1, o2 -> StringUtils.compare(o1.name, o2.name) }
-                                    .toList()
-                            it.setFolders(sortedImageFolderList)
-
-                            mBus.post(RescanFolderListMessage("renameDirectory"))
-                        }
                     }
                 }
 
@@ -1168,10 +1173,10 @@ object ImageModule : BaseModule() {
             if (!containerFolders.isEmpty()) {
                 val containerFolder = containerFolders[0]
 
-                containerFolder.mFolders?.add(0, createImageFolder(dir))
+                containerFolder.subFolders?.add(0, createImageFolder(dir))
 
                 containerFolder.setFolders(
-                        Stream.of(containerFolder.mFolders)
+                        Stream.of(containerFolder.subFolders)
                                 .sorted({ o1, o2 -> o1.file.compareTo(o2.file) })
                                 .toList())
 
@@ -1229,13 +1234,13 @@ object ImageModule : BaseModule() {
                 mFolderModelLock.writeLock().lock()
                 Stream.of(mFolderModel!!.containerFolders)
                         .forEach { containerFolder ->
-                            val folders = containerFolder.folders
+                            val folders = containerFolder.subFolders
                             val i = org.apache.commons.collections4.ListUtils.indexOf<ImageFolder>(folders
                             ) { `object` -> SystemUtils.isSameFile(`object`.file, dir) }
 
                             if (i != -1) {
                                 Log.d(TAG, "removeFolder: remove folder at $i")
-                                containerFolder.mFolders?.removeAt(i)
+                                containerFolder.subFolders?.removeAt(i)
                             }
                         }
 
@@ -1335,14 +1340,17 @@ object ImageModule : BaseModule() {
             try {
                 mFolderModelLock.readLock().lock()
 
-                mFolderModel?.containerFolders?.forEach {
-                    for (imageFolder in it.folders) {
+                mFolderModel?.containerFolders?.forEach { containerFolder ->
 
-                        imageFolder.getMediaFiles()?.let {
+                    containerFolder.subFolders?.forEach { imageFolder ->
+
+                        imageFolder.mediaFiles?.let {
+
                             val conflictFiles = intersectMoveFiles(
                                     imageFolder.file,
                                     it.toList(), sourceFiles, null)
-                            if (!conflictFiles.isEmpty()) {
+
+                            conflictFiles.whenNotNullNorEmpty {
                                 result.existedFiles?.put(imageFolder.file, Stream.of(conflictFiles)
                                         .map { fileFilePair -> fileFilePair.first }
                                         .toList())
@@ -1693,7 +1701,7 @@ object ImageModule : BaseModule() {
 
                 mFolderModel?.containerFolders?.forEachIndexed folderContainerLoop@{ index, containerFolder ->
 
-                    containerFolder.folders.forEachIndexed folderLoop@{ subIndex, imageFolder ->
+                    containerFolder.subFolders?.forEachIndexed folderLoop@{ subIndex, imageFolder ->
                         if (imageFolder.file == selectedDir) {
                             foundIndex = index
                             foundSubIndex = index
@@ -1707,7 +1715,7 @@ object ImageModule : BaseModule() {
                 }
 
                 if (foundIndex != -1) {
-                    val removedFolder = mFolderModel?.containerFolders?.get(foundIndex)?.mFolders?.removeAt(foundSubIndex)
+                    val removedFolder = mFolderModel?.containerFolders?.get(foundIndex)?.subFolders?.removeAt(foundSubIndex)
                     if (removedFolder == null) {
                         e.onError(RuntimeException("Remove folder model from cache failed."))
                     } else {

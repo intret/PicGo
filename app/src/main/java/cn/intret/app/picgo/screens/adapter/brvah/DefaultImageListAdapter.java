@@ -255,7 +255,7 @@ public class DefaultImageListAdapter extends BaseImageAdapter<DefaultImageListAd
 //        int oldSelectedItemCount = getSelectedItemCount();
 //
 //        // 新数据集合为空，应该退出选择模式
-//        int newSelectedItemCount = (int)com.annimon.stream.Stream.of(items).filter(Item::isSelected).count();
+//        int newSelectedItemCount = (int)com.annimon.stream.Stream.of(items).showFiltereSections(Item::isSelected).count();
 //        if ( newSelectedItemCount == 0 && mIsSelectionMode && mOnInteractionListener != null) {
 //            mIsSelectionMode = false;
 //            mOnInteractionListener.onSelectionModeChange(this, mIsSelectionMode);

@@ -18,8 +18,8 @@ import java.util.List;
 import java.util.Map;
 
 import cn.intret.app.picgo.R;
-import cn.intret.app.picgo.screens.adapter.HorizontalImageAdapterUils;
-import cn.intret.app.picgo.screens.adapter.HorizontalImageListAdapter;
+import cn.intret.app.picgo.screens.adapter.ThumbnailAdapterUtils;
+import cn.intret.app.picgo.screens.adapter.ThumbnailListAdapter;
 import q.rorbin.badgeview.Badge;
 import q.rorbin.badgeview.QBadgeView;
 
@@ -31,7 +31,7 @@ public class ExpandableFolderAdapter
 
     public static class ItemViewHolder extends BaseViewHolder {
 
-        HorizontalImageListAdapter adapter;
+        ThumbnailListAdapter adapter;
         private RecyclerView.LayoutManager layoutManager;
 
         RecyclerView thumbList;
@@ -225,7 +225,7 @@ public class ExpandableFolderAdapter
         if (item.adapter == null) {
 
             Log.d(TAG, "updateThumbList: create thumbnail adapte for " + item.getName());
-            item.adapter = new HorizontalImageListAdapter(HorizontalImageAdapterUils.filesToItems(item.getThumbList()));
+            item.adapter = new ThumbnailListAdapter(ThumbnailAdapterUtils.INSTANCE.filesToItems(item.getThumbnailList()));
 
             rv.setLayoutManager(item.getLayout(vh.itemView.getContext()));
             rv.setAdapter(item.adapter);

@@ -82,7 +82,7 @@ public class SectionFolderListAdapter
         int mCount;
         File mFile;
         List<File> mThumbList;
-        private HorizontalImageListAdapter mAdapter;
+        private ThumbnailListAdapter mAdapter;
 
         public List<File> getThumbList() {
             return mThumbList;
@@ -120,11 +120,11 @@ public class SectionFolderListAdapter
             return this;
         }
 
-        public void setAdapter(HorizontalImageListAdapter adapter) {
+        public void setAdapter(ThumbnailListAdapter adapter) {
             mAdapter = adapter;
         }
 
-        public HorizontalImageListAdapter getAdapter() {
+        public ThumbnailListAdapter getAdapter() {
             return mAdapter;
         }
     }
@@ -227,7 +227,7 @@ public class SectionFolderListAdapter
 
         holder.thumbList.setLayoutManager(new LinearLayoutManager(holder.itemView.getContext(),
                 LinearLayoutManager.HORIZONTAL, true));
-//        holder.thumbList.setOnTouchListener((v, event) -> {
+//        holder.thumbnailList.setOnTouchListener((v, event) -> {
 //            // http://stackoverflow.com/questions/8121491/is-it-possible-to-add-a-scrollable-textview-to-a-listview
 //            v.getParent().requestDisallowInterceptTouchEvent(true); // needed for complex gestures
 //            // simple tap works without the above line as well
@@ -235,7 +235,7 @@ public class SectionFolderListAdapter
 //        });
 
         if (item.getAdapter() == null) {
-            HorizontalImageListAdapter adapter = new HorizontalImageListAdapter(filesToItems(item.getThumbList()));
+            ThumbnailListAdapter adapter = new ThumbnailListAdapter(filesToItems(item.getThumbList()));
 
             item.setAdapter(adapter);
             holder.thumbList.setAdapter(item.getAdapter());
@@ -247,11 +247,11 @@ public class SectionFolderListAdapter
         holder.count.setText(String.valueOf(item.getCount()));
     }
 
-    private List<HorizontalImageListAdapter.Item> filesToItems(List<File> thumbList) {
+    private List<ThumbnailListAdapter.Item> filesToItems(List<File> thumbList) {
         if (thumbList == null) {
             return null;
         }
-        return Stream.of(thumbList).map(file -> new HorizontalImageListAdapter.Item().setFile(file)).toList();
+        return Stream.of(thumbList).map(file -> new ThumbnailListAdapter.Item().setFile(file)).toList();
     }
 
     class FolderHeaderViewHolder extends RecyclerView.ViewHolder {
