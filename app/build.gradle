@@ -23,8 +23,8 @@ android {
         applicationId "cn.intret.app.picgo"
         minSdkVersion 22
         targetSdkVersion 27
-        versionCode 1
-        versionName "0.1"
+        versionCode 2
+        versionName "0.2"
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
@@ -73,7 +73,7 @@ android {
     productFlavors {
         production {
             dimension "state"
-            versionName "0.1.0"
+            versionName "0.2.0"
             versionNameSuffix ""
             versionCode 1 // todo get GIT code
         }
@@ -83,7 +83,7 @@ android {
             // (production and developing version) of app on the same device
             applicationIdSuffix '.dev'
 
-            versionName "0.1.0"
+            versionName "0.2.0"
             versionNameSuffix "-dev"
             versionCode 1 // todo get GIT code
         }
