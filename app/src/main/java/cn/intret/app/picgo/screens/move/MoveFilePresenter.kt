@@ -1,9 +1,9 @@
 package cn.intret.app.picgo.screens.move
 
 import android.arch.lifecycle.LifecycleOwner
-import cn.intret.app.picgo.model.image.DetectFileExistenceResult
-import cn.intret.app.picgo.model.image.FolderModel
 import cn.intret.app.picgo.model.image.ImageModule
+import cn.intret.app.picgo.model.image.data.DetectFileExistenceResult
+import cn.intret.app.picgo.model.image.data.FolderModel
 import cn.intret.app.picgo.screens.base.BaseLifecyclePresenter
 import cn.intret.app.picgo.utils.RxUtils
 import java.io.File

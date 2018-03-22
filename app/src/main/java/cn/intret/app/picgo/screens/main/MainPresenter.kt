@@ -6,10 +6,10 @@ import cn.intret.app.picgo.R
 import cn.intret.app.picgo.di.ActivityScoped
 import cn.intret.app.picgo.model.NotEmptyException
 import cn.intret.app.picgo.model.image.ImageModule
-import cn.intret.app.picgo.model.image.LoadMediaFileParam
-import cn.intret.app.picgo.model.user.SortOrder
-import cn.intret.app.picgo.model.user.SortWay
+import cn.intret.app.picgo.model.image.data.LoadMediaFileParam
 import cn.intret.app.picgo.model.user.UserModule
+import cn.intret.app.picgo.model.user.data.SortOrder
+import cn.intret.app.picgo.model.user.data.SortWay
 import cn.intret.app.picgo.screens.base.BaseLifecyclePresenter
 import cn.intret.app.picgo.utils.RxUtils
 import io.reactivex.Observable

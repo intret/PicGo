@@ -1,5 +1,8 @@
-package cn.intret.app.picgo.model.user
+package cn.intret.app.picgo.model.user.data
 
+/**
+ * Image list sort way
+ */
 enum class SortWay {
     NAME,
     SIZE,

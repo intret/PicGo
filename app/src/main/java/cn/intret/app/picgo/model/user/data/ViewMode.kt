@@ -1,6 +1,8 @@
-package cn.intret.app.picgo.model.user
+package cn.intret.app.picgo.model.user.data
 
-
+/**
+ * Image list view mode
+ */
 enum class ViewMode {
     GRID_VIEW,
     LIST_VIEW,

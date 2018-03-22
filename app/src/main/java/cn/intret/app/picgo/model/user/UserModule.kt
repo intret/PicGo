@@ -7,6 +7,7 @@ import android.util.Log
 import cn.intret.app.picgo.model.BaseModule
 import cn.intret.app.picgo.model.event.RecentOpenFolderListChangeMessage
 import cn.intret.app.picgo.model.event.RenameDirectoryMessage
+import cn.intret.app.picgo.model.user.data.*
 import cn.intret.app.picgo.utils.ListUtils
 import cn.intret.app.picgo.utils.MapAction1
 import cn.intret.app.picgo.utils.Modifier
@@ -27,22 +28,53 @@ import java.util.*
 import javax.inject.Singleton
 
 /**
- * Singleton Module for external storage (SDCard) multimedia files management.
+ * Singleton Module of user preferences: image list view mode, image list sort order, recently opened image folder list.
  *
- *
+ * The module needs an application context, given by calling {@link #setAppContext}
  */
 @Singleton
 @SuppressLint("StaticFieldLeak")
 object UserModule : BaseModule() {
+    // ------------------------------------------------
+    // constants
+    // ------------------------------------------------
+
+    val PREF_KEY_FOLDER_ACCESS_RECENT_HISTORY = "folder_recent_history"
+    val PREF_KEY_IMAGE_VIEW_MODE = "image_view_mode"
+    private val PREF_KEY_IMAGE_SORT_ORDER = "image_sort_order"
+    private val PREF_KEY_IMAGE_SORT_WAY = "image_sort_way"
+
+    val VIEW_MODE_LIST_VIEW = "list_view"
+    val VIEW_MODE_GRID_VIEW = "grid_view"
+    val PREF_KEY_SHOW_HIDDEN_FOLDER = "show_hidden_folder"
+    val PREF_KEY_HIDDEN_FOLDER_LIST_JSON = "hidden_folder_list_json"
+
+    val TAG = "UserDataService"
+
+    // ------------------------------------------------
+    //
+    // ------------------------------------------------
 
     private val mMaxRecentHistorySize = 10
 
     lateinit var preferences: RxSharedPreferences
         internal set
 
+    // a scoped event bus for current module
     internal var mEventBus = EventBus.getDefault()
 
+    // ------------------------------------------------
+    // ui preferences
+    // ------------------------------------------------
+
     internal var moveFileDialogFirstVisibleItemPosition = 0
+
+    val imageClickToFullscreen: Boolean
+        get() = true
+
+    // ------------------------------------------------
+    // image list preferences
+    // ------------------------------------------------
 
     val sortWay: Preference<SortWay>
         get() = preferences.getObject(PREF_KEY_IMAGE_SORT_WAY,
@@ -81,45 +113,6 @@ object UserModule : BaseModule() {
                 return value.toString()
             }
         })
-
-
-    override fun setAppContext(applicationContext: Context) {
-        super.setAppContext(applicationContext)
-
-        initWithContext(applicationContext)
-    }
-
-    private fun initWithContext(applicationContext: Context) {
-        this.preferences = RxSharedPreferences.create(PreferenceManager.getDefaultSharedPreferences(applicationContext))
-
-        validateRecentFolderList()
-    }
-
-    fun addOpenFolderRecentRecord(dir: File?): Observable<Boolean> {
-
-        return Observable.create { e ->
-            if (dir == null) {
-                throw IllegalArgumentException("Argument 'dir' is null.")
-            }
-
-            val saveRecentList = updateOpenFolderRecentPreference(Modifier<MutableList<RecentRecord>> { recentRecords ->
-
-                val remove = cn.intret.app.picgo.utils.ListUtils.removeListElement<RecentRecord>(recentRecords)
-                {
-                    record -> record.filePath != null && record.filePath == dir.absolutePath
-                }
-
-                recentRecords.toMutableList().add(0, RecentRecord().setFilePath(dir.absolutePath))
-
-                Stream.of<RecentRecord>(recentRecords).limit(mMaxRecentHistorySize.toLong()).toList()
-            })
-
-            mEventBus.post(RecentOpenFolderListChangeMessage().setRecentRecord(saveRecentList))
-
-            e.onNext(true)
-            e.onComplete()
-        }
-    }
 
     private//serialized = "[]";
     //                        Log.d(TAG, "deserialize() called with: serialized = [" + serialized + "]");
@@ -197,32 +190,70 @@ object UserModule : BaseModule() {
             e.onComplete()
         }
 
-    val imageClickToFullscreen: Boolean
-        get() = true
 
-    /*
-     * Inner class
-     */
-
-    fun getMoveFileDialogFirstVisibleItemPosition(): Int {
-        return moveFileDialogFirstVisibleItemPosition
-    }
-
-    /*
-     * UI preferences
-     */
-    fun setMoveFileDialogFirstVisibleItemPosition(moveFileDialogFirstVisibleItemPosition: Int): UserModule {
-        this.moveFileDialogFirstVisibleItemPosition = moveFileDialogFirstVisibleItemPosition
-        return this
-    }
+    // ---------------------------------------------------------------------------------------------
+    // module initialization
+    // ---------------------------------------------------------------------------------------------
 
     init {
         mEventBus.register(this)
     }
 
-    /*
-     * Helper
-     */
+    override fun setAppContext(applicationContext: Context) {
+        super.setAppContext(applicationContext)
+
+        initWithContext(applicationContext)
+    }
+
+    private fun initWithContext(applicationContext: Context) {
+        this.preferences = RxSharedPreferences.create(PreferenceManager.getDefaultSharedPreferences(applicationContext))
+
+        validateRecentFolderList()
+    }
+
+    fun addOpenFolderRecentRecord(dir: File?): Observable<Boolean> {
+
+        return Observable.create { e ->
+            if (dir == null) {
+                throw IllegalArgumentException("Argument 'dir' is null.")
+            }
+
+            val saveRecentList = updateOpenFolderRecentPreference(Modifier<MutableList<RecentRecord>> { recentRecords ->
+
+                val remove = cn.intret.app.picgo.utils.ListUtils.removeListElement<RecentRecord>(recentRecords)
+                { record ->
+                    record.filePath != null && record.filePath == dir.absolutePath
+                }
+
+                recentRecords.toMutableList().add(0, RecentRecord().setFilePath(dir.absolutePath))
+
+                Stream.of<RecentRecord>(recentRecords).limit(mMaxRecentHistorySize.toLong()).toList()
+            })
+
+            mEventBus.post(RecentOpenFolderListChangeMessage().setRecentRecord(saveRecentList))
+
+            e.onNext(true)
+            e.onComplete()
+        }
+    }
+
+
+    // ---------------------------------------------------------------------------------------------
+    // UI preferences
+    // ---------------------------------------------------------------------------------------------
+
+    fun setMoveFileDialogFirstVisibleItemPosition(moveFileDialogFirstVisibleItemPosition: Int): UserModule {
+        this.moveFileDialogFirstVisibleItemPosition = moveFileDialogFirstVisibleItemPosition
+        return this
+    }
+
+    fun getMoveFileDialogFirstVisibleItemPosition(): Int {
+        return moveFileDialogFirstVisibleItemPosition
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // preference helper functions
+    // ---------------------------------------------------------------------------------------------
 
     fun <R> getStringPreference(key: String, mapAction: MapAction1<R, String>?): R? {
         val `val` = preferences.getString(key).get()
@@ -239,9 +270,10 @@ object UserModule : BaseModule() {
     }
 
 
-    /*
-     * EventBus message
-     */
+    // ---------------------------------------------------------------------------------------------
+    // EventBus message
+    // ---------------------------------------------------------------------------------------------
+
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
     fun onEvent(message: RenameDirectoryMessage) {
@@ -252,9 +284,11 @@ object UserModule : BaseModule() {
                 .subscribe { ok -> Log.d(TAG, "onEvent: rename recent record success : " + message.getOldDirectory()!!) }
     }
 
-    /*
-     * Recent folder list
-     */
+
+    // ------------------------------------------------
+    // Recent folder list
+    // ------------------------------------------------
+
     private fun validateRecentFolderList() {
 
         loadRecentOpenFolders(false)
@@ -407,9 +441,11 @@ object UserModule : BaseModule() {
         }
     }
 
-    /*
-     * Hidden subFolders
-     */
+
+    // ------------------------------------------------
+    // Hidden subFolders
+    // ------------------------------------------------
+
     fun addExcludeFolder(dir: File): Observable<Boolean> {
 
         return Observable.create { e ->
@@ -427,22 +463,4 @@ object UserModule : BaseModule() {
             e.onComplete()
         }
     }
-
-
-    val PREF_KEY_FOLDER_ACCESS_RECENT_HISTORY = "folder_recent_history"
-    val PREF_KEY_IMAGE_VIEW_MODE = "image_view_mode"
-    private val PREF_KEY_IMAGE_SORT_ORDER = "image_sort_order"
-    private val PREF_KEY_IMAGE_SORT_WAY = "image_sort_way"
-
-    val VIEW_MODE_LIST_VIEW = "list_view"
-    val VIEW_MODE_GRID_VIEW = "grid_view"
-    val PREF_KEY_SHOW_HIDDEN_FOLDER = "show_hidden_folder"
-    val PREF_KEY_HIDDEN_FOLDER_LIST_JSON = "hidden_folder_list_json"
-    val TAG = "UserDataService"
-
-    /*
-   * Singleton
- */
-
-
 }

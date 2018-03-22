@@ -1,6 +1,6 @@
-package cn.intret.app.picgo.model.image
+package cn.intret.app.picgo.model.image.data
 
-import java.util.Date
+import java.util.*
 
 /**
  * Image Group

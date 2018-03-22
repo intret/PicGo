@@ -1,4 +1,4 @@
-package cn.intret.app.picgo.model.image
+package cn.intret.app.picgo.model.image.data
 
 /**
  * 冲突解决结果

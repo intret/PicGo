@@ -10,7 +10,7 @@ import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
 
-import cn.intret.app.picgo.model.image.ImageFolder;
+import cn.intret.app.picgo.model.image.data.ImageFolder;
 import cn.intret.app.picgo.screens.adapter.ThumbnailListAdapter;
 
 

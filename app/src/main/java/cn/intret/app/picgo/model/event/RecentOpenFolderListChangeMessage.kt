@@ -1,6 +1,6 @@
 package cn.intret.app.picgo.model.event
 
-import cn.intret.app.picgo.model.user.RecentRecord
+import cn.intret.app.picgo.model.user.data.RecentRecord
 
 class RecentOpenFolderListChangeMessage : BaseMessage {
     private var mRecentRecord: List<RecentRecord>? = null

@@ -1,14 +1,12 @@
 package cn.intret.app.picgo.screens.main
 
 import android.support.annotation.StringRes
-
+import cn.intret.app.picgo.model.image.data.FolderModel
+import cn.intret.app.picgo.model.image.data.MediaFile
+import cn.intret.app.picgo.model.user.data.SortOrder
+import cn.intret.app.picgo.model.user.data.SortWay
+import cn.intret.app.picgo.model.user.data.UserInitialPreferences
 import java.io.File
-
-import cn.intret.app.picgo.model.image.FolderModel
-import cn.intret.app.picgo.model.image.MediaFile
-import cn.intret.app.picgo.model.user.SortOrder
-import cn.intret.app.picgo.model.user.SortWay
-import cn.intret.app.picgo.model.user.UserInitialPreferences
 
 /**
  * Created by intret on 2018/3/13.

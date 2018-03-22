@@ -1,7 +1,7 @@
 package cn.intret.app.picgo.screens.move
 
-import cn.intret.app.picgo.model.image.DetectFileExistenceResult
-import cn.intret.app.picgo.model.image.FolderModel
+import cn.intret.app.picgo.model.image.data.DetectFileExistenceResult
+import cn.intret.app.picgo.model.image.data.FolderModel
 import java.io.File
 
 /**

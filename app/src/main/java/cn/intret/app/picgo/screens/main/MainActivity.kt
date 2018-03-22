@@ -31,8 +31,10 @@ import butterknife.OnLongClick
 import cn.intret.app.picgo.R
 import cn.intret.app.picgo.app.MyApp
 import cn.intret.app.picgo.model.event.*
-import cn.intret.app.picgo.model.image.*
-import cn.intret.app.picgo.model.user.*
+import cn.intret.app.picgo.model.image.ImageModule
+import cn.intret.app.picgo.model.image.data.*
+import cn.intret.app.picgo.model.user.UserModule
+import cn.intret.app.picgo.model.user.data.*
 import cn.intret.app.picgo.screens.adapter.*
 import cn.intret.app.picgo.screens.adapter.brvah.*
 import cn.intret.app.picgo.screens.base.BaseDaggerAppCompatActivity

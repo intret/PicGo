@@ -1,4 +1,4 @@
-package cn.intret.app.picgo.model.image
+package cn.intret.app.picgo.model.image.data
 
 /**
  * Created by intret on 2018/3/21.

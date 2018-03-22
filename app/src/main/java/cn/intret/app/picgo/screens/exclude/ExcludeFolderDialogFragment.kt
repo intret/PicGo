@@ -50,7 +50,7 @@ import java.util.concurrent.TimeUnit
 
 
 /**
- * Move selected files ( Fragment argument specified ) to user selected target folder.
+ * A dialog fragment shows excluded-image-folders list.
  */
 class ExcludeFolderDialogFragment : BottomSheetDialogFragment(), T9KeypadView.OnT9KeypadInteractionHandler {
 

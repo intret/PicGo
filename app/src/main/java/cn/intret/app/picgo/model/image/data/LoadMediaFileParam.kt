@@ -1,7 +1,7 @@
-package cn.intret.app.picgo.model.image
+package cn.intret.app.picgo.model.image.data
 
-import cn.intret.app.picgo.model.user.SortOrder
-import cn.intret.app.picgo.model.user.SortWay
+import cn.intret.app.picgo.model.user.data.SortOrder
+import cn.intret.app.picgo.model.user.data.SortWay
 
 class LoadMediaFileParam {
     internal var mFromCacheFirst = true

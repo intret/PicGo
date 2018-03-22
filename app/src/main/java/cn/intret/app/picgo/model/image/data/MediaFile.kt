@@ -1,10 +1,8 @@
-package cn.intret.app.picgo.model.image
+package cn.intret.app.picgo.model.image.data
 
 import android.util.Size
-
 import java.io.File
-import java.util.Comparator
-import java.util.Date
+import java.util.*
 
 /**
  * Media file (image/video)

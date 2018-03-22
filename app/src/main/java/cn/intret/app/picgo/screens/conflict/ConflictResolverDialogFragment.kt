@@ -15,10 +15,10 @@ import butterknife.ButterKnife
 import butterknife.OnClick
 import cn.intret.app.picgo.R
 import cn.intret.app.picgo.model.event.ConflictResolveResultMessage
-import cn.intret.app.picgo.model.image.CompareItem
-import cn.intret.app.picgo.model.image.CompareItemResolveResult
 import cn.intret.app.picgo.model.image.ImageModule
-import cn.intret.app.picgo.model.image.ResolveResult
+import cn.intret.app.picgo.model.image.data.CompareItem
+import cn.intret.app.picgo.model.image.data.CompareItemResolveResult
+import cn.intret.app.picgo.model.image.data.ResolveResult
 import cn.intret.app.picgo.screens.adapter.ConflictImageListAdapter
 import cn.intret.app.picgo.utils.ListUtils
 import cn.intret.app.picgo.utils.RxUtils

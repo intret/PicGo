@@ -1,9 +1,8 @@
-package cn.intret.app.picgo.model.image
+package cn.intret.app.picgo.model.image.data
 
 import android.util.Pair
-
 import java.io.File
-import java.util.LinkedList
+import java.util.*
 
 
 class MoveFileResult {

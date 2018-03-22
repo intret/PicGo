@@ -1,9 +1,9 @@
 package cn.intret.app.picgo.screens.main
 
-import cn.intret.app.picgo.model.image.GroupMode
-import cn.intret.app.picgo.model.user.SortOrder
-import cn.intret.app.picgo.model.user.SortWay
-import cn.intret.app.picgo.model.user.ViewMode
+import cn.intret.app.picgo.model.image.data.GroupMode
+import cn.intret.app.picgo.model.user.data.SortOrder
+import cn.intret.app.picgo.model.user.data.SortWay
+import cn.intret.app.picgo.model.user.data.ViewMode
 
 /**
  * Created by intret on 2017/11/1.

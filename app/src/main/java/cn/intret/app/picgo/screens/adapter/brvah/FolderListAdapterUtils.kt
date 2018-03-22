@@ -1,7 +1,7 @@
 package cn.intret.app.picgo.screens.adapter.brvah
 
-import cn.intret.app.picgo.model.image.FolderModel
-import cn.intret.app.picgo.model.image.ImageFolder
+import cn.intret.app.picgo.model.image.data.FolderModel
+import cn.intret.app.picgo.model.image.data.ImageFolder
 import cn.intret.app.picgo.screens.adapter.SectionedFolderListAdapter
 import cn.intret.app.picgo.utils.whenNotNullNorEmpty
 import com.annimon.stream.Stream

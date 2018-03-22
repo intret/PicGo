@@ -1,8 +1,7 @@
 package cn.intret.app.picgo.screens.event
 
+import cn.intret.app.picgo.model.image.data.MoveFileResult
 import java.io.File
-
-import cn.intret.app.picgo.model.image.MoveFileResult
 
 class MoveFileResultMessage {
     private var mResult: MoveFileResult? = null

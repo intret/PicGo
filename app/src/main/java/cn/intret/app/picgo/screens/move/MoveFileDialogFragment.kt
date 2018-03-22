@@ -24,9 +24,9 @@ import cn.intret.app.picgo.R
 import cn.intret.app.picgo.di.ActivityScoped
 import cn.intret.app.picgo.model.CoreModule
 import cn.intret.app.picgo.model.event.FolderModelChangeMessage
-import cn.intret.app.picgo.model.image.DetectFileExistenceResult
-import cn.intret.app.picgo.model.image.FolderModel
 import cn.intret.app.picgo.model.image.ImageModule
+import cn.intret.app.picgo.model.image.data.DetectFileExistenceResult
+import cn.intret.app.picgo.model.image.data.FolderModel
 import cn.intret.app.picgo.model.user.UserModule
 import cn.intret.app.picgo.screens.adapter.SectionedFolderListAdapter
 import cn.intret.app.picgo.screens.adapter.SectionedListItemClickDispatcher

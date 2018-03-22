@@ -25,7 +25,7 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
-import cn.intret.app.picgo.model.image.GroupMode;
+import cn.intret.app.picgo.model.image.data.GroupMode;
 
 /**
  * 分段图片列表

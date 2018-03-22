@@ -8,9 +8,10 @@ import android.util.Pair
 import cn.intret.app.picgo.model.BaseModule
 import cn.intret.app.picgo.model.NotEmptyException
 import cn.intret.app.picgo.model.event.*
-import cn.intret.app.picgo.model.user.SortOrder
-import cn.intret.app.picgo.model.user.SortWay
+import cn.intret.app.picgo.model.image.data.*
 import cn.intret.app.picgo.model.user.UserModule
+import cn.intret.app.picgo.model.user.data.SortOrder
+import cn.intret.app.picgo.model.user.data.SortWay
 import cn.intret.app.picgo.utils.*
 import com.annimon.stream.Collector
 import com.annimon.stream.Stream
@@ -34,6 +35,10 @@ import javax.inject.Singleton
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
+/**
+ * Media file folder management, now it scans folders in 'internal-storage/DCIM' and 'internal-storage/Pictures'.
+ * TODO: add asynchronous device internal-storage media file scanner, sdcard scanner
+ */
 @Singleton
 @SuppressLint("StaticFieldLeak")
 object ImageModule : BaseModule() {

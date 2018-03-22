@@ -20,7 +20,7 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import cn.intret.app.picgo.R;
-import cn.intret.app.picgo.model.image.ResolveResult;
+import cn.intret.app.picgo.model.image.data.ResolveResult;
 import cn.intret.app.picgo.utils.FileSizeUtils;
 import cn.intret.app.picgo.utils.MediaUtils;
 import cn.intret.app.picgo.utils.Param;

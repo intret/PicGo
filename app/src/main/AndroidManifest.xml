@@ -27,10 +27,6 @@
             android:name=".screens.floating.FloatWindowService"
             android:exported="false">
         </service>
-        <service
-            android:name=".app.service.SelectedImageFloatViewService"
-            android:exported="false">
-        </service>
 
         <activity
             android:name=".screens.image.ImageActivity"

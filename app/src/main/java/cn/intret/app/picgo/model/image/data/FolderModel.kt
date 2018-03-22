@@ -1,4 +1,4 @@
-package cn.intret.app.picgo.model.image
+package cn.intret.app.picgo.model.image.data
 
 import java.io.File
 import java.util.LinkedList

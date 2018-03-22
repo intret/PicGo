@@ -13,8 +13,4 @@ abstract class ActivityBindingModule {
     @ActivityScoped
     @ContributesAndroidInjector(modules = arrayOf(MainModule::class))
     internal abstract fun mainActivity(): MainActivity
-
-//    @ActivityScoped
-//    @ContributesAndroidInjector(modules = arrayOf(MoveFileModule::class))
-//    internal abstract fun moveFileFragment(): MoveFileDialogFragment
 }

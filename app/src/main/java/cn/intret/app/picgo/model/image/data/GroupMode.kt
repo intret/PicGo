@@ -1,4 +1,4 @@
-package cn.intret.app.picgo.model.image
+package cn.intret.app.picgo.model.image.data
 
 /**
  * Image group mode for image list

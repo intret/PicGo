@@ -1,7 +1,7 @@
 package cn.intret.app.picgo.model.event
 
 
-import cn.intret.app.picgo.model.image.CompareItemResolveResult
+import cn.intret.app.picgo.model.image.data.CompareItemResolveResult
 
 class ConflictResolveResultMessage {
     internal lateinit var compareItems: List<CompareItemResolveResult>
