@@ -1,1 +1,2 @@
+// remove or upgrade brvah module
 include ':app', ':sectioned-recyclerview', 'brvah'
