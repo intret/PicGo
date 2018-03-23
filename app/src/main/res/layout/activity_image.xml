@@ -7,7 +7,7 @@
     android:layout_height="match_parent"
     android:clipToPadding="true"
     android:fitsSystemWindows="true"
-    tools:context="cn.intret.app.picgo.screens.image.ImageActivity">
+    tools:context="cn.intret.app.picgo.ui.image.ImageActivity">
 
 
     <!--Pager-->

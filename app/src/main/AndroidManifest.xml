@@ -13,7 +13,8 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".screens.main.MainActivity"
+        <activity
+            android:name=".ui.main.MainActivity"
             android:theme="@style/Main"
             >
             <intent-filter>
@@ -24,24 +25,24 @@
         </activity>
 
         <service
-            android:name=".screens.floating.FloatWindowService"
+            android:name=".ui.floating.FloatWindowService"
             android:exported="false">
         </service>
 
         <activity
-            android:name=".screens.image.ImageActivity"
+            android:name=".ui.image.ImageActivity"
             android:theme="@style/AppTheme.ImageViewer">
         </activity>
         <activity
-            android:name=".screens.image.DragPhotoActivity"
+            android:name=".ui.image.DragPhotoActivity"
             android:theme="@style/translucent"/>
-        <activity android:name=".screens.pref.AboutActivity">
+        <activity android:name=".ui.pref.AboutActivity">
             <intent-filter>
                 <action android:name="picgo.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
-        <activity android:name=".screens.pref.SettingActivity">
+        <activity android:name=".ui.pref.SettingActivity">
         </activity>
     </application>
 

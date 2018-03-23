@@ -1,7 +1,7 @@
 package cn.intret.app.picgo.di
 
-import cn.intret.app.picgo.screens.main.MainActivity
-import cn.intret.app.picgo.screens.main.MainModule
+import cn.intret.app.picgo.ui.main.MainActivity
+import cn.intret.app.picgo.ui.main.MainModule
 import dagger.Module
 import dagger.android.ContributesAndroidInjector
 

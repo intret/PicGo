@@ -3,7 +3,7 @@
                 android:id="@+id/image_container"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                tools:context="cn.intret.app.picgo.screens.image.ImageFragment">
+                tools:context="cn.intret.app.picgo.ui.image.ImageFragment">
 
     <pl.droidsonroids.gif.GifImageView
         android:id="@+id/gif_image"

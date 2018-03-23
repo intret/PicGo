@@ -2,7 +2,7 @@ package cn.intret.app.picgo.di
 
 import android.app.Application
 import cn.intret.app.picgo.app.MyApp
-import cn.intret.app.picgo.screens.move.MoveFileModule
+import cn.intret.app.picgo.ui.move.MoveFileModule
 import dagger.BindsInstance
 import dagger.Component
 import dagger.android.AndroidInjector
