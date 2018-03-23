@@ -1,13 +1,13 @@
 # About [![Build Status](https://travis-ci.org/intret/PicGo.svg?branch=master)](https://travis-ci.org/intret/PicGo)
 
-**PicGo**, an android image viewer&managment app built by Kotlin, has these features:
+**PicGo**, an android image viewer&management app built by Kotlin, has these features:
 
 - **👍🏻👍🏻👍🏻 T9 Keypad Filter**: quick T9-Keypad image folder name filtering of image folders from directories `<ExternalStorage>/DCIM` and `<ExternalStorage>/Pictures`.
 - **🈯️Drag select** : Press image in image list to entering selection mode, drag to select more images.
 - **🔜Move files** : quick move-file-to dialog for moving files to target directory.
 - **🌁Image and video** : Supports viewing `gif/jpeg/png/webp` images, and roughly supports viewing video files, likes `."mp4","mov","mpg","mpeg","rmvb","avi"`.
 - **🈯️Drag close** : drag-down close image viewer page.
-- **🍟Share files** : Share image file to third-party applications whose can accecp the image file.
+- **🍟Share files** : Share image file to third-party application who can receive the image file.
 
 # Download Apk 
 
@@ -55,7 +55,7 @@ Below listing the screen shot of PicGo.
 | input "733" for "Reddit"                                     | ![picgo-t9-kepad-reddit](docs/screenshots/jpg/picgo-t9-keypad-english.jpg) |
 | input "93" for "文"                                          | ![picgo-t9-kepad-wz](docs/screenshots/jpg/picgo-t9-keypad-wz.jpg) |
 
-## Feature - Image File Name Conflict Dectection
+## Feature - Image File Name Conflict Detection
 
 | ヽ｀ヽ、ヽ｀ヽ｀、ヽ｀｀、ヽ、｀｀、 ｀、ヽ｀｀、 、ヽ ｀ ヽ｀、｀、、ヽヽ｀ヽ、｀｀、 、ヽ｀、ヽ｀｀、ヽ｀ヽ｀、、ヽ ｀ヽ｀｀、ヽ｀｀、ヽ｀｀ヽヽ｀ヽ、ヽ｀ヽ｀、ヽ｀｀、ヽ、｀｀、 ｀、ヽ｀｀ | ヽ｀ヽ、ヽ｀ヽ｀、ヽ｀｀、ヽ、｀｀、 ｀、ヽ｀｀、 、ヽ ｀ ヽ｀、｀、、ヽヽ｀ヽ、｀｀、 、ヽ｀、ヽ｀｀、ヽ｀ヽ｀、、ヽ ｀ヽ｀｀、ヽ｀｀、ヽ｀｀ヽヽ｀ヽ、ヽ｀ヽ｀、ヽ｀｀、ヽ、｀｀、 ｀、ヽ｀｀ |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
@@ -81,7 +81,7 @@ Below listing the screen shot of PicGo.
 
 | ヽ｀ヽ、ヽ｀ヽ｀、ヽ｀｀、ヽ、｀｀、 ｀、ヽ｀｀、 、ヽ ｀ ヽ｀、｀、、ヽヽ｀ヽ、｀｀、 、ヽ｀、ヽ｀｀、ヽ｀ヽ｀、、ヽ ｀ヽ｀｀、ヽ｀｀、ヽ｀｀ヽヽ｀ヽ、ヽ｀ヽ｀、ヽ｀｀、ヽ、｀｀、 ｀、ヽ｀｀ | ヽ｀ヽ、ヽ｀ヽ｀、ヽ｀｀、ヽ、｀｀、 ｀、ヽ｀｀、 、ヽ ｀ ヽ｀、｀、、ヽヽ｀ヽ、｀｀、 、ヽ｀、ヽ｀｀、ヽ｀ヽ｀、、ヽ ｀ヽ｀｀、ヽ｀｀、ヽ｀｀ヽヽ｀ヽ、ヽ｀ヽ｀、ヽ｀｀、ヽ、｀｀、 ｀、ヽ｀｀ |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| Open Recents                                     | ![picgo-recents](docs/screenshots/jpg/picgo-recents.jpg) |
+| Open Recent                                     | ![picgo-recents](docs/screenshots/jpg/picgo-recents.jpg) |
 | View Mode                                    | ![picgo-view-mode](docs/screenshots/jpg/picgo-view-mode.jpg) |
 | Setting                                          | ![picgo-setting](docs/screenshots/jpg/picgo-setting.jpg) |
 | Folder excluding setting                                          | ![picgo-exclude-file](docs/screenshots/jpg/picgo-exclude-file.jpg) |
